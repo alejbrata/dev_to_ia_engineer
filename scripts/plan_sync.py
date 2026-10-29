@@ -79,9 +79,7 @@ def parse_plan(texto: str | None = None) -> list[Grupo]:
     for linea in texto.splitlines():
         if m := MODULO_RE.match(linea):
             numero, nombre = int(m[1]), m[2]
-            actual = Grupo(
-                f"Módulo {numero} — {nombre}", f"{numero:02d}-{slugify(nombre)}"
-            )
+            actual = Grupo(f"Módulo {numero} — {nombre}", f"{numero:02d}-{slugify(nombre)}")
             grupos.append(actual)
         elif ANEXOS_RE.match(linea):
             actual = Grupo(ANEXOS_LABEL, ANEXOS_DIR)
@@ -100,8 +98,7 @@ def parse_plan(texto: str | None = None) -> list[Grupo]:
 
 def sidebar(grupos: list[Grupo]) -> list[dict]:
     return [
-        {"label": g.label, "items": [{"autogenerate": {"directory": g.directory}}]}
-        for g in grupos
+        {"label": g.label, "items": [{"autogenerate": {"directory": g.directory}}]} for g in grupos
     ]
 
 

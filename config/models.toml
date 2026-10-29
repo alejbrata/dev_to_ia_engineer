@@ -1,0 +1,32 @@
+# Nombres de modelos del curso.
+#
+# Es el único sitio donde aparecen: ni el texto de las lecciones ni el código de las
+# prácticas los escriben a mano. Cambian cada pocos meses; cuando lo hagan, se
+# actualiza este fichero y nada más.
+#
+# Estructura:
+#   [roles.<rol>]        qué modelo usa cada tarea del curso.
+#     provider           clave de una sección [providers.<nombre>].
+#     model              identificador exacto del modelo en ese proveedor.
+#   [providers.<nombre>] datos del proveedor. Las claves API van en .env, nunca aquí.
+#     api_key_env        nombre de la variable de entorno con la clave.
+#     base_url           opcional, para endpoints compatibles o servidores locales.
+
+[roles.chat]
+# Modelo general para generación y conversación.
+provider = ""
+model = ""
+
+[roles.judge]
+# Modelo que hace de juez en las evals (LLM-as-judge).
+provider = ""
+model = ""
+
+[roles.embeddings]
+# Modelo de embeddings para RAG. Debe ser el mismo al indexar y al consultar.
+provider = ""
+model = ""
+
+# [providers.ejemplo]
+# api_key_env = "EJEMPLO_API_KEY"
+# base_url = ""

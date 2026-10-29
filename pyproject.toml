@@ -1,0 +1,35 @@
+[project]
+name = "curso-ai-engineering"
+version = "0.1.0"
+description = "Curso abierto de AI Engineering: prácticas y librería compartida."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = ["curso-core"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+    "ruff>=0.17.3",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv.sources]
+curso-core = { workspace = true }
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["site"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["packages", "tests"]
+pythonpath = ["scripts"]
+addopts = "--import-mode=importlib"
