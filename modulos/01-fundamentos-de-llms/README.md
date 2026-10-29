@@ -2,5 +2,6 @@
 
 - `tokens.py`: trocea textos con el tokenizador real del modelo y compara tokens.
 - `prediccion.py`: muestra la probabilidad de cada token generado y sus alternativas.
+- `contexto.py`: qué pasa cuando el prompt no cabe en la ventana de contexto (solo Ollama).
 
 Ejecútalos desde la raíz del repo con `uv run python modulos/01-fundamentos-de-llms/<script>.py`.
