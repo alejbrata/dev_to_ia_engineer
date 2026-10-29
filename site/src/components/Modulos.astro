@@ -6,6 +6,7 @@ import { CardGrid, LinkCard } from '@astrojs/starlight/components';
 import sidebar from '../sidebar.json';
 
 const docs = await getCollection('docs');
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 
 const modulos = sidebar.map(({ label, items }) => {
 	const directory = items[0].autogenerate.directory;
@@ -18,7 +19,7 @@ const modulos = sidebar.map(({ label, items }) => {
 		description: nombre.length
 			? `${numero} · ${lecciones.length} lecciones`
 			: `${lecciones.length} anexos`,
-		href: `/${lecciones[0]?.id ?? directory}/`,
+		href: `${base}/${lecciones[0]?.id ?? directory}/`,
 	};
 });
 ---

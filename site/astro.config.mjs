@@ -7,6 +7,9 @@ import sidebar from './src/sidebar.json' with { type: 'json' };
 
 // https://astro.build/config
 export default defineConfig({
+	site: 'https://alejbrata.github.io',
+	// Subruta de GitHub Pages. Los enlaces internos en Markdown deben incluirla.
+	base: '/dev_to_ia_engineer',
 	integrations: [
 		starlight({
 			title: 'Curso de AI Engineer',

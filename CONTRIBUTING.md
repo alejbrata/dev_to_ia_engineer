@@ -27,6 +27,10 @@ uv run python scripts/plan_sync.py
 
 El script regenera el sidebar y crea el esqueleto de las lecciones nuevas. No borra ni sobrescribe páginas: si renombras una, mueve tú el fichero. Un test comprueba que la web y el plan coinciden.
 
+## Enlaces internos
+
+La web se publica en GitHub Pages bajo la subruta `/dev_to_ia_engineer/`. En los enlaces internos de las lecciones usa rutas relativas (`../02-que-hace-un-ai-engineer/`) o incluye la subruta (`/dev_to_ia_engineer/03-rag/01-cuando-usar-rag/`).
+
 ## Estilo
 
 - Español de España, con tuteo y tono directo y técnico. Frases cortas.
