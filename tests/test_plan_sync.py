@@ -26,7 +26,7 @@ def test_paginas_coinciden_con_el_plan() -> None:
     existentes = {
         p.relative_to(plan_sync.DOCS).as_posix()
         for p in plan_sync.DOCS.rglob("*.md*")
-        if p.name != "index.mdx"
+        if p.name not in {"index.mdx", "404.md"}
     }
     assert existentes == esperadas
 
