@@ -1,0 +1,34 @@
+# Autodiagnóstico de la lección 01 ("La rotación").
+#
+# Puntúa cada habilidad de 0 a 3:
+#   0 = nunca lo he hecho
+#   1 = lo he visto o lo he hecho siguiendo un tutorial
+#   2 = lo hago, pero con ayuda o consultando a menudo
+#   3 = lo hago solo y sabría explicarlo
+#
+# Después ejecuta, desde la raíz del repo:
+#   uv run python modulos/00-introduccion/autodiagnostico.py
+#
+# Repítelo al terminar cada módulo. Si lo versionas en tu fork, `git log -p` sobre
+# este fichero es tu registro de progreso.
+
+[backend]
+# Lo que traes de desarrollo backend y se transfiere a AI Engineering.
+python = 0
+apis_http = 0
+testing = 0
+bases_de_datos = 0
+observabilidad = 0
+arquitectura = 0
+seguridad = 0
+despliegue = 0
+
+[nuevo]
+# Lo específico de trabajar con LLMs.
+fundamentos_llm = 0
+prompting = 0
+salida_estructurada = 0
+rag = 0
+evals = 0
+agentes = 0
+modelos_abiertos = 0
