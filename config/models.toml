@@ -31,6 +31,12 @@ hf_repo = "Qwen/Qwen2.5-1.5B-Instruct"
 provider = "ollama_compatible"
 model = "qwen2.5:1.5b"
 
+[roles.chat_llamacpp]
+# El mismo modelo servido por llama-server (llama.cpp), compatible con OpenAI.
+# Arráncalo con: llama-server -hf Qwen/Qwen2.5-1.5B-Instruct-GGUF:Q4_K_M -c 4096 --port 8081
+provider = "llamacpp"
+model = "Qwen/Qwen2.5-1.5B-Instruct-GGUF:Q4_K_M"
+
 [roles.remoto]
 # Un modelo servido por un proveedor en la nube vía Hugging Face Inference Providers.
 # Necesita HF_TOKEN y créditos en la cuenta. Revisado: 2026-10.
@@ -57,6 +63,11 @@ base_url = "http://localhost:11434"
 tipo = "openai"
 base_url = "http://localhost:11434/v1"
 
+[providers.llamacpp]
+# Servidor local de llama.cpp (llama-server). No necesita clave.
+tipo = "openai"
+base_url = "http://localhost:8081/v1"
+
 [providers.huggingface]
 # Hugging Face Inference Providers. Necesita HF_TOKEN y créditos en la cuenta:
 # las cuentas gratuitas no incluyen créditos mensuales. Revisado: 2026-10.
@@ -70,5 +81,9 @@ entrada = 0.0
 salida = 0.0
 
 [precios."ollama_compatible/qwen2.5:1.5b"]
+entrada = 0.0
+salida = 0.0
+
+[precios."llamacpp/Qwen/Qwen2.5-1.5B-Instruct-GGUF:Q4_K_M"]
 entrada = 0.0
 salida = 0.0
