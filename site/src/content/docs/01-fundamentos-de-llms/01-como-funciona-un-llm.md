@@ -3,25 +3,194 @@ title: "Cómo funciona un LLM sin matemáticas innecesarias"
 description: "Cómo funciona un LLM sin matemáticas innecesarias: tokens, predicción, contexto"
 ---
 
+:::note[Revisado: 2026-10]
+Las salidas de esta lección son reales y se obtuvieron con el modelo con el que se construyó el curso (Qwen2.5 1.5B Instruct en Ollama). Con otro modelo, los números cambian, pero los fenómenos son los mismos.
+:::
+
 ## Objetivos
 
-TODO
+Al terminar esta lección podrás:
+
+- Explicar qué es un token y por qué el mismo texto cuesta distinto según el idioma.
+- Describir la generación de texto como una predicción repetida del siguiente token.
+- Explicar por qué el token más probable no tiene por qué ser el correcto.
+- Distinguir lo que tú escribes de lo que el modelo recibe realmente.
 
 ## Teoría
 
-TODO
+### El modelo no ve palabras, ve tokens
+
+Un LLM no trabaja con caracteres ni con palabras. Trabaja con **tokens**: fragmentos de texto sacados de un vocabulario fijo. El modelo del curso tiene un vocabulario de unos 150 000 tokens.
+
+La pieza que convierte texto en tokens es el **tokenizador**. Se construye antes de entrenar el modelo, a partir de un corpus enorme, con una idea sencilla: las secuencias de caracteres frecuentes se quedan como un solo token y las raras se parten en trozos. La técnica más extendida se llama BPE (Byte Pair Encoding).
+
+Eso tiene consecuencias prácticas:
+
+- **Una palabra común es un token; una rara son varios.** "funciona" es un token; "ininterrumpidamente" son seis.
+- **El idioma importa.** Si el corpus del tokenizador tenía más inglés que español, el español se parte en más trozos. La misma frase cuesta más tokens en español.
+- **Los números pueden partirse dígito a dígito.** En este tokenizador, `1234567` son siete tokens. Es una de las razones por las que los LLMs fallan en aritmética.
+
+Los tokens importan porque son la unidad de todo lo que vas a medir. El precio se cobra por token. El límite de contexto se mide en tokens. La latencia depende de cuántos tokens genera el modelo.
+
+### Generar es predecir el siguiente token, una y otra vez
+
+Lo que hace un LLM, en esencia, es esto: dada una secuencia de tokens, calcula la probabilidad de cada token del vocabulario como siguiente. Elige uno, lo añade a la secuencia y repite. Así hasta que genera un token especial de fin o llega al límite de tokens que le hayas puesto.
+
+Se parece al autocompletado de tu IDE, llamado en bucle sobre su propia salida. Es una imagen simplificada, pero predice bien cómo se comporta el modelo:
+
+- **No hay plan.** El modelo no decide la respuesta y luego la escribe. La construye token a token, y cada token condiciona los siguientes.
+- **Probable no es verdadero.** El modelo produce texto que se parece al que vio en su entrenamiento. Si lo probable y lo correcto coinciden, bien. Si no, el modelo se equivoca con la misma fluidez con la que acierta.
+- **Cómo se elige el token importa.** Quedarse siempre con el más probable no es la única opción. Lo verás en la lección de sampling.
+
+### Lo que escribes no es lo que el modelo recibe
+
+Cuando mandas mensajes a una API de chat, el servidor no se los pasa tal cual al modelo. Los convierte en una única secuencia de tokens con una **plantilla de chat**: marcas especiales que separan cada mensaje e indican quién habla (sistema, usuario, asistente).
+
+Algunos servidores añaden además un **prompt de sistema por defecto** si no mandas uno. Ollama, con el modelo del curso, añade este:
+
+```text
+You are Qwen, created by Alibaba Cloud. You are a helpful assistant.
+```
+
+No lo ves, pero el modelo sí, y lo pagas en tokens. Lo medirás en la práctica.
+
+### El contexto y la falta de memoria
+
+Todo lo que el modelo tiene en cuenta en una llamada cabe en su **ventana de contexto**: el prompt de sistema, los mensajes y la respuesta que está generando. Lo que no está ahí, no existe para él. La lección siguiente trata qué pasa cuando te pasas de ese límite.
+
+Además, el modelo no recuerda nada entre llamadas. Si una aplicación de chat parece recordar la conversación, es porque reenvía todos los mensajes anteriores en cada petición. Es como HTTP sin sesión: el estado lo mantiene el cliente, no el servidor.
 
 ## Práctica
 
-TODO
+Esta es la primera práctica que usa `curso_core`, la librería compartida del curso. Su cliente lee el modelo de `config/models.toml`, hace la llamada y la registra con sus tokens, latencia y coste.
+
+### 1. Mira los tokens
+
+[`tokens.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/01-fundamentos-de-llms/tokens.py) descarga de Hugging Face el tokenizador del modelo y trocea varios textos. Necesitas Ollama arrancado con el modelo descargado (lo hiciste en el módulo 0):
+
+```sh
+uv run python modulos/01-fundamentos-de-llms/tokens.py
+```
+
+```text
+Tokenizador de Qwen/Qwen2.5-1.5B-Instruct
+
+[español] 11 palabras -> 15 tokens (1.36 tokens/palabra)
+   Exp|lica| en| una| sola| frase| qué| es| un| modelo| de| l|engu|aje|.
+[inglés] 10 palabras -> 12 tokens (1.20 tokens/palabra)
+   Ex|plain| in| a| single| sentence| what| a| language| model| is|.
+[palabras largas] 5 palabras -> 17 tokens (3.40 tokens/palabra)
+   El| fer|roc|arr|il| met|ropol|it|ano| funciona| in|int|err|ump|id|amente|.
+[números] 5 palabras -> 20 tokens (4.00 tokens/palabra)
+   1|2|3|4|5|6|7| +| |8|9| =| |1|2|3|4|6|5|6
+[código] 7 palabras -> 10 tokens (1.43 tokens/palabra)
+   def| suma|(a|,| b|):| return| a| +| b
+
+Tu pregunta: 15 tokens. El servidor (qwen2.5:1.5b) procesó 44.
+Diferencia: 29 tokens que no escribiste tú.
+```
+
+Fíjate en los espacios: van pegados al principio del token (` en`, ` una`). Y en "lenguaje", que se parte en `l|engu|aje` aunque "modelo" es un solo token.
+
+Prueba con tus propios textos:
+
+```sh
+uv run python modulos/01-fundamentos-de-llms/tokens.py "tu texto aquí"
+```
+
+### 2. Mira la predicción token a token
+
+[`prediccion.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/01-fundamentos-de-llms/prediccion.py) pide una respuesta corta con temperatura 0 (siempre el token más probable) y muestra la probabilidad de cada token y las alternativas:
+
+```sh
+uv run python modulos/01-fundamentos-de-llms/prediccion.py
+```
+
+```text
+> Completa con una sola palabra: el cielo despejado es de color
+
+         token  prob.   alternativas
+          'bl'  48.6%   'az' 30%, 'amar' 8%, 'Az' 2%
+        'anco' 100.0%   'anc' 0%, 'anca' 0%, 'an' 0%
+           '.'  78.5%   '' 21%, '.\n\n' 0%, '。' 0%
+
+Respuesta: 'blanco.'
+```
+
+El modelo dice que el cielo despejado es **blanco**. "Azul" (`az`) estaba en la lista con un 30 %, pero `bl` tenía un 48,6 %. Con temperatura 0 gana siempre el más probable, y aquí el más probable era incorrecto.
+
+Fíjate también en el segundo token: una vez elegido `bl`, la continuación `anco` es casi segura. El primer token decidió la respuesta. Así funciona la generación: cada elección condiciona todo lo que viene después.
+
+Prueba otros prompts con `prediccion.py "tu prompt"`. Busca casos en los que la primera elección esté reñida.
 
 ## Mide y depura
 
-TODO
+### Tokens por palabra
+
+La relación entre tokens y palabras de tu contenido real es tu primera métrica de coste. Aquí, el español sale a 1,36 tokens por palabra y el inglés a 1,20, con frases cortas y comunes. Con vocabulario técnico, nombres propios o números, sube mucho: 3,4 y 4 en los ejemplos.
+
+No estimes coste ni contexto contando palabras. Tokeniza una muestra de tus textos reales con el tokenizador del modelo que vas a usar. Cada modelo tiene el suyo, y los números cambian de uno a otro.
+
+### Los tokens que no escribes
+
+La pregunta tenía 15 tokens y el servidor procesó 44. Los 29 de diferencia salen de:
+
+- El prompt de sistema por defecto: 16 tokens.
+- Las marcas de la plantilla de chat (`<|im_start|>system`, `<|im_end|>`, `<|im_start|>user`…): el resto.
+
+Para una pregunta corta, eso triplica la entrada. En una conversación larga, el peso relativo baja, pero se paga en cada llamada. Cuando midas tokens, mide los que reporta el servidor, no los que crees haber mandado.
+
+### La probabilidad como señal
+
+Las probabilidades de `prediccion.py` son una señal de confianza del modelo token a token. Un primer token al 48,6 % con una alternativa al 30 % indica una decisión reñida. No es una medida de si la respuesta es correcta (el modelo puede estar muy seguro y equivocarse), pero sirve para detectar respuestas frágiles. Lo usarás en el módulo de evals.
+
+### Tus primeras trazas
+
+Cada llamada que hace `curso_core` queda registrada en `trazas/llamadas.jsonl`, una línea JSON por llamada:
+
+```json
+{"id":"c7a772ae4104","momento":"2026-10-29T20:09:38.352356Z","rol":"chat","proveedor":"ollama","modelo":"qwen2.5:1.5b","ok":true,"intentos":1,"latencia_s":5.769194199994672,"tokens_entrada":36,"tokens_salida":4,"coste_usd":0.0,"error":null,"status":null}
+```
+
+Es el equivalente a un access log. En la lección 06 lo convertirás en métricas.
 
 ## Errores frecuentes
 
-TODO
+**Estimar tokens contando palabras.** Funciona para una cuenta rápida en inglés, pero se desvía con otros idiomas, con código, con números y con jerga. Tokeniza una muestra real.
+
+**Confiar en la respuesta más probable.** Temperatura 0 hace la salida más estable, no más correcta. El modelo del curso dice que el cielo despejado es blanco con total tranquilidad.
+
+**Olvidar el prompt de sistema oculto.** Si no mandas un mensaje de sistema, algunos servidores ponen el suyo. Afecta al comportamiento (el modelo cree ser un asistente concreto) y al coste. Si te importa, manda tú siempre el mensaje de sistema.
+
+**Asustarse con los avisos de Hugging Face.** Al descargar el tokenizador puedes ver dos avisos. El primero es este:
+
+```text
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+```
+
+El primero desaparece si pones tu `HF_TOKEN` en `.env`. Sin él, la descarga funciona igual con límites de uso más bajos. El segundo es específico de Windows: `huggingface_hub` no puede usar enlaces simbólicos en su caché y avisa de que ocupará algo más de disco. Es inofensivo, y el script lo silencia.
+
+### Anatomía de un error: el repositorio público que pide contraseña
+
+Escribes a mano el repositorio del tokenizador en `config/models.toml` y se te come una letra: `Qwen/Qwen2.5-1.5B-Instruc`. Al ejecutar `tokens.py`:
+
+```text
+httpx2.HTTPStatusError: Client error '401 Unauthorized' for url 'https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruc/resolve/main/tokenizer.json'
+...
+huggingface_hub.errors.RepositoryNotFoundError: 401 Client Error.
+
+Repository Not Found for url: https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruc/resolve/main/tokenizer.json.
+Please make sure you specified the correct `repo_id` and `repo_type`.
+If you are trying to access a private or gated repo, make sure you are authenticated and your token has the required permissions.
+For more details, see https://huggingface.co/docs/huggingface_hub/authentication
+Invalid username or password.
+```
+
+**Cómo leerlo.** Hay dos pistas contradictorias. El código HTTP es 401 y la última línea dice "Invalid username or password", así que parece un problema de credenciales. Pero el nombre de la excepción es `RepositoryNotFoundError`, y la primera línea del mensaje dice "Repository Not Found". Cuando un error se contradice, fíate del tipo de excepción y de la URL, no del texto genérico.
+
+**Causa.** El repositorio no existe por la errata. Hugging Face responde 401 tanto si un repositorio no existe como si es privado y no tienes acceso. Así no revela qué repositorios privados existen. Es una práctica de seguridad habitual, pero confunde al depurar.
+
+**Solución.** Copia la URL de la petición (`https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruc/...`) y abre la parte del repositorio en el navegador. Si da 404, es una errata. Copia el identificador desde la página del modelo en vez de escribirlo a mano.
 
 ## Bitácora
 
@@ -29,4 +198,8 @@ TODO(alex)
 
 ## Para profundizar
 
-TODO
+- Sennrich, Haddow y Birch, [Neural Machine Translation of Rare Words with Subword Units](https://arxiv.org/abs/1508.07909) (2016). El artículo que popularizó BPE para tokenizar.
+- [Documentación de Hugging Face Tokenizers](https://huggingface.co/docs/tokenizers/index): la librería que usa la práctica.
+- [Plantillas de chat](https://huggingface.co/docs/transformers/chat_templating) en la documentación de Transformers: cómo se convierten los mensajes en tokens.
+- [Ficha de Qwen2.5 1.5B Instruct](https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct) en Hugging Face.
+- [Referencia de `/api/chat` de Ollama](https://docs.ollama.com/api/chat): incluye los parámetros `logprobs` y `top_logprobs`.
