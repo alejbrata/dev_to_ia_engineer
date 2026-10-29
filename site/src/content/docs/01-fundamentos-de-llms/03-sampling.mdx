@@ -3,6 +3,9 @@ title: "Sampling"
 description: "Sampling: temperature, top_p y determinismo (o su ausencia)"
 ---
 
+import Temperatura from '../../../components/Temperatura.astro';
+
+
 :::note[Revisado: 2026-10]
 Las salidas de esta lección son reales y se obtuvieron con el modelo con el que se construyó el curso (Qwen2.5 1.5B Instruct) en Ollama 0.40.13. Con otro modelo o versión, las respuestas concretas cambiarán; los fenómenos, no.
 :::
@@ -94,6 +97,10 @@ La primera parte toma las cinco alternativas más probables del primer token de 
 ```
 
 Con T=0,3, "blanco" (`bl`) se queda con el 83,5 %. Con T=1,5, "amarillo" (`amar`) sube del 0,2 % al 13,6 %. Ninguna temperatura convierte "azul" en la opción favorita: la temperatura reparte la probabilidad, no corrige al modelo.
+
+Mueve la temperatura tú mismo sobre esas mismas probabilidades reales y sortea:
+
+<Temperatura />
 
 ### 2. Diez veces la misma petición
 

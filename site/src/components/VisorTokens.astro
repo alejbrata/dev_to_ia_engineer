@@ -1,0 +1,126 @@
+---
+// Visor de tokens con el tokenizador real del modelo del curso, ejecutado en el navegador.
+// Da los mismos tokens que la práctica en Python (comprobado con los ejemplos de la lección).
+import medidas from '../data/medidas.json';
+
+const ejemplos = [
+	['español', 'Explica en una sola frase qué es un modelo de lenguaje.'],
+	['inglés', 'Explain in a single sentence what a language model is.'],
+	['palabras largas', 'El ferrocarril metropolitano funciona ininterrumpidamente.'],
+	['números', '1234567 + 89 = 1234656'],
+	['código', 'def suma(a, b): return a + b'],
+];
+---
+
+<div class="laboratorio visor-tokens not-content" data-repo={medidas.hf_repo}>
+	<div class="laboratorio-cabecera">
+		<strong>Laboratorio · tokens</strong>
+		<span>tokenizador de {medidas.hf_repo}, en tu navegador</span>
+	</div>
+	<div class="laboratorio-cuerpo">
+		<textarea data-texto aria-label="Texto para tokenizar">{ejemplos[0][1]}</textarea>
+		<div class="ejemplos" role="group" aria-label="Ejemplos">
+			{
+				ejemplos.map(([etiqueta, texto]) => (
+					<button type="button" data-ejemplo={texto}>
+						{etiqueta}
+					</button>
+				))
+			}
+		</div>
+		<div data-antes>
+			<button type="button" class="principal" data-cargar>
+				Cargar el tokenizador real
+			</button>
+			<p class="nota">
+				Se descarga una vez desde Hugging Face (unos 7 MB) y se ejecuta en tu navegador. Ningún
+				texto sale de tu equipo.
+			</p>
+		</div>
+		<div data-despues hidden>
+			<div class="cifras" aria-live="polite">
+				<span><b data-tokens>0</b> tokens</span>
+				<span><b data-palabras>0</b> palabras</span>
+				<span><b data-ratio>0</b> tokens/palabra</span>
+			</div>
+			<div class="fichas" data-fichas></div>
+		</div>
+	</div>
+</div>
+
+<style>
+	.ejemplos {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+	}
+	.ejemplos button {
+		font-size: var(--sl-text-xs);
+		padding: 0.2rem 0.6rem;
+	}
+</style>
+
+<script>
+	import { Tokenizer } from '@huggingface/tokenizers';
+
+	async function cargar(repo: string): Promise<Tokenizer> {
+		const url = (fichero: string) => `https://huggingface.co/${repo}/resolve/main/${fichero}`;
+		const [json, config] = await Promise.all(
+			['tokenizer.json', 'tokenizer_config.json'].map((f) =>
+				fetch(url(f)).then((r) => {
+					if (!r.ok) throw new Error(`${r.status} al descargar ${f}`);
+					return r.json();
+				}),
+			),
+		);
+		return new Tokenizer(json, config);
+	}
+
+	document.querySelectorAll<HTMLElement>('.visor-tokens').forEach((visor) => {
+		const texto = visor.querySelector<HTMLTextAreaElement>('[data-texto]')!;
+		const botonCargar = visor.querySelector<HTMLButtonElement>('[data-cargar]')!;
+		const fichas = visor.querySelector<HTMLElement>('[data-fichas]')!;
+		let tokenizer: Tokenizer | null = null;
+
+		const pintar = () => {
+			if (!tokenizer) return;
+			const { ids } = tokenizer.encode(texto.value, { add_special_tokens: false });
+			fichas.replaceChildren(
+				...ids.map((id) => {
+					const ficha = document.createElement('span');
+					ficha.className = 'ficha';
+					ficha.textContent = tokenizer!.decode([id]);
+					ficha.title = `id ${id}`;
+					return ficha;
+				}),
+			);
+			const palabras = texto.value.split(/\s+/).filter(Boolean).length;
+			visor.querySelector('[data-tokens]')!.textContent = String(ids.length);
+			visor.querySelector('[data-palabras]')!.textContent = String(palabras);
+			visor.querySelector('[data-ratio]')!.textContent = (ids.length / Math.max(1, palabras)).toFixed(
+				2,
+			);
+		};
+
+		botonCargar.addEventListener('click', async () => {
+			botonCargar.disabled = true;
+			botonCargar.textContent = 'Descargando…';
+			try {
+				tokenizer = await cargar(visor.dataset.repo!);
+				visor.querySelector<HTMLElement>('[data-antes]')!.hidden = true;
+				visor.querySelector<HTMLElement>('[data-despues]')!.hidden = false;
+				pintar();
+			} catch (e) {
+				botonCargar.disabled = false;
+				botonCargar.textContent = `No se pudo descargar (${(e as Error).message}). Reintentar`;
+			}
+		});
+		texto.addEventListener('input', pintar);
+		visor.querySelectorAll<HTMLButtonElement>('[data-ejemplo]').forEach((boton) =>
+			boton.addEventListener('click', () => {
+				texto.value = boton.dataset.ejemplo!;
+				pintar();
+			}),
+		);
+	});
+</script>

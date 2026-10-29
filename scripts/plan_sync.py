@@ -155,7 +155,8 @@ def main() -> None:
     for grupo in grupos:
         for pagina in grupo.paginas:
             ruta = DOCS / grupo.directory / f"{pagina.slug}.md"
-            if ruta.exists():
+            # Una lección puede haberse convertido a MDX para usar componentes.
+            if ruta.exists() or ruta.with_suffix(".mdx").exists():
                 continue
             ruta.parent.mkdir(parents=True, exist_ok=True)
             ruta.write_text(contenido(grupo, pagina), encoding="utf-8", newline="\n")

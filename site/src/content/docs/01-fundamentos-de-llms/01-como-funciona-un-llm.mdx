@@ -3,6 +3,9 @@ title: "Cómo funciona un LLM sin matemáticas innecesarias"
 description: "Cómo funciona un LLM sin matemáticas innecesarias: tokens, predicción, contexto"
 ---
 
+import VisorTokens from '../../../components/VisorTokens.astro';
+
+
 :::note[Revisado: 2026-10]
 Las salidas de esta lección son reales y se obtuvieron con el modelo con el que se construyó el curso (Qwen2.5 1.5B Instruct en Ollama). Con otro modelo, los números cambian, pero los fenómenos son los mismos.
 :::
@@ -97,6 +100,12 @@ Prueba con tus propios textos:
 ```sh
 uv run python modulos/01-fundamentos-de-llms/tokens.py "tu texto aquí"
 ```
+
+### Pruébalo aquí
+
+El mismo tokenizador, ejecutado en tu navegador. Escribe cualquier texto y mira cómo se trocea. Da exactamente los mismos tokens que el script de Python.
+
+<VisorTokens />
 
 ### 2. Mira la predicción token a token
 

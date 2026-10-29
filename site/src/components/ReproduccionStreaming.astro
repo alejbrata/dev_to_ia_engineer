@@ -1,0 +1,92 @@
+---
+// Repetición, con sus tiempos reales, de una misma respuesta con y sin streaming.
+// La grabación es de scripts/datos_web.py: cada fragmento lleva su instante de llegada.
+import medidas from '../data/medidas.json';
+
+const g = medidas.streaming;
+const textoCompleto = g.fragmentos.map((f) => f.texto).join('');
+---
+
+<div
+	class="laboratorio streaming not-content"
+	data-grabacion={JSON.stringify({ fragmentos: g.fragmentos, total: g.total_s })}
+>
+	<div class="laboratorio-cabecera">
+		<strong>Laboratorio · streaming</strong>
+		<span>grabación real de {medidas.modelo} · velocidad 1×</span>
+	</div>
+	<div class="laboratorio-cuerpo">
+		<p class="nota">&gt; {g.prompt}</p>
+		<div>
+			<button type="button" class="principal" data-reproducir>Reproducir las dos a la vez</button>
+		</div>
+		<div class="dos-consolas">
+			<figure class="consola">
+				<div class="consola-barra">
+					<span>con streaming</span><span data-reloj-con>—</span>
+				</div>
+				<div class="consola-cuerpo" data-con>{textoCompleto}</div>
+			</figure>
+			<figure class="consola">
+				<div class="consola-barra">
+					<span>sin streaming</span><span data-reloj-sin>—</span>
+				</div>
+				<div class="consola-cuerpo" data-sin>{textoCompleto}</div>
+			</figure>
+		</div>
+		<p class="cifras">
+			<span>primer fragmento <b>{g.primer_token_s.toFixed(2)} s</b></span>
+			<span>respuesta completa <b>{g.total_s.toFixed(2)} s</b></span>
+			<span><b>{g.tokens_salida}</b> tokens de salida</span>
+		</p>
+	</div>
+</div>
+
+<script>
+	type Fragmento = { t: number; texto: string };
+
+	document.querySelectorAll<HTMLElement>('.streaming').forEach((caja) => {
+		const { fragmentos, total } = JSON.parse(caja.dataset.grabacion!) as {
+			fragmentos: Fragmento[];
+			total: number;
+		};
+		const con = caja.querySelector<HTMLElement>('[data-con]')!;
+		const sin = caja.querySelector<HTMLElement>('[data-sin]')!;
+		const relojCon = caja.querySelector<HTMLElement>('[data-reloj-con]')!;
+		const relojSin = caja.querySelector<HTMLElement>('[data-reloj-sin]')!;
+		const boton = caja.querySelector<HTMLButtonElement>('[data-reproducir]')!;
+		const completo = fragmentos.map((f) => f.texto).join('');
+
+		boton.addEventListener('click', () => {
+			boton.disabled = true;
+			con.textContent = '';
+			sin.textContent = '';
+			const inicio = performance.now();
+			let siguiente = 0;
+			let primero = false;
+
+			const paso = () => {
+				const s = (performance.now() - inicio) / 1000;
+				while (siguiente < fragmentos.length && fragmentos[siguiente].t <= s) {
+					con.append(fragmentos[siguiente++].texto);
+					con.scrollTop = con.scrollHeight;
+					if (!primero) {
+						primero = true;
+						relojCon.textContent = `1.er fragmento: ${s.toFixed(2)} s`;
+					}
+				}
+				if (s < total) {
+					relojSin.textContent = `esperando… ${s.toFixed(1)} s`;
+					if (!primero) relojCon.textContent = `esperando… ${s.toFixed(1)} s`;
+					requestAnimationFrame(paso);
+				} else {
+					while (siguiente < fragmentos.length) con.append(fragmentos[siguiente++].texto);
+					sin.textContent = completo;
+					relojSin.textContent = `todo: ${total.toFixed(2)} s`;
+					boton.disabled = false;
+				}
+			};
+			requestAnimationFrame(paso);
+		});
+	});
+</script>

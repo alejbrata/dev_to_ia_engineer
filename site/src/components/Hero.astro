@@ -1,0 +1,116 @@
+---
+// Hero de Starlight. En la portada se sustituye por una consola que reproduce, con sus
+// tiempos reales, una llamada en streaming grabada con scripts/datos_web.py.
+import Default from '@astrojs/starlight/components/Hero.astro';
+import { LinkButton } from '@astrojs/starlight/components';
+import medidas from '../data/medidas.json';
+
+const esPortada = Astro.locals.starlightRoute.id === '';
+const { title, hero } = Astro.locals.starlightRoute.entry.data;
+const acciones = hero?.actions ?? [];
+
+const grabacion = medidas.portada;
+const comando = `uv run python modulos/01-fundamentos-de-llms/streaming.py "${grabacion.prompt}"`;
+const velocidad = grabacion.tokens_salida / (grabacion.total_s - grabacion.primer_token_s);
+const resumen = [
+	`${grabacion.fragmentos.length} fragmentos · ${grabacion.tokens_salida} tokens de salida`,
+	`primer fragmento: ${grabacion.primer_token_s.toFixed(2)} s · respuesta completa: ${grabacion.total_s.toFixed(2)} s`,
+	`velocidad de generación: ${velocidad.toFixed(1)} tokens/s`,
+].join('\n');
+const textoCompleto = grabacion.fragmentos.map((f) => f.texto).join('');
+---
+
+{
+	esPortada ? (
+		<div class="portada not-content">
+			<div>
+				<span class="antetitulo">Curso abierto · en español · código incluido</span>
+				<h1 id="_top">
+					Curso de AI Engineer
+					<span class="sin-humo">(sin humo)</span>
+				</h1>
+				{hero?.tagline && <p class="entradilla" set:html={hero.tagline} />}
+				<div class="acciones">
+					{acciones.map(({ text, link, variant, icon }) => (
+						<LinkButton href={link} variant={variant} icon={icon?.name}>
+							{text}
+						</LinkButton>
+					))}
+				</div>
+			</div>
+
+			<figure class="consola" aria-label={`Grabación real: ${grabacion.prompt}`}>
+				<div class="consola-barra">
+					<span>grabación real · {medidas.modelo} en local · velocidad 1×</span>
+					<button type="button" data-repetir hidden>
+						repetir
+					</button>
+				</div>
+				<div class="consola-cuerpo" data-consola>
+					<span class="prompt">$ </span>
+					{comando}
+					{'\n\n'}
+					<span class="tenue">&gt; {grabacion.prompt}</span>
+					{'\n\n'}
+					<span data-salida>{textoCompleto}</span>
+					{'\n\n'}
+					<span class="metrica" data-resumen>
+						{resumen}
+					</span>
+				</div>
+				<script
+					type="application/json"
+					data-grabacion
+					set:html={JSON.stringify({ fragmentos: grabacion.fragmentos, total: grabacion.total_s })}
+				/>
+			</figure>
+		</div>
+	) : (
+		<Default>
+			<slot />
+		</Default>
+	)
+}
+
+<script>
+	// Reproduce la grabación respetando los instantes reales de cada fragmento.
+	// Sin JavaScript, o con movimiento reducido, se ve el resultado final directamente.
+	type Fragmento = { t: number; texto: string };
+
+	function reproducir(figura: HTMLElement) {
+		const datos = JSON.parse(
+			figura.querySelector('[data-grabacion]')!.textContent!,
+		) as { fragmentos: Fragmento[]; total: number };
+		const salida = figura.querySelector<HTMLElement>('[data-salida]')!;
+		const resumen = figura.querySelector<HTMLElement>('[data-resumen]')!;
+		const boton = figura.querySelector<HTMLButtonElement>('[data-repetir]')!;
+		const cursor = document.createElement('span');
+		cursor.className = 'cursor';
+
+		let temporizadores: number[] = [];
+		const arrancar = () => {
+			temporizadores.forEach(clearTimeout);
+			temporizadores = [];
+			salida.textContent = '';
+			salida.after(cursor);
+			resumen.hidden = true;
+			boton.hidden = true;
+			for (const { t, texto } of datos.fragmentos) {
+				temporizadores.push(window.setTimeout(() => salida.append(texto), t * 1000));
+			}
+			temporizadores.push(
+				window.setTimeout(() => {
+					cursor.remove();
+					resumen.hidden = false;
+					boton.hidden = false;
+				}, datos.total * 1000 + 300),
+			);
+		};
+		boton.addEventListener('click', arrancar);
+		arrancar();
+	}
+
+	if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+		document.querySelectorAll<HTMLElement>('figure.consola').forEach(reproducir);
+	}
+</script>

@@ -1,0 +1,97 @@
+---
+// Deslizador de temperatura sobre las probabilidades reales del primer token,
+// grabadas con scripts/datos_web.py. Aplica p^(1/T) y normaliza, como el servidor.
+import medidas from '../data/medidas.json';
+
+const { prompt, alternativas } = medidas.temperatura;
+---
+
+<div
+	class="laboratorio temperatura not-content"
+	data-alternativas={JSON.stringify(alternativas)}
+>
+	<div class="laboratorio-cabecera">
+		<strong>Laboratorio · temperatura</strong>
+		<span>probabilidades reales de {medidas.modelo}</span>
+	</div>
+	<div class="laboratorio-cuerpo">
+		<p class="nota">&gt; {prompt}</p>
+		<label class="deslizador">
+			<span>T = <b data-valor>1.00</b></span>
+			<input type="range" min="0" max="2" step="0.05" value="1" data-t aria-label="Temperatura" />
+		</label>
+		<div class="barras" data-barras>
+			{
+				alternativas.map(({ token, probabilidad }) => (
+					<>
+						<code>{JSON.stringify(token)}</code>
+						<span class="pista">
+							<span class="relleno" style={`width:${probabilidad * 100}%`} />
+						</span>
+						<span class="pct">{(probabilidad * 100).toFixed(1)} %</span>
+					</>
+				))
+			}
+		</div>
+		<div>
+			<button type="button" data-sortear>Sortear 100 veces con esta temperatura</button>
+		</div>
+		<p class="cifras" data-sorteo aria-live="polite"></p>
+		<p class="nota">
+			Reescaladas sobre los 5 tokens más probables. «bl» empieza «blanco»; «az», «azul»; «amar»,
+			«amarillo».
+		</p>
+	</div>
+</div>
+
+<script>
+	type Alternativa = { token: string; probabilidad: number };
+
+	function reescalar(probs: number[], t: number): number[] {
+		if (t === 0) {
+			const max = Math.max(...probs);
+			return probs.map((p) => (p === max ? 1 : 0));
+		}
+		const pesos = probs.map((p) => Math.exp(Math.log(p) / t));
+		const total = pesos.reduce((a, b) => a + b, 0);
+		return pesos.map((w) => w / total);
+	}
+
+	document.querySelectorAll<HTMLElement>('.temperatura').forEach((caja) => {
+		const alternativas = JSON.parse(caja.dataset.alternativas!) as Alternativa[];
+		const originales = alternativas.map((a) => a.probabilidad);
+		const deslizador = caja.querySelector<HTMLInputElement>('[data-t]')!;
+		const rellenos = [...caja.querySelectorAll<HTMLElement>('.relleno')];
+		const pcts = [...caja.querySelectorAll<HTMLElement>('.pct')];
+		const sorteo = caja.querySelector<HTMLElement>('[data-sorteo]')!;
+		let actuales = reescalar(originales, 1);
+
+		const pintar = () => {
+			const t = Number(deslizador.value);
+			actuales = reescalar(originales, t);
+			const max = Math.max(...actuales);
+			caja.querySelector('[data-valor]')!.textContent = t.toFixed(2);
+			actuales.forEach((p, i) => {
+				rellenos[i].style.width = `${p * 100}%`;
+				rellenos[i].classList.toggle('elegido', p === max);
+				pcts[i].textContent = `${(p * 100).toFixed(1)} %`;
+			});
+			sorteo.textContent = '';
+		};
+
+		caja.querySelector('[data-sortear]')!.addEventListener('click', () => {
+			const cuentas = alternativas.map(() => 0);
+			for (let n = 0; n < 100; n++) {
+				let r = Math.random();
+				const i = actuales.findIndex((p) => (r -= p) <= 0);
+				cuentas[i === -1 ? actuales.length - 1 : i]++;
+			}
+			sorteo.textContent =
+				'En 100 sorteos: ' +
+				alternativas.map((a, i) => `${JSON.stringify(a.token)} ×${cuentas[i]}`).join(' · ');
+		});
+
+		deslizador.addEventListener('input', pintar);
+		pintar();
+	});
+</script>

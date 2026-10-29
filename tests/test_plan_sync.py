@@ -22,9 +22,10 @@ def test_sidebar_generado_desde_el_plan() -> None:
 
 
 def test_paginas_coinciden_con_el_plan() -> None:
-    esperadas = {f"{g.directory}/{p.slug}.md" for g in GRUPOS for p in g.paginas}
+    # Las lecciones pueden ser .md o .mdx (las que usan componentes interactivos).
+    esperadas = {f"{g.directory}/{p.slug}" for g in GRUPOS for p in g.paginas}
     existentes = {
-        p.relative_to(plan_sync.DOCS).as_posix()
+        p.relative_to(plan_sync.DOCS).with_suffix("").as_posix()
         for p in plan_sync.DOCS.rglob("*.md*")
         if p.name not in {"index.mdx", "404.md"}
     }

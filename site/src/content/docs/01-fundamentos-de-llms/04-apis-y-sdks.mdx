@@ -3,6 +3,9 @@ title: "APIs y SDKs"
 description: "APIs y SDKs: llamada mínima, streaming, mensajes y roles"
 ---
 
+import ReproduccionStreaming from '../../../components/ReproduccionStreaming.astro';
+
+
 :::note[Revisado: 2026-10]
 Las salidas de esta lección son reales. Las llamadas locales se hicieron con el modelo con el que se construyó el curso (Qwen2.5 1.5B Instruct) en Ollama 0.40.13. Las remotas, contra Hugging Face Inference Providers con una cuenta gratuita sin créditos.
 :::
@@ -158,6 +161,10 @@ velocidad de generación: 37.1 tokens/s
 El usuario empieza a leer a los 2,5 segundos en lugar de esperar casi 9. Casi cada fragmento es un token.
 
 Por cierto: la pregunta pedía "cuatro frases" y el modelo devolvió cuatro apartados largos con formato. Pedir una longitud no garantiza obtenerla; si la necesitas, ponla también como límite (`max_tokens`).
+
+La misma diferencia, reproducida con los tiempos reales de una grabación de la misma pregunta:
+
+<ReproduccionStreaming />
 
 ### 4. Errores reales de un proveedor
 

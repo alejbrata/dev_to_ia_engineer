@@ -22,7 +22,18 @@ export default defineConfig({
 				// en: { label: 'English', lang: 'en' },
 			},
 			sidebar,
-			customCss: ['./src/styles/custom.css'],
+			customCss: [
+				'@fontsource/ibm-plex-sans/400.css',
+				'@fontsource/ibm-plex-sans/500.css',
+				'@fontsource/ibm-plex-sans/600.css',
+				'@fontsource/ibm-plex-mono/400.css',
+				'@fontsource/ibm-plex-mono/500.css',
+				'./src/styles/custom.css',
+			],
+			components: {
+				// En la portada, una consola que reproduce una llamada real; en el resto, el Hero normal.
+				Hero: './src/components/Hero.astro',
+			},
 		}),
 	],
 });

@@ -1,0 +1,58 @@
+---
+// Franja de la portada con medidas reales tomadas en las lecciones. Cada cifra enlaza
+// a la lección donde se obtiene y se puede reproducir.
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+const lecturas = [
+	{
+		valor: '15',
+		unidad: 'vs 12 tokens',
+		que: 'La misma frase, en español y en inglés.',
+		enlace: '01-fundamentos-de-llms/01-como-funciona-un-llm/',
+	},
+	{
+		valor: '2 050',
+		unidad: 'de 6 016 tokens',
+		que: 'Lo que procesó el servidor. Recortó el resto sin avisar.',
+		enlace: '01-fundamentos-de-llms/02-ventana-de-contexto/',
+	},
+	{
+		valor: '48,6 %',
+		unidad: '«blanco»',
+		que: 'Frente a un 30 % «azul». El token más probable no es el correcto.',
+		enlace: '01-fundamentos-de-llms/03-sampling/',
+	},
+	{
+		valor: '2,47 s',
+		unidad: 'vs 8,73 s',
+		que: 'Primer fragmento frente a respuesta completa, en streaming.',
+		enlace: '01-fundamentos-de-llms/04-apis-y-sdks/',
+	},
+];
+---
+
+<section class="lecturas not-content" aria-label="Lecturas reales del curso">
+	{
+		lecturas.map(({ valor, unidad, que, enlace }) => (
+			<div class="lectura">
+				<span class="valor">
+					{valor} <small>{unidad}</small>
+				</span>
+				<span class="que">{que}</span>
+				<a href={`${base}/${enlace}`}>Medido en esta lección →</a>
+			</div>
+		))
+	}
+</section>
+<p class="nota-lecturas">
+	Medidas reales con el modelo con el que se construyó el curso. Las reproducirás tú en las
+	prácticas.
+</p>
+
+<style>
+	.nota-lecturas {
+		margin-top: 0;
+		font-size: var(--sl-text-xs);
+		color: var(--sl-color-gray-3);
+	}
+</style>
