@@ -41,5 +41,5 @@ def test_carpetas_de_modulos() -> None:
 
 
 def test_bitacoras_por_modulo() -> None:
-    existentes = {p.stem for p in (ROOT / "bitacora").glob("*.md")}
+    existentes = {p.stem for p in (ROOT / "bitacora").glob("*.md") if p.name != "README.md"}
     assert existentes == {g.directory for g in MODULOS}
