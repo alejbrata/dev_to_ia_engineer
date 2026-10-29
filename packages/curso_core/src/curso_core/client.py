@@ -229,9 +229,15 @@ class ClienteLLM:
             mensajes = [Mensaje(role="user", content=mensajes)]
         nombre, proveedor, modelo = self.config.resolver(rol)
         construir, interpretar = DIALECTOS[proveedor.tipo]
-        ruta, cuerpo = construir(modelo, mensajes, opciones or Opciones())
+        opciones = opciones or Opciones()
+        ruta, cuerpo = construir(modelo, mensajes, opciones)
 
-        traza = dict(rol=rol, proveedor=nombre, modelo=modelo)
+        traza = dict(
+            rol=rol,
+            proveedor=nombre,
+            modelo=modelo,
+            opciones=opciones.model_dump(exclude_none=True),
+        )
         inicio = time.perf_counter()
         try:
             with self._http(proveedor) as http:

@@ -29,6 +29,8 @@ class Traza(BaseModel):
     tokens_entrada: int | None = None
     tokens_salida: int | None = None
     coste_usd: float | None = None
+    # Parámetros de generación usados (temperatura, semilla...), para poder reproducirla.
+    opciones: dict = {}
     error: str | None = None
     status: int | None = None
 

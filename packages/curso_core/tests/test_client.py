@@ -61,6 +61,7 @@ def test_ollama_envia_opciones_y_registra_traza(tmp_path: Path) -> None:
 
     [traza] = leer(tmp_path / "trazas.jsonl")
     assert traza.ok and traza.id == r.id_traza and traza.tokens_salida == 4
+    assert traza.opciones == {"temperatura": 0, "semilla": 7}
 
 
 def test_openai_usa_la_clave_y_calcula_el_coste(tmp_path: Path, monkeypatch) -> None:
