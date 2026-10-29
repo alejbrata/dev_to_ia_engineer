@@ -1,0 +1,102 @@
+[
+  {
+    "label": "Módulo 0 — Introducción",
+    "items": [
+      {
+        "autogenerate": {
+          "directory": "00-introduccion"
+        }
+      }
+    ]
+  },
+  {
+    "label": "Módulo 1 — Fundamentos de LLMs",
+    "items": [
+      {
+        "autogenerate": {
+          "directory": "01-fundamentos-de-llms"
+        }
+      }
+    ]
+  },
+  {
+    "label": "Módulo 2 — Prompting y salida estructurada",
+    "items": [
+      {
+        "autogenerate": {
+          "directory": "02-prompting-y-salida-estructurada"
+        }
+      }
+    ]
+  },
+  {
+    "label": "Módulo 3 — RAG",
+    "items": [
+      {
+        "autogenerate": {
+          "directory": "03-rag"
+        }
+      }
+    ]
+  },
+  {
+    "label": "Módulo 4 — Evals",
+    "items": [
+      {
+        "autogenerate": {
+          "directory": "04-evals"
+        }
+      }
+    ]
+  },
+  {
+    "label": "Módulo 5 — Agentes",
+    "items": [
+      {
+        "autogenerate": {
+          "directory": "05-agentes"
+        }
+      }
+    ]
+  },
+  {
+    "label": "Módulo 6 — Producción",
+    "items": [
+      {
+        "autogenerate": {
+          "directory": "06-produccion"
+        }
+      }
+    ]
+  },
+  {
+    "label": "Módulo 7 — Modelos propios",
+    "items": [
+      {
+        "autogenerate": {
+          "directory": "07-modelos-propios"
+        }
+      }
+    ]
+  },
+  {
+    "label": "Módulo 8 — Proyecto final",
+    "items": [
+      {
+        "autogenerate": {
+          "directory": "08-proyecto-final"
+        }
+      }
+    ]
+  },
+  {
+    "label": "Anexos",
+    "items": [
+      {
+        "autogenerate": {
+          "directory": "anexos"
+        }
+      }
+    ]
+  }
+]
