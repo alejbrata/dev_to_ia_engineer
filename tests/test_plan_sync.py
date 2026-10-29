@@ -34,3 +34,8 @@ def test_paginas_coinciden_con_el_plan() -> None:
 def test_carpetas_de_modulos() -> None:
     existentes = {p.name for p in (ROOT / "modulos").iterdir() if p.is_dir()}
     assert existentes == {g.directory for g in MODULOS}
+
+
+def test_bitacoras_por_modulo() -> None:
+    existentes = {p.stem for p in (ROOT / "bitacora").glob("*.md")}
+    assert existentes == {g.directory for g in MODULOS}
