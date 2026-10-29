@@ -13,7 +13,7 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 3. Cómo usar este curso: estructura, prerrequisitos, ritmo
 4. Entorno de trabajo: Python, uv, VS Code, claves API, `.env`, primer "hola mundo" con un LLM
 
-## Módulo 1 — Fundamentos de LLMs ⬜
+## Módulo 1 — Fundamentos de LLMs 🟨
 
 1. Cómo funciona un LLM sin matemáticas innecesarias: tokens, predicción, contexto
 2. Ventana de contexto, límites y qué pasa cuando te pasas

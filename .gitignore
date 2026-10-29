@@ -22,3 +22,6 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 .idea/
+
+# Trazas locales de curso_core
+trazas/

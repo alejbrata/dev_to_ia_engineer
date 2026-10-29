@@ -83,6 +83,16 @@ dev = [
 name = "curso-core"
 version = "0.1.0"
 source = { editable = "packages/curso_core" }
+dependencies = [
+    { name = "httpx" },
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "httpx", specifier = ">=0.28.1" },
+    { name = "pydantic", specifier = ">=2.14.1" },
+]
 
 [[package]]
 name = "h11"

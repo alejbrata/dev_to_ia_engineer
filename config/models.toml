@@ -9,8 +9,12 @@
 #     provider           clave de una sección [providers.<nombre>].
 #     model              identificador exacto del modelo en ese proveedor.
 #   [providers.<nombre>] datos del proveedor. Las claves API van en .env, nunca aquí.
-#     api_key_env        nombre de la variable de entorno con la clave.
-#     base_url           opcional, para endpoints compatibles o servidores locales.
+#     tipo               dialecto de la API: "ollama" (nativo) u "openai" (compatible
+#                        con OpenAI: OpenAI, Hugging Face, vLLM, llama.cpp...).
+#     base_url           URL base de la API.
+#     api_key_env        opcional: nombre de la variable de entorno con la clave.
+#   [precios."<proveedor>/<modelo>"] USD por millón de tokens de entrada y de salida.
+#                        Sin entrada en esta tabla, el coste de la llamada es desconocido.
 
 [roles.chat]
 # Modelo general para generación y conversación.
@@ -31,8 +35,17 @@ model = ""
 
 [providers.ollama]
 # Servidor local de Ollama. No necesita clave.
+tipo = "ollama"
 base_url = "http://localhost:11434"
 
-# [providers.ejemplo]
-# api_key_env = "EJEMPLO_API_KEY"
-# base_url = ""
+[providers.huggingface]
+# Hugging Face Inference Providers. Necesita HF_TOKEN y créditos en la cuenta:
+# las cuentas gratuitas no incluyen créditos mensuales. Revisado: 2026-10.
+tipo = "openai"
+base_url = "https://router.huggingface.co/v1"
+api_key_env = "HF_TOKEN"
+
+[precios."ollama/qwen2.5:1.5b"]
+# En local no se paga por token: el coste es tu hardware y tu electricidad.
+entrada = 0.0
+salida = 0.0
