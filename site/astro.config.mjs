@@ -19,6 +19,7 @@ export default defineConfig({
 				// en: { label: 'English', lang: 'en' },
 			},
 			sidebar,
+			customCss: ['./src/styles/custom.css'],
 		}),
 	],
 });

@@ -3,8 +3,53 @@ title: Curso de AI Engineer (sin humo)
 description: Curso abierto en español para formarse como AI Engineer.
 template: splash
 hero:
+  title: Curso de AI Engineer <span class="sin-humo">(sin humo)</span>
+  tagline: Aprende a construir, medir, depurar y poner en producción sistemas basados en LLMs. Un curso abierto, en español, para desarrolladores que quieren trabajar en el puesto.
+  image:
+    alt: 'Ciclo de trabajo del curso: construir, medir, depurar y desplegar.'
+    html: |
+      <svg class="ciclo" viewBox="0 0 320 320" role="img" aria-label="Construir, medir, depurar, desplegar">
+        <circle cx="160" cy="160" r="104" class="ciclo-anillo" />
+        <g class="ciclo-nodo"><circle cx="160" cy="56" r="44" /><text x="160" y="61">Construir</text></g>
+        <g class="ciclo-nodo"><circle cx="264" cy="160" r="44" /><text x="264" y="165">Medir</text></g>
+        <g class="ciclo-nodo"><circle cx="160" cy="264" r="44" /><text x="160" y="269">Depurar</text></g>
+        <g class="ciclo-nodo"><circle cx="56" cy="160" r="44" /><text x="56" y="165">Desplegar</text></g>
+      </svg>
   actions:
     - text: Ver el temario
       link: /00-introduccion/01-la-rotacion/
       icon: right-arrow
+    - text: Cómo usar este curso
+      link: /00-introduccion/03-como-usar-este-curso/
+      variant: minimal
 ---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+import Modulos from '../../components/Modulos.astro';
+
+## Cómo es este curso
+
+<CardGrid>
+	<Card title="Desarrollo primero" icon="laptop">
+		Cada concepto termina en código que funciona.
+	</Card>
+	<Card title="Medir y depurar" icon="magnifier">
+		Trazas, tokens, latencia, coste y tasa de error en todos los módulos, no
+		como un tema aparte.
+	</Card>
+	<Card title="Agnóstico al proveedor" icon="puzzle">
+		El núcleo usa abstracciones neutras. Lo específico de cada herramienta va
+		en los anexos.
+	</Card>
+	<Card title="Sin humo" icon="warning">
+		Si algo tiene limitaciones o no compensa, se dice.
+	</Card>
+</CardGrid>
+
+## Para quién es
+
+Para desarrolladores con experiencia, sobre todo backend, que quieren pasar a AI Engineering. Se asume que sabes programar y usar git. No hace falta experiencia previa en machine learning.
+
+## Temario
+
+<Modulos />

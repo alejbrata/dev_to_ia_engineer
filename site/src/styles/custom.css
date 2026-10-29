@@ -1,0 +1,31 @@
+/* Portada */
+.hero .sin-humo {
+	color: var(--sl-color-accent-high);
+	white-space: nowrap;
+}
+
+.ciclo {
+	width: min(100%, 20rem);
+	height: auto;
+}
+
+.ciclo-anillo {
+	fill: none;
+	stroke: var(--sl-color-gray-5);
+	stroke-width: 2;
+	stroke-dasharray: 6 8;
+}
+
+.ciclo-nodo circle {
+	fill: var(--sl-color-bg-nav);
+	stroke: var(--sl-color-accent);
+	stroke-width: 2;
+}
+
+.ciclo-nodo text {
+	fill: var(--sl-color-white);
+	font-family: var(--sl-font);
+	font-size: 14px;
+	font-weight: 600;
+	text-anchor: middle;
+}

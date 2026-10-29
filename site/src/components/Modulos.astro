@@ -1,0 +1,28 @@
+---
+// Tarjetas de módulos para la portada. Lee el sidebar generado desde docs/PLAN.md,
+// así que se actualiza solo al cambiar el plan.
+import { getCollection } from 'astro:content';
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+import sidebar from '../sidebar.json';
+
+const docs = await getCollection('docs');
+
+const modulos = sidebar.map(({ label, items }) => {
+	const directory = items[0].autogenerate.directory;
+	const lecciones = docs
+		.filter((doc) => doc.id.startsWith(`${directory}/`))
+		.sort((a, b) => a.id.localeCompare(b.id));
+	const [numero, ...nombre] = label.split(' — ');
+	return {
+		title: nombre.length ? nombre.join(' — ') : label,
+		description: nombre.length
+			? `${numero} · ${lecciones.length} lecciones`
+			: `${lecciones.length} anexos`,
+		href: `/${lecciones[0]?.id ?? directory}/`,
+	};
+});
+---
+
+<CardGrid>
+	{modulos.map((m) => <LinkCard title={m.title} description={m.description} href={m.href} />)}
+</CardGrid>
