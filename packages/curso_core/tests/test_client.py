@@ -27,7 +27,7 @@ OLLAMA_OK = {
     "eval_count": 4,
 }
 OPENAI_OK = {
-    "choices": [{"message": {"role": "assistant", "content": "Hola."}}],
+    "choices": [{"message": {"role": "assistant", "content": "Hola."}, "finish_reason": "length"}],
     "usage": {"prompt_tokens": 1_000_000, "completion_tokens": 500_000},
 }
 
@@ -57,6 +57,7 @@ def test_ollama_envia_opciones_y_registra_traza(tmp_path: Path) -> None:
     assert cuerpo["options"] == {"temperature": 0, "seed": 7}
     assert (r.texto, r.tokens_entrada, r.tokens_salida, r.intentos) == ("Hola.", 10, 4, 1)
     assert r.coste_usd is None  # sin precio configurado
+    assert r.motivo_fin is None  # el falso de Ollama no trae done_reason
 
     [traza] = leer(tmp_path / "trazas.jsonl")
     assert traza.ok and traza.id == r.id_traza and traza.tokens_salida == 4
@@ -74,6 +75,7 @@ def test_openai_usa_la_clave_y_calcula_el_coste(tmp_path: Path, monkeypatch) -> 
     r = cliente(manejador, tmp_path).chat([Mensaje(role="user", content="hola")], rol="remoto")
 
     assert cabeceras == ["Bearer secreta"]
+    assert r.motivo_fin == "length"
     assert r.coste_usd == pytest.approx(1.0 + 1.0)  # 1M de entrada a 1 $ + 0,5M de salida a 2 $
 
 

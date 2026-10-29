@@ -71,6 +71,8 @@ class Respuesta(BaseModel):
     coste_usd: float | None
     intentos: int
     id_traza: str
+    # Por qué terminó la generación: "stop" (fin natural) o "length" (límite de tokens).
+    motivo_fin: str | None = None
     tokens: list[TokenGenerado] | None = None
 
 
@@ -101,6 +103,7 @@ class Bruto(NamedTuple):
     tokens_salida: int
     # Lista de {token, logprob, top_logprobs: [{token, logprob}]}; mismo formato en ambos.
     logprobs: list[dict] | None
+    motivo_fin: str | None
 
 
 def _tokens_generados(logprobs: list[dict] | None) -> list[TokenGenerado] | None:
@@ -144,6 +147,7 @@ def _respuesta_ollama(datos: dict) -> Bruto:
         datos.get("prompt_eval_count", 0),
         datos["eval_count"],
         datos.get("logprobs"),
+        datos.get("done_reason"),
     )
 
 
@@ -166,7 +170,11 @@ def _respuesta_openai(datos: dict) -> Bruto:
     eleccion = datos["choices"][0]
     logprobs = (eleccion.get("logprobs") or {}).get("content")
     return Bruto(
-        eleccion["message"]["content"], uso["prompt_tokens"], uso["completion_tokens"], logprobs
+        eleccion["message"]["content"],
+        uso["prompt_tokens"],
+        uso["completion_tokens"],
+        logprobs,
+        eleccion.get("finish_reason"),
     )
 
 
@@ -264,6 +272,7 @@ class ClienteLLM:
             coste_usd=coste,
             intentos=intentos,
             id_traza=registro.id,
+            motivo_fin=bruto.motivo_fin,
             tokens=_tokens_generados(bruto.logprobs),
         )
 
