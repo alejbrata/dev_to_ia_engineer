@@ -6,7 +6,7 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 
 ---
 
-## Módulo 0 — Introducción ⬜
+## Módulo 0 — Introducción 🟨
 
 1. **La rotación**: del folio en blanco al TFM *(depende al 100 % de `bitacora/00-introduccion.md`)*
 2. Qué hace un AI Engineer (y qué no): frente a ML Engineer, Data Scientist y dev "que usa IA"
