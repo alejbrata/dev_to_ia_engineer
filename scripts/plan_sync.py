@@ -54,7 +54,27 @@ class Grupo:
     paginas: list[Pagina] = field(default_factory=list)
 
 
+# Slugs cortos para títulos largos. El resto se deriva del título.
+SLUGS = {
+    "Prompting y salida estructurada": "prompting",
+    "Cómo funciona un LLM sin matemáticas innecesarias": "como-funciona-un-llm",
+    "Ventana de contexto, límites y qué pasa cuando te pasas": "ventana-de-contexto",
+    "Modelos abiertos frente a cerrados; primer contacto con Hugging Face": "abiertos-y-cerrados",
+    "Few-shot y técnicas que sí funcionan (y mitos que no)": "few-shot",
+    "Generación con citas y control de alucinaciones": "generacion-con-citas",
+    "El bucle de un agente desde cero (sin framework)": "bucle-de-un-agente",
+    "Guardrails y validación de entrada y salida": "guardrails",
+    "Inferencia local (Ollama, llama.cpp, vLLM)": "inferencia-local",
+    "Evaluar el modelo ajustado frente al base": "evaluar-el-modelo-ajustado",
+    "Cómo presentarlo como proyecto de portafolio": "portafolio",
+    "Herramientas y estrategias de desarrollo con IA": "desarrollo-con-ia",
+}
+
+
 def slugify(texto: str) -> str:
+    if texto in SLUGS:
+        return SLUGS[texto]
+    texto = re.sub(r"\s*\(.*?\)", "", texto)
     sin_tildes = unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode()
     return re.sub(r"[^a-z0-9]+", "-", sin_tildes.lower()).strip("-")
 

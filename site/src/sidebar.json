@@ -24,7 +24,7 @@
     "items": [
       {
         "autogenerate": {
-          "directory": "02-prompting-y-salida-estructurada"
+          "directory": "02-prompting"
         }
       }
     ]
