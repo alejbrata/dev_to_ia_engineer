@@ -14,8 +14,10 @@
 
 [roles.chat]
 # Modelo general para generación y conversación.
-provider = ""
-model = ""
+# Por defecto, un modelo pequeño y abierto servido en local con Ollama.
+# Descárgalo con `ollama pull <model>`. Revisado: 2026-10.
+provider = "ollama"
+model = "qwen2.5:1.5b"
 
 [roles.judge]
 # Modelo que hace de juez en las evals (LLM-as-judge).
@@ -26,6 +28,10 @@ model = ""
 # Modelo de embeddings para RAG. Debe ser el mismo al indexar y al consultar.
 provider = ""
 model = ""
+
+[providers.ollama]
+# Servidor local de Ollama. No necesita clave.
+base_url = "http://localhost:11434"
 
 # [providers.ejemplo]
 # api_key_env = "EJEMPLO_API_KEY"
