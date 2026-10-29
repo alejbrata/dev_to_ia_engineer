@@ -4,7 +4,10 @@ version = "0.1.0"
 description = "Curso abierto de AI Engineering: prácticas y librería compartida."
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = ["curso-core"]
+dependencies = [
+    "curso-core",
+    "python-dotenv>=1.2.4",
+]
 
 [dependency-groups]
 dev = [
@@ -30,6 +33,6 @@ extend-exclude = ["site"]
 select = ["E", "F", "I", "UP", "B", "SIM"]
 
 [tool.pytest.ini_options]
-testpaths = ["packages", "tests"]
+testpaths = ["packages", "tests", "modulos"]
 pythonpath = ["scripts"]
 addopts = "--import-mode=importlib"
