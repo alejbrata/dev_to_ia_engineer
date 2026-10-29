@@ -80,7 +80,7 @@ Los nombres de modelos no aparecen en el texto ni en el código de las práctica
 
 ## Práctica
 
-Clona el repositorio y comprueba que todo funciona. Necesitas [uv](https://docs.astral.sh/uv/) y Node.js; la lección siguiente explica cómo instalarlos si no los tienes.
+Clona el repositorio y comprueba que todo funciona. Necesitas [uv](https://docs.astral.sh/uv/); la lección siguiente explica cómo instalarlo, junto con Ollama para ejecutar modelos en local.
 
 ```sh
 git clone https://github.com/alejbrata/dev_to_ia_engineer.git
@@ -91,9 +91,9 @@ uv run pytest          # ejecuta los tests
 uv run ruff check      # pasa el linter
 ```
 
-Si todo va bien, pytest termina con una línea como `10 passed` y ruff con `All checks passed!`. El número de tests crecerá con el curso.
+Si todo va bien, pytest termina con una línea como `48 passed` (el número crece con el curso) y ruff con `All checks passed!`.
 
-Ahora arranca la web en local:
+Si además quieres arrancar esta web en local (opcional; solo hace falta para contribuir al curso), necesitas [Node.js](https://nodejs.org/) 22.23.4 o superior:
 
 ```sh
 cd site

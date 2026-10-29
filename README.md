@@ -27,7 +27,7 @@ npm run dev
 
 ## Arrancar el código
 
-Requiere [uv](https://docs.astral.sh/uv/). uv instala Python 3.12+ si no lo tienes.
+Requiere [uv](https://docs.astral.sh/uv/), que instala Python 3.12+ si no lo tienes, y [Ollama](https://ollama.com) para ejecutar modelos en local. La lección 04 del módulo 0 explica cómo prepararlo todo.
 
 ```sh
 uv sync

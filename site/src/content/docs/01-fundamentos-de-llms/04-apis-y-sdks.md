@@ -72,7 +72,7 @@ El streaming no hace la respuesta más rápida. Hace que el **primer fragmento**
 | 500, 502, 503, 504 | Fallo del servidor o del proveedor | Sí, con backoff exponencial |
 | Timeout | No hubo respuesta a tiempo | Sí, con cuidado |
 
-Reintentar un error que no va a desaparecer solo gasta tiempo y, a veces, cuota. `curso_core` reintenta 429, 5xx y timeouts con backoff exponencial y jitter (esperas crecientes con un componente aleatorio, para que muchos clientes no reintenten a la vez), y nunca los 4xx.
+Reintentar un error que no va a desaparecer solo gasta tiempo y, a veces, cuota. `curso_core` reintenta 429, 5xx y timeouts con backoff exponencial y jitter (esperas crecientes con un componente aleatorio, para que muchos clientes no reintenten a la vez). El resto de errores 4xx no los reintenta nunca.
 
 Con los timeouts, ten en cuenta que cortar la conexión en tu lado no siempre detiene la generación en el servidor. Según el proveedor, puede seguir generando y cobrándote los tokens. Pon timeouts acordes a lo que tarda tu modelo, no los heredados de una API REST.
 
