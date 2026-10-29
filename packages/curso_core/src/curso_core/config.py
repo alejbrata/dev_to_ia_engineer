@@ -7,6 +7,7 @@ import tomllib
 from pathlib import Path
 from typing import Literal
 
+from dotenv import load_dotenv
 from pydantic import BaseModel, ConfigDict
 
 FICHERO = Path("config") / "models.toml"
@@ -27,6 +28,8 @@ class Rol(BaseModel):
 
     provider: str
     model: str
+    # Repositorio del modelo en el Hub de Hugging Face: su ficha y su tokenizador.
+    hf_repo: str | None = None
 
 
 class Precio(BaseModel):
@@ -74,5 +77,11 @@ def buscar_fichero(desde: Path | None = None) -> Path:
 
 
 def cargar(ruta: Path | None = None) -> Config:
-    with (ruta or buscar_fichero()).open("rb") as f:
+    """Lee `models.toml` y carga el `.env` de la raíz del repo, si existe.
+
+    Las variables que ya estén definidas en el entorno no se sobrescriben.
+    """
+    ruta = ruta or buscar_fichero()
+    load_dotenv(ruta.resolve().parent.parent / ".env", override=False)
+    with ruta.open("rb") as f:
         return Config.model_validate(tomllib.load(f))

@@ -13,12 +13,13 @@ El modelo sale del rol (por defecto, `chat`) en `config/models.toml`.
 
 from __future__ import annotations
 
+import math
 import os
 import random
 import time
 from collections.abc import Callable
 from pathlib import Path
-from typing import Literal
+from typing import Literal, NamedTuple
 
 import httpx
 from pydantic import BaseModel
@@ -44,6 +45,20 @@ class Opciones(BaseModel):
     max_tokens: int | None = None
     # Tamaño de la ventana de contexto. Solo lo admite Ollama; en el resto lo fija el modelo.
     contexto: int | None = None
+    # Si se indica, la respuesta incluye la probabilidad de cada token generado y de
+    # esta cantidad de alternativas. No todos los proveedores lo admiten.
+    alternativas: int | None = None
+
+
+class Alternativa(BaseModel):
+    token: str
+    probabilidad: float
+
+
+class TokenGenerado(BaseModel):
+    token: str
+    probabilidad: float
+    alternativas: list[Alternativa]
 
 
 class Respuesta(BaseModel):
@@ -56,6 +71,7 @@ class Respuesta(BaseModel):
     coste_usd: float | None
     intentos: int
     id_traza: str
+    tokens: list[TokenGenerado] | None = None
 
 
 class ErrorLLM(Exception):
@@ -77,6 +93,32 @@ class ErrorLLM(Exception):
 # --- Dialectos de API --------------------------------------------------------------
 
 
+class Bruto(NamedTuple):
+    """Lo que se extrae de la respuesta de cualquier dialecto."""
+
+    texto: str
+    tokens_entrada: int
+    tokens_salida: int
+    # Lista de {token, logprob, top_logprobs: [{token, logprob}]}; mismo formato en ambos.
+    logprobs: list[dict] | None
+
+
+def _tokens_generados(logprobs: list[dict] | None) -> list[TokenGenerado] | None:
+    if logprobs is None:
+        return None
+    return [
+        TokenGenerado(
+            token=lp["token"],
+            probabilidad=math.exp(lp["logprob"]),
+            alternativas=[
+                Alternativa(token=a["token"], probabilidad=math.exp(a["logprob"]))
+                for a in lp.get("top_logprobs", [])
+            ],
+        )
+        for lp in logprobs
+    ]
+
+
 def _peticion_ollama(modelo: str, mensajes: list[Mensaje], op: Opciones) -> tuple[str, dict]:
     opciones = {
         "temperature": op.temperatura,
@@ -91,11 +133,18 @@ def _peticion_ollama(modelo: str, mensajes: list[Mensaje], op: Opciones) -> tupl
         "stream": False,
         "options": {k: v for k, v in opciones.items() if v is not None},
     }
+    if op.alternativas is not None:
+        cuerpo |= {"logprobs": True, "top_logprobs": op.alternativas}
     return "/api/chat", cuerpo
 
 
-def _respuesta_ollama(datos: dict) -> tuple[str, int, int]:
-    return datos["message"]["content"], datos.get("prompt_eval_count", 0), datos["eval_count"]
+def _respuesta_ollama(datos: dict) -> Bruto:
+    return Bruto(
+        datos["message"]["content"],
+        datos.get("prompt_eval_count", 0),
+        datos["eval_count"],
+        datos.get("logprobs"),
+    )
 
 
 def _peticion_openai(modelo: str, mensajes: list[Mensaje], op: Opciones) -> tuple[str, dict]:
@@ -107,13 +156,18 @@ def _peticion_openai(modelo: str, mensajes: list[Mensaje], op: Opciones) -> tupl
         "seed": op.semilla,
         "max_tokens": op.max_tokens,
     }
+    if op.alternativas is not None:
+        cuerpo |= {"logprobs": True, "top_logprobs": op.alternativas}
     return "/chat/completions", {k: v for k, v in cuerpo.items() if v is not None}
 
 
-def _respuesta_openai(datos: dict) -> tuple[str, int, int]:
+def _respuesta_openai(datos: dict) -> Bruto:
     uso = datos["usage"]
-    texto = datos["choices"][0]["message"]["content"]
-    return texto, uso["prompt_tokens"], uso["completion_tokens"]
+    eleccion = datos["choices"][0]
+    logprobs = (eleccion.get("logprobs") or {}).get("content")
+    return Bruto(
+        eleccion["message"]["content"], uso["prompt_tokens"], uso["completion_tokens"], logprobs
+    )
 
 
 DIALECTOS = {
@@ -174,7 +228,7 @@ class ClienteLLM:
         try:
             with self._http(proveedor) as http:
                 datos, intentos = self._enviar(http, ruta, cuerpo)
-            texto, entrada, salida = interpretar(datos)
+            bruto = interpretar(datos)
         except ErrorLLM as e:
             self._registrar(
                 Traza(
@@ -189,27 +243,28 @@ class ClienteLLM:
             raise
 
         latencia = time.perf_counter() - inicio
-        coste = self._coste(nombre, modelo, entrada, salida)
+        coste = self._coste(nombre, modelo, bruto.tokens_entrada, bruto.tokens_salida)
         registro = Traza(
             **traza,
             ok=True,
             intentos=intentos,
             latencia_s=latencia,
-            tokens_entrada=entrada,
-            tokens_salida=salida,
+            tokens_entrada=bruto.tokens_entrada,
+            tokens_salida=bruto.tokens_salida,
             coste_usd=coste,
         )
         self._registrar(registro)
         return Respuesta(
-            texto=texto,
+            texto=bruto.texto,
             proveedor=nombre,
             modelo=modelo,
-            tokens_entrada=entrada,
-            tokens_salida=salida,
+            tokens_entrada=bruto.tokens_entrada,
+            tokens_salida=bruto.tokens_salida,
             latencia_s=latencia,
             coste_usd=coste,
             intentos=intentos,
             id_traza=registro.id,
+            tokens=_tokens_generados(bruto.logprobs),
         )
 
     # --- Detalles ------------------------------------------------------------------

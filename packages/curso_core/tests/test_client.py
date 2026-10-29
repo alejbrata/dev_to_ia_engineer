@@ -138,3 +138,39 @@ def test_sin_conexion_no_reintenta(tmp_path: Path) -> None:
 
     with pytest.raises(ErrorLLM, match="No se pudo conectar"):
         cliente(manejador, tmp_path).chat("hola")
+
+
+def test_alternativas_devuelve_probabilidades(tmp_path: Path) -> None:
+    datos = OLLAMA_OK | {
+        "logprobs": [
+            {
+                "token": "Hola",
+                "logprob": 0.0,
+                "top_logprobs": [
+                    {"token": "Hola", "logprob": 0.0},
+                    {"token": "Hi", "logprob": -2.0},
+                ],
+            }
+        ]
+    }
+    cuerpos = []
+
+    def manejador(request: httpx.Request) -> httpx.Response:
+        cuerpos.append(json.loads(request.content))
+        return httpx.Response(200, json=datos)
+
+    r = cliente(manejador, tmp_path).chat("hola", opciones=Opciones(alternativas=2))
+
+    assert cuerpos[0]["logprobs"] is True and cuerpos[0]["top_logprobs"] == 2
+    [token] = r.tokens
+    assert token.probabilidad == pytest.approx(1.0)
+    assert token.alternativas[1].token == "Hi"
+    assert token.alternativas[1].probabilidad == pytest.approx(0.1353, abs=1e-4)
+
+
+def test_sin_alternativas_no_pide_probabilidades(tmp_path: Path) -> None:
+    def manejador(request: httpx.Request) -> httpx.Response:
+        assert "logprobs" not in json.loads(request.content)
+        return httpx.Response(200, json=OLLAMA_OK)
+
+    assert cliente(manejador, tmp_path).chat("hola").tokens is None

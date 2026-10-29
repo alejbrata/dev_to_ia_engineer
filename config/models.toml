@@ -8,6 +8,7 @@
 #   [roles.<rol>]        qué modelo usa cada tarea del curso.
 #     provider           clave de una sección [providers.<nombre>].
 #     model              identificador exacto del modelo en ese proveedor.
+#     hf_repo            opcional: repositorio en Hugging Face (ficha y tokenizador).
 #   [providers.<nombre>] datos del proveedor. Las claves API van en .env, nunca aquí.
 #     tipo               dialecto de la API: "ollama" (nativo) u "openai" (compatible
 #                        con OpenAI: OpenAI, Hugging Face, vLLM, llama.cpp...).
@@ -22,6 +23,7 @@
 # Descárgalo con `ollama pull <model>`. Revisado: 2026-10.
 provider = "ollama"
 model = "qwen2.5:1.5b"
+hf_repo = "Qwen/Qwen2.5-1.5B-Instruct"
 
 [roles.judge]
 # Modelo que hace de juez en las evals (LLM-as-judge).
