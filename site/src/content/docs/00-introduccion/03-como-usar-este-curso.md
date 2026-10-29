@@ -27,7 +27,7 @@ El curso tiene nueve módulos y unos anexos:
 | 4. Evals | Medir la calidad de forma sistemática |
 | 5. Agentes | Modelos que usan herramientas en bucle |
 | 6. Producción | Arquitectura, observabilidad, seguridad y despliegue |
-| 7. Modelos propios | Modelos abiertos, inferencia local y fine-tuning |
+| 7. Modelos propios | Servir modelos abiertos en tu infraestructura y ajustarlos con fine-tuning (sin entrenar desde cero) |
 | 8. Proyecto final | Un sistema completo para tu portafolio |
 
 Los anexos recogen lo específico de herramientas concretas. El núcleo del curso no depende de ningún proveedor.

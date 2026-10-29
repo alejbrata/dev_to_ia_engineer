@@ -24,7 +24,7 @@ El trabajo se desplaza. La pregunta deja de ser "¿cómo entreno un modelo que h
 
 **Data Scientist.** Analiza datos para responder preguntas de negocio. Diseña experimentos, construye modelos estadísticos y comunica conclusiones. Su entregable suele ser una decisión o un informe, no un servicio en producción.
 
-**ML Engineer.** Entrena, despliega y mantiene modelos propios. Se ocupa de pipelines de datos, features, entrenamiento, serving y reentrenamiento (lo que se suele llamar MLOps). Su entregable es un modelo funcionando en producción.
+**ML Engineer.** Entrena desde sus propios datos, despliega y mantiene modelos diseñados para una tarea concreta: detectar fraude, recomendar productos, predecir la demanda. Se ocupa de pipelines de datos, features, entrenamiento, serving y reentrenamiento (lo que se suele llamar MLOps). Su entregable es un modelo funcionando en producción.
 
 **AI Engineer.** Construye producto sobre modelos ya entrenados. Diseña prompts y contexto, conecta el modelo con datos propios (RAG) y con herramientas (agentes), y mide la calidad con evals. También controla coste, latencia y errores en producción. A veces ajusta un modelo (fine-tuning), pero rara vez entrena uno desde cero. Su entregable es un sistema que funciona y del que sabe cuánto funciona.
 
@@ -32,9 +32,22 @@ El trabajo se desplaza. La pregunta deja de ser "¿cómo entreno un modelo que h
 
 ### Qué no hace un AI Engineer
 
-- No investiga arquitecturas de modelos ni entrena modelos fundacionales. Eso es investigación y requiere otro perfil y otro presupuesto.
+- No investiga arquitecturas de modelos ni entrena modelos fundacionales desde cero. Eso es investigación y requiere otro perfil y otro presupuesto.
 - No se limita a escribir prompts. El prompt es una pieza más, como lo es una consulta SQL en un backend.
 - No trata el modelo como un oráculo. Lo trata como una dependencia externa que a veces falla, y diseña el sistema para que eso no lo rompa.
+
+### Entrenar no es lo mismo que adaptar
+
+"Trabajar con modelos" puede significar cosas muy distintas. Conviene separarlas:
+
+| Qué | Quién | Dónde lo verás |
+| --- | --- | --- |
+| Entrenar un modelo de lenguaje desde cero | Laboratorios de investigación, con presupuestos de millones | Fuera del alcance del curso |
+| Usar un modelo por API | AI Engineer | Módulos 1 a 6 |
+| Ejecutar un modelo abierto en tu propia infraestructura | AI Engineer | Módulo 0 (tu primer modelo local) y módulo 7 |
+| Ajustar un modelo existente con tus datos (fine-tuning) | AI Engineer o ML Engineer | Módulo 7 |
+
+Cuando el curso habla de **modelos propios** (módulo 7), se refiere a las dos últimas filas: tomar un modelo abierto ya entrenado, servirlo tú y, si compensa, ajustarlo. El fine-tuning parte de un modelo que ya sabe hacer casi todo y lo especializa con relativamente pocos datos y horas de cómputo, no meses. Es una herramienta más del AI Engineer, y no la primera: el módulo 7 empieza precisamente por cuándo no merece la pena.
 
 ### Por qué un backend lo tiene más cerca de lo que cree
 
@@ -84,7 +97,7 @@ La última fila tiene trampa. En un backend, un error suele ser una excepción. 
 
 ## Errores frecuentes
 
-**Creer que el puesto exige entrenar modelos.** La mayor parte del trabajo es ingeniería de software alrededor de un modelo existente. Las matemáticas que necesitas son pocas y se explican cuando hacen falta.
+**Creer que el puesto exige entrenar modelos desde cero.** La mayor parte del trabajo es ingeniería de software alrededor de un modelo existente. Cuando toca adaptar uno, se parte de un modelo ya entrenado. Las matemáticas que necesitas son pocas y se explican cuando hacen falta.
 
 **Confundir una demo con un producto.** Que funcione con los cinco ejemplos que has probado no dice nada de los cinco mil que llegarán en producción. "Parece que funciona" no es una métrica.
 
