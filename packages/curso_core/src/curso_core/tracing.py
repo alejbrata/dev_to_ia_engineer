@@ -26,6 +26,8 @@ class Traza(BaseModel):
     ok: bool
     intentos: int
     latencia_s: float
+    # Solo en streaming: segundos hasta el primer fragmento de texto.
+    primer_token_s: float | None = None
     tokens_entrada: int | None = None
     tokens_salida: int | None = None
     coste_usd: float | None = None

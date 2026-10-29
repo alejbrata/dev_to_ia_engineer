@@ -25,6 +25,18 @@ provider = "ollama"
 model = "qwen2.5:1.5b"
 hf_repo = "Qwen/Qwen2.5-1.5B-Instruct"
 
+[roles.chat_compatible]
+# El mismo modelo local, pero hablando el dialecto compatible con OpenAI que Ollama
+# expone en /v1. Lo usa la lección 04 del módulo 1 para comparar APIs.
+provider = "ollama_compatible"
+model = "qwen2.5:1.5b"
+
+[roles.remoto]
+# Un modelo servido por un proveedor en la nube vía Hugging Face Inference Providers.
+# Necesita HF_TOKEN y créditos en la cuenta. Revisado: 2026-10.
+provider = "huggingface"
+model = "Qwen/Qwen3-4B-Instruct-2507"
+
 [roles.judge]
 # Modelo que hace de juez en las evals (LLM-as-judge).
 provider = ""
@@ -40,6 +52,11 @@ model = ""
 tipo = "ollama"
 base_url = "http://localhost:11434"
 
+[providers.ollama_compatible]
+# El mismo servidor de Ollama, con su API compatible con OpenAI.
+tipo = "openai"
+base_url = "http://localhost:11434/v1"
+
 [providers.huggingface]
 # Hugging Face Inference Providers. Necesita HF_TOKEN y créditos en la cuenta:
 # las cuentas gratuitas no incluyen créditos mensuales. Revisado: 2026-10.
@@ -49,5 +66,9 @@ api_key_env = "HF_TOKEN"
 
 [precios."ollama/qwen2.5:1.5b"]
 # En local no se paga por token: el coste es tu hardware y tu electricidad.
+entrada = 0.0
+salida = 0.0
+
+[precios."ollama_compatible/qwen2.5:1.5b"]
 entrada = 0.0
 salida = 0.0

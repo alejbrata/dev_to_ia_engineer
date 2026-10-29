@@ -177,3 +177,58 @@ def test_sin_alternativas_no_pide_probabilidades(tmp_path: Path) -> None:
         return httpx.Response(200, json=OLLAMA_OK)
 
     assert cliente(manejador, tmp_path).chat("hola").tokens is None
+
+
+def test_stream_ollama_entrega_fragmentos_y_metricas(tmp_path: Path) -> None:
+    lineas = [
+        {"message": {"content": "Ho"}, "done": False},
+        {"message": {"content": "la."}, "done": False},
+        {
+            "message": {"content": ""},
+            "done": True,
+            "prompt_eval_count": 9,
+            "eval_count": 2,
+            "done_reason": "stop",
+        },
+    ]
+    cuerpo = "\n".join(json.dumps(linea) for linea in lineas) + "\n"
+
+    def manejador(request: httpx.Request) -> httpx.Response:
+        assert json.loads(request.content)["stream"] is True
+        return httpx.Response(200, text=cuerpo)
+
+    flujo = cliente(manejador, tmp_path).chat_stream("hola")
+    assert list(flujo) == ["Ho", "la."]
+    r = flujo.respuesta
+    assert (r.texto, r.tokens_entrada, r.tokens_salida, r.motivo_fin) == ("Hola.", 9, 2, "stop")
+    assert r.primer_token_s is not None and r.primer_token_s <= r.latencia_s
+    [traza] = leer(tmp_path / "trazas.jsonl")
+    assert traza.primer_token_s == r.primer_token_s
+
+
+def test_stream_openai_lee_server_sent_events(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("CLAVE", "secreta")
+    eventos = [
+        {"choices": [{"delta": {"content": "Ho"}, "finish_reason": None}]},
+        {"choices": [{"delta": {"content": "la."}, "finish_reason": "stop"}]},
+        {"choices": [], "usage": {"prompt_tokens": 1_000_000, "completion_tokens": 0}},
+    ]
+    cuerpo = "".join(f"data: {json.dumps(e)}\n\n" for e in eventos) + "data: [DONE]\n\n"
+
+    def manejador(request: httpx.Request) -> httpx.Response:
+        enviado = json.loads(request.content)
+        assert enviado["stream"] is True and enviado["stream_options"] == {"include_usage": True}
+        return httpx.Response(200, text=cuerpo)
+
+    flujo = cliente(manejador, tmp_path).chat_stream("hola", rol="remoto")
+    assert "".join(flujo) == "Hola."
+    assert flujo.respuesta.motivo_fin == "stop"
+    assert flujo.respuesta.coste_usd == pytest.approx(1.0)
+
+
+def test_stream_con_error_http_no_entrega_texto(tmp_path: Path) -> None:
+    flujo = cliente(lambda r: httpx.Response(401, text="no"), tmp_path).chat_stream("hola")
+    with pytest.raises(ErrorLLM) as e:
+        list(flujo)
+    assert e.value.status == 401
+    assert flujo.respuesta is None
