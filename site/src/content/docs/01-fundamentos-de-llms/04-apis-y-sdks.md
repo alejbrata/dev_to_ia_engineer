@@ -3,25 +3,228 @@ title: "APIs y SDKs"
 description: "APIs y SDKs: llamada mínima, streaming, mensajes y roles"
 ---
 
+:::note[Revisado: 2026-10]
+Las salidas de esta lección son reales. Las llamadas locales se hicieron con el modelo con el que se construyó el curso (Qwen2.5 1.5B Instruct) en Ollama 0.40.13. Las remotas, contra Hugging Face Inference Providers con una cuenta gratuita sin créditos.
+:::
+
 ## Objetivos
 
-TODO
+Al terminar esta lección podrás:
+
+- Hacer la misma llamada a un modelo con HTTP a mano, con un SDK y con `curso_core`, y explicar qué aporta cada capa.
+- Construir una conversación con mensajes de sistema, usuario y asistente, sabiendo que la API no guarda estado.
+- Usar streaming y medir el tiempo hasta el primer fragmento frente al tiempo total.
+- Leer los errores HTTP de un proveedor y decidir cuáles se reintentan.
 
 ## Teoría
 
-TODO
+### Qué es una API de chat
+
+Por debajo, todas las APIs de modelos de chat hacen lo mismo. Mandas un `POST` con un JSON que lleva el modelo, la lista de mensajes y los parámetros de generación. Recibes el texto generado y el uso de tokens.
+
+Hay muchos proveedores, pero pocos dialectos:
+
+- **El compatible con OpenAI** (`/chat/completions`). Lo creó OpenAI y se ha convertido en el estándar de facto. Lo implementan Hugging Face Inference Providers, servidores de inferencia como vLLM o llama.cpp, y también Ollama en `/v1`.
+- **Los propios de cada proveedor.** Ollama tiene su API nativa (`/api/chat`), y algunos proveedores comerciales tienen la suya. Lo específico de cada uno va en los anexos.
+
+`curso_core` habla los dos dialectos que usa el curso. Cambiar de proveedor es cambiar el rol en `config/models.toml`, no el código.
+
+### HTTP, SDK o abstracción propia
+
+Puedes llamar al modelo de tres formas:
+
+1. **HTTP a mano.** Ves exactamente qué viaja. Pero tienes que construir el JSON, parsear la respuesta y gestionar errores y reintentos tú.
+2. **El SDK de un proveedor.** Te da tipos, reintentos y el parseo del streaming. A cambio, tu código queda atado a la forma de esa API.
+3. **Una abstracción propia, como `curso_core`.** Una capa fina que expone lo que tu aplicación necesita (texto, tokens, latencia, coste, trazas) y esconde el dialecto.
+
+Si vienes de Java, la tercera es el patrón de siempre: un repositorio o un DAO delante de JDBC. El resto de la aplicación no sabe qué base de datos hay detrás.
+
+### Mensajes y roles
+
+Una conversación es una lista de mensajes, cada uno con un rol:
+
+- **`system`**: instrucciones generales sobre cómo comportarse. Va primero.
+- **`user`**: lo que dice el usuario.
+- **`assistant`**: lo que respondió el modelo en turnos anteriores.
+
+La API **no guarda estado**. Cada llamada es independiente. Para que el modelo "recuerde", reenvías la conversación entera en cada petición. Eso tiene un coste: cada turno paga en tokens todos los anteriores.
+
+El mensaje de sistema es una instrucción fuerte, pero no una garantía. Los modelos pequeños, sobre todo, lo ignoran a veces. Lo verás en la práctica.
+
+### Streaming
+
+Sin streaming, el servidor genera la respuesta entera y te la manda de golpe. Con streaming, te manda cada fragmento según lo genera. Ollama usa una línea JSON por fragmento; las APIs compatibles con OpenAI usan Server-Sent Events (líneas `data: {...}`).
+
+El streaming no hace la respuesta más rápida. Hace que el **primer fragmento** llegue mucho antes que la respuesta completa, y eso cambia la percepción del usuario. A cambio, complica dos cosas:
+
+- **Los errores a mitad de respuesta.** Si la conexión se corta después de enviar texto, ya no puedes reintentar de forma transparente.
+- **El uso de tokens.** En la API compatible con OpenAI, el uso no llega en streaming salvo que lo pidas (`stream_options.include_usage`). `curso_core` lo pide siempre.
+
+### Errores HTTP: cuáles se reintentan
+
+| Código | Qué significa | ¿Reintentar? |
+| --- | --- | --- |
+| 400 | Petición mal formada: modelo inexistente, parámetro inválido, contexto excedido | No. Corrige la petición |
+| 401 | Credenciales inválidas | No |
+| 402 | Sin saldo o créditos | No |
+| 403 | Sin permiso para ese modelo o recurso | No |
+| 429 | Has superado el límite de uso | Sí, con espera (respeta `Retry-After` si viene) |
+| 500, 502, 503, 504 | Fallo del servidor o del proveedor | Sí, con backoff exponencial |
+| Timeout | No hubo respuesta a tiempo | Sí, con cuidado |
+
+Reintentar un error que no va a desaparecer solo gasta tiempo y, a veces, cuota. `curso_core` reintenta 429, 5xx y timeouts con backoff exponencial y jitter (esperas crecientes con un componente aleatorio, para que muchos clientes no reintenten a la vez), y nunca los 4xx.
+
+Con los timeouts, ten en cuenta que cortar la conexión en tu lado no siempre detiene la generación en el servidor. Según el proveedor, puede seguir generando y cobrándote los tokens. Pon timeouts acordes a lo que tarda tu modelo, no los heredados de una API REST.
+
+:::caution[Hugging Face Inference Providers necesita créditos]
+Para llamar a modelos en la nube a través de Hugging Face necesitas tres cosas:
+
+1. Una cuenta de Hugging Face.
+2. Un token de acceso con el permiso **Make calls to Inference Providers** ([se crea aquí](https://huggingface.co/settings/tokens)), guardado en `HF_TOKEN` en tu `.env`.
+3. **Créditos en la cuenta.** Las cuentas gratuitas no incluyen créditos mensuales: hay que comprarlos o suscribirse a PRO, que incluye una pequeña cantidad al mes. Consulta la [página de precios](https://huggingface.co/docs/inference-providers/pricing) actual.
+
+Sin créditos, el token es válido pero cada llamada devuelve un error **402**. No es un fallo de tu código. El resto del curso funciona entero en local con Ollama, sin pagar nada.
+:::
 
 ## Práctica
 
-TODO
+En esta lección hay cuatro scripts en `modulos/01-fundamentos-de-llms/`. Los tres primeros solo necesitan Ollama.
+
+### 1. La misma llamada de tres formas
+
+[`tres_formas.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/01-fundamentos-de-llms/tres_formas.py) hace la misma pregunta, con el mismo mensaje de sistema, con HTTP a mano, con el SDK de OpenAI contra la API `/v1` de Ollama y con `curso_core` en sus dos dialectos:
+
+```sh
+uv run python modulos/01-fundamentos-de-llms/tres_formas.py
+```
+
+```text
+> ¿Para qué sirve un balanceador de carga?
+
+[1. HTTP a mano (API nativa)] 42 tokens de entrada, 40 de salida
+   Un balanceador de carga ayuda a equilibrar la carga eléctrica entre diferentes componentes de un circuito, asegurando una distribución uniforme de la corriente.
+
+[2. SDK de OpenAI (API /v1)] 42 tokens de entrada, 37 de salida
+   Un balanceador de carga ayuda a equilibrar la carga eléctrica entre diferentes componentes de un circuito, asegurando que no se sobrecarguen.
+
+[3. curso_core, rol chat] 42 tokens de entrada, 37 de salida
+   Un balanceador de carga ayuda a equilibrar la carga eléctrica entre diferentes componentes de un circuito, asegurando que no se sobrecarguen.
+
+[3. curso_core, rol chat_compatible] 42 tokens de entrada, 37 de salida
+   Un balanceador de carga ayuda a equilibrar la carga eléctrica entre diferentes componentes de un circuito, asegurando que no se sobrecarguen.
+```
+
+Tres cosas que mirar:
+
+- **Las cuatro vías procesan los mismos 42 tokens.** Es el mismo modelo con el mismo prompt, sea cual sea el cliente.
+- **La primera respuesta es distinta, con temperatura 0.** Fue la primera llamada tras cargar el modelo: es el mismo efecto que mediste en la lección de sampling.
+- **El modelo habla de electricidad.** "Balanceador de carga" es ambiguo, y el mensaje de sistema ("asistente técnico") no bastó para orientarlo hacia redes. Un modelo pequeño necesita más contexto del que crees.
+
+Lee el código de las tres funciones y compara cuánto trabajo hace cada una.
+
+### 2. Conversación y roles
+
+[`conversacion.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/01-fundamentos-de-llms/conversacion.py) le cuenta al modelo que estás migrando un servicio llamado Atlas y luego le pregunta cómo se llama:
+
+```text
+1. Dos llamadas independientes
+   > ¿Cómo se llama el servicio que estoy migrando? Responde solo con el nombre.
+   'Servicio de migración' (47 tokens)
+
+2. La segunda llamada reenvía el historial
+   > ¿Cómo se llama el servicio que estoy migrando? Responde solo con el nombre.
+   'Atlas' (137 tokens)
+
+3. Mismo historial con un mensaje de sistema
+   'Atlas' (137 tokens)
+```
+
+- **Sin historial**, el modelo no tiene el dato y se inventa una respuesta plausible.
+- **Con historial**, acierta, y la entrada pasa de 47 a 137 tokens.
+- **Con un mensaje de sistema** que pide responder en inglés y en mayúsculas, responde igual: `'Atlas'`, sin mayúsculas. El modelo ignoró la instrucción.
+
+Fíjate también en que el contador no cambió al añadir el mensaje de sistema: 137 tokens en los dos casos. Parece que no se hubiera enviado, pero sí se envió. Cuando mandas tu propio mensaje de sistema, **sustituye** al que Ollama pone por defecto (lección 01), y por casualidad los dos ocupan 16 tokens. Es un buen ejemplo de por qué conviene comprobar una sospecha antes de dar por hecho un bug.
+
+### 3. Streaming
+
+[`streaming.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/01-fundamentos-de-llms/streaming.py) imprime la respuesta según llega y mide los tiempos:
+
+```text
+231 fragmentos · 232 tokens de salida
+primer fragmento: 2.47 s · respuesta completa: 8.73 s
+velocidad de generación: 37.1 tokens/s
+```
+
+El usuario empieza a leer a los 2,5 segundos en lugar de esperar casi 9. Casi cada fragmento es un token.
+
+Por cierto: la pregunta pedía "cuatro frases" y el modelo devolvió cuatro apartados largos con formato. Pedir una longitud no garantiza obtenerla; si la necesitas, ponla también como límite (`max_tokens`).
+
+### 4. Errores reales de un proveedor
+
+[`errores_api.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/01-fundamentos-de-llms/errores_api.py) llama a un modelo en la nube a través de Hugging Face (rol `remoto`) en varios escenarios, y termina con un timeout forzado contra el modelo local. Necesita `HF_TOKEN` en tu `.env`:
+
+```text
+[tu token]
+   status: 402 · intentos: 1
+   motivo: {"error":"You have no remaining credits. Purchase pre-paid credits to continue using Inference Providers. Alternatively, subscribe to PRO to get monthly included credits."}
+
+[modelo que no existe]
+   status: 400 · intentos: 1
+   motivo: {"error":{"message":"The requested model 'modelo/que-no-existe' does not exist.","type":"invalid_request_error","param":"model","code":"model_not_found"}}
+
+[token inválido]
+   status: 401 · intentos: 1
+   motivo: {"error":"Invalid username or password."}
+
+[timeout]
+   status: None · intentos: 2
+   motivo: Timeout tras 2 intentos: ReadTimeout('timed out')
+```
+
+Los tres errores HTTP se resolvieron en un intento: no tiene sentido reintentarlos. El timeout, en cambio, se reintentó una vez antes de rendirse. Si tu cuenta tiene créditos, el primer caso funcionará y verás la respuesta.
 
 ## Mide y depura
 
-TODO
+### Primer fragmento frente a respuesta completa
+
+En una aplicación interactiva, la métrica que percibe el usuario es el **tiempo hasta el primer fragmento** (TTFT, time to first token). En la práctica: 2,47 s frente a 8,73 s de la respuesta completa. `curso_core` lo guarda como `primer_token_s` en la respuesta y en la traza de cada llamada en streaming.
+
+El tiempo hasta el primer fragmento depende sobre todo de cuánto tarda el modelo en procesar la entrada. El resto depende de la velocidad de generación (37 tokens por segundo aquí) y de cuántos tokens genera.
+
+### El coste del historial
+
+Cada turno de una conversación reenvía todos los anteriores. En la práctica, una pregunta pasó de 47 a 137 tokens de entrada por llevar historial. En una conversación de veinte turnos, la entrada de cada llamada incluye los veinte. Mide `tokens_entrada` por turno en tus trazas para ver cómo crece.
+
+### Errores por código en las trazas
+
+Cada llamada fallida queda en la traza con su `status`, su `error` y el número de `intentos`. Agrupar por `status` te dice qué está pasando: muchos 429 son un problema de capacidad o de cuota; muchos 401 o 402, de configuración o de facturación; muchos timeouts, de dimensionado. Lo convertirás en métricas en la lección 06.
 
 ## Errores frecuentes
 
-TODO
+**Reintentarlo todo.** Un 401 o un 402 no se arreglan solos. Reintentarlos retrasa el error y, en algunos proveedores, cuenta para tu límite de uso.
+
+**No leer el cuerpo del error.** El código HTTP es la categoría; el cuerpo es el motivo. "400" no te dice nada; `model_not_found` te dice exactamente qué corregir.
+
+**Timeouts de API REST.** Medio segundo es razonable para una API de datos y absurdo para un LLM que genera cientos de tokens. Dimensiona el timeout con las latencias que mides, con margen.
+
+**Dar por hecho que el modelo entiende el dominio.** "Balanceador de carga" acabó en electricidad. Si tu aplicación es de un dominio concreto, díselo en el mensaje de sistema y dale contexto.
+
+**Fiarse del mensaje de sistema.** Es una instrucción, no una restricción. Si necesitas un formato garantizado, valídalo en el código. Lo harás en el módulo 2.
+
+### Anatomía de un error: el token válido que no funciona
+
+Creas tu token de Hugging Face, lo pones en `.env` y llamas a un modelo en la nube. Recibes:
+
+```text
+status: 402 · intentos: 1
+motivo: {"error":"You have no remaining credits. Purchase pre-paid credits to continue using Inference Providers. Alternatively, subscribe to PRO to get monthly included credits."}
+```
+
+**Cómo leerlo.** El 402 (Payment Required) es un código poco habitual, y precisamente por eso es claro: no es un problema de credenciales (sería 401) ni de permisos (403), sino de saldo. El cuerpo lo confirma y te da las dos salidas. Fíjate en `intentos: 1`: `curso_core` no lo reintentó, porque no se va a arreglar solo.
+
+**Causa.** El token es válido y tiene el permiso correcto, pero la cuenta no tiene créditos. En Hugging Face, las cuentas gratuitas no los incluyen: el token sirve para descargar modelos sin límites estrictos, pero llamar a un proveedor en la nube cuesta dinero.
+
+**Solución.** Compra créditos, suscríbete a PRO o usa un modelo local. Y en cualquier proveedor, comprueba la facturación antes de culpar a tu código: un 402 o un 429 por cuota agotada pueden aparecer de un día para otro en un sistema que funcionaba.
 
 ## Bitácora
 
@@ -29,4 +232,8 @@ TODO(alex)
 
 ## Para profundizar
 
-TODO
+- [Referencia de la API de Ollama](https://docs.ollama.com/api/chat) y su [compatibilidad con OpenAI](https://docs.ollama.com/api/openai-compatibility).
+- [Hugging Face Inference Providers](https://huggingface.co/docs/inference-providers/index) y su [página de precios](https://huggingface.co/docs/inference-providers/pricing).
+- [SDK de OpenAI para Python](https://github.com/openai/openai-python): el cliente que usa la práctica contra la API compatible.
+- [Server-Sent Events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events) en MDN: el formato del streaming compatible con OpenAI.
+- Códigos [402](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/402) y [429](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429) en MDN.

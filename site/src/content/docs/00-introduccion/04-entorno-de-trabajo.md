@@ -221,13 +221,15 @@ Variables (.env)
 
 Modelos (config/models.toml)
   OK chat
+  OK chat_compatible
+  OK remoto
   -- judge
   -- embeddings
 
 Todo listo.
 ```
 
-`OK` indica que algo está configurado y `--` que no lo está. Las claves y los roles vacíos no son un problema todavía; solo cuentan como error un Python antiguo o la falta de `.env`.
+`OK` indica que algo está configurado y `--` que no lo está. Las claves y los roles vacíos no son un problema todavía; solo cuentan como error un Python antiguo o la falta de `.env`. Los roles `chat_compatible` y `remoto` los usarás en el módulo 1.
 
 ### 8. Tu primer "hola mundo" con un LLM
 

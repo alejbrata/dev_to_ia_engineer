@@ -30,4 +30,4 @@ def test_roles_configurados_exige_proveedor_y_modelo() -> None:
 
 def test_models_toml_del_repo_es_valido() -> None:
     modelos = ce.leer_modelos(ce.RAIZ / "config" / "models.toml")
-    assert set(modelos["roles"]) == {"chat", "judge", "embeddings"}
+    assert {"chat", "judge", "embeddings"} <= set(modelos["roles"])
