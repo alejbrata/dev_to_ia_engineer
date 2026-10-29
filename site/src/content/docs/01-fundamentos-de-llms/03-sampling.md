@@ -3,25 +3,196 @@ title: "Sampling"
 description: "Sampling: temperature, top_p y determinismo (o su ausencia)"
 ---
 
+:::note[Revisado: 2026-10]
+Las salidas de esta lección son reales y se obtuvieron con el modelo con el que se construyó el curso (Qwen2.5 1.5B Instruct) en Ollama 0.40.13. Con otro modelo o versión, las respuestas concretas cambiarán; los fenómenos, no.
+:::
+
 ## Objetivos
 
-TODO
+Al terminar esta lección podrás:
+
+- Explicar qué hacen la temperatura y top_p sobre la distribución de probabilidades del siguiente token.
+- Medir la diversidad de las respuestas de un modelo con distintos ajustes.
+- Explicar qué garantiza una semilla fija y qué no.
+- Escribir tests que no fallen por la variabilidad del modelo.
 
 ## Teoría
 
-TODO
+### Elegir el siguiente token
+
+En la lección 01 viste que el modelo calcula, en cada paso, una probabilidad para cada token posible. El **sampling** es la regla para elegir uno de ellos. No forma parte del modelo: lo aplica el servidor después, y tú lo controlas con unos pocos parámetros.
+
+La regla más simple es quedarse siempre con el más probable. Se llama decodificación voraz (greedy) y es lo que pides con temperatura 0. Es estable, pero ya viste que no garantiza acertar, y en textos largos tiende a repetirse.
+
+La alternativa es **sortear** el token según sus probabilidades. Un token con un 30 % sale tres de cada diez veces. Así el texto es más variado, a cambio de que a veces salga un token poco probable que lleve la respuesta por mal camino.
+
+### Temperatura
+
+La temperatura deforma la distribución antes del sorteo:
+
+- **Por debajo de 1** concentra la probabilidad en los tokens más probables. Con 0, todo va al primero.
+- **1** deja la distribución tal cual.
+- **Por encima de 1** la aplana: los tokens poco probables ganan opciones.
+
+Técnicamente, cada probabilidad `p` se transforma en `p^(1/T)` y se vuelve a normalizar. En la práctica lo verás con las probabilidades reales de la lección 01.
+
+Ollama usa una temperatura de 0,8 si no indicas otra. Es decir: **por defecto, cada llamada es un sorteo**.
+
+### top_p
+
+top_p (o nucleus sampling) recorta la lista de candidatos antes del sorteo: se queda con los tokens más probables hasta que su probabilidad acumulada alcanza `p`, y descarta el resto. Con top_p = 0,3, solo entran los tokens que suman el 30 % más probable.
+
+Sirve para cortar la cola de tokens raros sin renunciar a la variedad entre los buenos. Se combina con la temperatura: primero se recorta y luego se sortea entre lo que queda.
+
+### Semilla
+
+El sorteo usa un generador de números aleatorios. Si fijas su **semilla**, la secuencia de números es siempre la misma, y con ella deberían repetirse las elecciones. Deberían. Para que se repitan, todos los cálculos previos tienen que dar exactamente los mismos números, bit a bit. Cualquier diferencia en cómo el servidor hace las cuentas (otro hardware, otra versión, otra forma de agrupar peticiones o de reutilizar cálculos) puede cambiar una probabilidad en el último decimal y, con ella, el token elegido.
+
+Por eso los proveedores hablan de reproducibilidad "en la medida de lo posible". La documentación de OpenAI lo dice explícitamente: con semilla, el determinismo no está garantizado.
+
+### Qué ajuste para qué tarea
+
+- **Extraer datos, clasificar, responder con un formato fijo:** temperatura 0 o muy baja. Quieres la respuesta más probable, siempre la misma.
+- **Generar variedad (nombres, ideas, reformulaciones):** temperatura media o alta, con top_p para cortar los disparates.
+- **En cualquier caso:** fija los parámetros tú, en el código. No dependas del valor por defecto del servidor, que además cambia entre servidores.
 
 ## Práctica
 
-TODO
+[`sampling.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/01-fundamentos-de-llms/sampling.py) tiene tres partes. En total son unas 60 llamadas; en un equipo sin GPU tarda tres o cuatro minutos:
+
+```sh
+uv run python modulos/01-fundamentos-de-llms/sampling.py
+```
+
+### 1. La temperatura sobre probabilidades reales
+
+La primera parte toma las cinco alternativas más probables del primer token de la pregunta del cielo (la de la lección 01) y aplica distintas temperaturas:
+
+```text
+1. Probabilidades del primer token
+> Completa con una sola palabra: el cielo despejado es de color
+
+   T=0.3
+       'bl'  83.5% #########################
+       'az'  16.2% #####
+     'amar'   0.2%
+       'Az'   0.0%
+        'n'   0.0%
+   T=1.0
+       'bl'  54.1% ################
+       'az'  33.1% ##########
+     'amar'   9.0% ###
+       'Az'   2.0% #
+        'n'   1.8% #
+   T=1.5
+       'bl'  44.7% #############
+       'az'  32.2% ##########
+     'amar'  13.6% ####
+       'Az'   5.0% #
+        'n'   4.5% #
+   (reescaladas sobre los 5 tokens más probables)
+```
+
+Con T=0,3, "blanco" (`bl`) se queda con el 83,5 %. Con T=1,5, "amarillo" (`amar`) sube del 0,2 % al 13,6 %. Ninguna temperatura convierte "azul" en la opción favorita: la temperatura reparte la probabilidad, no corrige al modelo.
+
+### 2. Diez veces la misma petición
+
+La segunda parte pide diez veces un nombre de cafetería con cada ajuste y cuenta las respuestas distintas:
+
+```text
+2. 10 repeticiones de la misma petición
+> Inventa un nombre para una cafetería. Responde solo con el nombre, sin comillas.
+
+   T=0                 1 de 10 distintas · 'Café Verde Urbano'×10
+   T=0.7              10 de 10 distintas · 'La Casa del Crépusculo'×1, 'Tus cafés del gusto'×1, 'SaffronMilleibri'×1
+   T=1.5              10 de 10 distintas · 'PazBlanco Starbucks'×1, 'Delicias Café'×1, 'Delicia Café'×1
+   T=1.5, top_p=0.3    5 de 10 distintas · 'Café del Sol'×3, 'Elusive Brew'×2, 'Café Verde Urbano'×2
+   T=0.8, semilla=42   1 de 10 distintas · 'Búon Cafe'×10
+```
+
+- **T=0:** siempre la misma.
+- **T=0,7 y T=1,5:** diez respuestas distintas de diez. Con 1,5 aparecen cosas como "PazBlanco Starbucks", que incluye el nombre de una marca real.
+- **top_p=0,3 con T=1,5:** la temperatura es alta, pero el recorte deja solo los candidatos más probables. Salen 5 respuestas distintas y ninguna es un disparate.
+- **Semilla 42:** diez veces la misma respuesta, pese a una temperatura de 0,8.
+
+### 3. ¿Es reproducible la semilla?
+
+La tercera parte descarga el modelo de memoria antes de cada ronda y repite la petición con semilla:
+
+```text
+3. Semilla fija (T=0.8, semilla=42), recargando el modelo antes de cada ronda
+
+   ronda 1: ['Librería Caféresco', 'Búon Cafe', 'Búon Cafe', 'Búon Cafe']
+   ronda 2: ['Librería Caféresco', 'Búon Cafe', 'Búon Cafe', 'Búon Cafe']
+   ronda 3: ['Librería Caféresco', 'Búon Cafe', 'Búon Cafe', 'Búon Cafe']
+```
+
+Misma petición, misma semilla, mismo servidor, mismo modelo: **la primera llamada tras cargar el modelo da otra respuesta**. Y lo hace de forma consistente, ronda tras ronda.
+
+La explicación más probable: en la primera llamada, Ollama procesa el prompt desde cero; en las siguientes, reutiliza parte del cálculo que guardó en una caché (lo verás en el campo `prompt_eval_cached_count` de su respuesta). Las dos rutas dan probabilidades casi iguales, pero no idénticas bit a bit, y con un sorteo de por medio "casi" basta para cambiar el resultado. Es una hipótesis coherente con los datos, no un comportamiento documentado. Lo importante es la conclusión: la semilla hace la salida reproducible a menudo, no siempre.
+
+Con temperatura 0 no hay sorteo, y en las mismas pruebas la respuesta fue idéntica en todas las llamadas, con el modelo recién cargado o no.
 
 ## Mide y depura
 
-TODO
+### La diversidad como métrica
+
+"Respuestas distintas de N" es una métrica sencilla y útil. Antes de fijar una temperatura en una tarea, mide:
+
+- En tareas de extracción o clasificación, quieres 1 de N. Si sale más, algo en tu configuración está sorteando.
+- En tareas creativas, quieres variedad, pero revisa las respuestas raras: son las que salen de la cola de la distribución.
+
+### Registra los parámetros
+
+`curso_core` guarda en la traza de cada llamada los parámetros que usaste:
+
+```json
+{"id":"bfaf3585ed72","momento":"2026-10-29T20:43:16.987083Z","rol":"chat","proveedor":"ollama","modelo":"qwen2.5:1.5b","ok":true,"intentos":1,"latencia_s":2.4389231000095606,"tokens_entrada":50,"tokens_salida":5,"coste_usd":0.0,"opciones":{"temperatura":0.8,"semilla":42,"max_tokens":15},"error":null,"status":null}
+```
+
+Sin ellos, una respuesta rara en producción no se puede reproducir ni explicar. Es el mismo principio que registrar la versión y la configuración de un servicio junto a sus logs.
+
+### Prueba propiedades, no textos
+
+Un modelo con sampling no es una función pura. No escribas tests que comparen el texto exacto de la respuesta. Comprueba propiedades: que sea JSON válido, que tenga los campos esperados, que no supere una longitud, que contenga el dato que buscas. Es la base de las evals que construirás en los módulos 2 y 4.
 
 ## Errores frecuentes
 
-TODO
+**Dejar la temperatura por defecto.** En Ollama es 0,8: cada llamada es un sorteo aunque no lo hayas pedido. Si tu tarea necesita estabilidad, pon temperatura 0 explícitamente.
+
+**Subir la temperatura para "hacerlo más creativo" en tareas que no lo son.** En extracción o clasificación, una temperatura alta solo añade errores. Los nombres inventados con marcas reales de la práctica son un ejemplo inofensivo; con datos de clientes no lo sería.
+
+**Creer que una semilla convierte el modelo en determinista.** Lo hace reproducible en condiciones idénticas, y las condiciones del servidor no siempre lo son. Con proveedores en la nube, aún menos: comparten hardware y cambian versiones sin avisar.
+
+### Anatomía de un error: el test que falla a veces
+
+Quieres un test de regresión para tu generador de nombres. Fijas la semilla y compruebas la respuesta:
+
+```python
+def test_nombre_de_cafeteria_es_reproducible() -> None:
+    opciones = Opciones(temperatura=0.8, semilla=42, max_tokens=15)
+    respuesta = ClienteLLM().chat(PROMPT, opciones=opciones)
+    assert respuesta.texto.strip() == "Búon Cafe"
+```
+
+Lo ejecutas y pasa. Lo vuelves a ejecutar y pasa. Al día siguiente, en CI, falla:
+
+```text
+>       assert respuesta.texto.strip() == "Búon Cafe"
+E       AssertionError: assert 'Librería Caféresco' == 'Búon Cafe'
+E
+E         - Búon Cafe
+E         + Librería Caféresco
+
+FAILED test_nombre_cafeteria.py::test_nombre_de_cafeteria_es_reproducible
+1 failed in 4.74s
+```
+
+**Cómo leerlo.** pytest muestra las dos cadenas: la esperada con `-` y la obtenida con `+`. No hay excepción ni timeout: el modelo respondió bien, pero otra cosa. Un test que pasa y falla sin cambios en el código es un test inestable (flaky), y el primer sospechoso es siempre algo no determinista.
+
+**Causa.** En tu máquina, el modelo ya estaba cargado de ejecuciones anteriores. En CI, o tras reiniciar Ollama, el test hace la primera llamada con el modelo recién cargado, y esa llamada da otra respuesta aunque la semilla sea la misma. Es lo que mediste en la parte 3 de la práctica.
+
+**Solución.** No pruebes el texto exacto de una salida con sampling. Si el comportamiento que quieres probar admite temperatura 0, úsala. Si no, prueba propiedades: que la respuesta no esté vacía, que sea un nombre corto, que no repita el prompt. Y si un test depende de un modelo, ejecútalo también con el modelo recién cargado antes de fiarte de él.
 
 ## Bitácora
 
@@ -29,4 +200,7 @@ TODO(alex)
 
 ## Para profundizar
 
-TODO
+- Holtzman et al., [The Curious Case of Neural Text Degeneration](https://arxiv.org/abs/1904.09751) (2019). El artículo que propuso nucleus sampling (top_p).
+- Hugging Face, [How to generate text](https://huggingface.co/blog/how-to-generate): las estrategias de decodificación explicadas con ejemplos.
+- [Parámetros del Modelfile](https://docs.ollama.com/modelfile) en la documentación de Ollama: valores por defecto de temperatura, top_p y semilla.
+- OpenAI Cookbook, [Reproducible outputs with the seed parameter](https://developers.openai.com/cookbook/examples/reproducible_outputs_with_the_seed_parameter): qué garantiza (y qué no) una semilla en un proveedor en la nube.
