@@ -51,7 +51,7 @@ Por último, que algo quepa no significa que se aproveche igual. Un estudio de 2
 
 [`contexto.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/01-fundamentos-de-llms/contexto.py) esconde un dato (un código de acceso) en un texto de unos 6 000 tokens y pregunta por él en tres casos. Tarda alrededor de un minuto y medio en un equipo sin GPU:
 
-```sh
+```sh title="Terminal de VS Code · raíz del repo"
 uv run python modulos/01-fundamentos-de-llms/contexto.py
 ```
 
@@ -86,13 +86,13 @@ Cambia el tamaño del texto con el número de párrafos (`contexto.py 100`, `con
 
 Ollama no es el único servidor que puedes montar en local. [llama.cpp](https://github.com/ggml-org/llama.cpp) incluye `llama-server`, que habla la API compatible con OpenAI y se comporta como un proveedor en la nube cuando te pasas de contexto. Instálalo (en Windows, `winget install llama.cpp`; en macOS, `brew install llama.cpp`; en Linux, desde sus [releases](https://github.com/ggml-org/llama.cpp/releases)) y arráncalo con el mismo modelo, descargado directamente de Hugging Face y con 4 096 tokens de contexto:
 
-```sh
+```sh title="Terminal aparte · se queda en marcha"
 llama-server -hf Qwen/Qwen2.5-1.5B-Instruct-GGUF:Q4_K_M -c 4096 --port 8081
 ```
 
 La primera vez descarga el modelo (alrededor de 1 GB). Con el servidor arrancado, en otra terminal, manda el mismo texto de 6 000 tokens con [`contexto_llamacpp.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/01-fundamentos-de-llms/contexto_llamacpp.py), que usa el rol `chat_llamacpp`:
 
-```sh
+```sh title="Terminal de VS Code · raíz del repo"
 uv run python modulos/01-fundamentos-de-llms/contexto_llamacpp.py
 ```
 
@@ -119,7 +119,7 @@ cliente.chat(prompt, opciones=Opciones(contexto=8192))
 
 Para todo el servidor, con una variable de entorno al arrancarlo:
 
-```sh
+```sh title="Terminal aparte · se queda en marcha"
 OLLAMA_CONTEXT_LENGTH=8192 ollama serve
 ```
 

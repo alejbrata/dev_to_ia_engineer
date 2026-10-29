@@ -1,6 +1,6 @@
 ---
 title: "Cómo usar este curso"
-description: "Cómo usar este curso: estructura, prerrequisitos, ritmo"
+description: "Cómo usar este curso: estructura, prerrequisitos, ritmo, tu fork del repo"
 ---
 
 ## Objetivos
@@ -9,7 +9,7 @@ Al terminar esta lección podrás:
 
 - Describir las siete secciones de una lección y para qué sirve cada una.
 - Comprobar si cumples los prerrequisitos.
-- Clonar el repositorio y ejecutar sus comprobaciones (tests, lint y web) en tu máquina.
+- Tener tu propia copia (fork) del repositorio del curso, clonada y abierta en VS Code.
 - Localizar en el repo el código, la configuración y el texto de cada lección.
 
 ## Teoría
@@ -51,8 +51,9 @@ No te saltes "Mide y depura". Es la sección que más te acerca al trabajo real.
 Necesitas:
 
 - **Saber programar** con soltura en algún lenguaje. Las prácticas están en Python. Si vienes de Java u otro lenguaje, te basta con leer el [tutorial oficial de Python](https://docs.python.org/3/tutorial/) a buen ritmo; el curso no enseña Python desde cero.
-- **Usar git** para clonar, hacer commits y trabajar con ramas.
+- **Usar git** para clonar, hacer commits y trabajar con ramas, y una **cuenta de GitHub**.
 - **Moverte por la terminal.** Las instrucciones dan comandos para macOS, Linux y Windows (PowerShell) cuando difieren.
+- **[VS Code](https://code.visualstudio.com/)** como editor. El repositorio del curso viene preparado para él: extensiones recomendadas, tareas para ejecutar las prácticas y depuración con F5. Puedes usar otro editor, pero las instrucciones dan por hecho VS Code.
 
 No necesitas experiencia previa en machine learning ni matemáticas avanzadas.
 
@@ -75,74 +76,94 @@ Dentro de una lección, termina la práctica antes de pasar a la siguiente. Leer
 | `.env.example` | Las variables de entorno que necesitas (claves, observabilidad) |
 | `bitacora/` | El texto personal del autor, módulo a módulo |
 | `docs/PLAN.md` | El temario y el estado de cada módulo |
+| `.vscode/` | La configuración de VS Code: extensiones, tareas y depuración |
 
 Los nombres de modelos no aparecen en el texto ni en el código de las prácticas, solo en `config/models.toml`. Cambian cada pocos meses, y así basta con tocar un fichero.
 
 ## Práctica
 
-Clona el repositorio y comprueba que todo funciona. Necesitas [uv](https://docs.astral.sh/uv/); la lección siguiente explica cómo instalarlo, junto con Ollama para ejecutar modelos en local.
+Vas a trabajar sobre tu propia copia del repositorio del curso: un **fork**. Así tus cambios, tus experimentos y tu progreso quedan en tu cuenta de GitHub, y puedes seguir recibiendo las actualizaciones del curso. Al final, en el proyecto final, crearás además un proyecto propio desde cero.
 
-```sh
-git clone https://github.com/alejbrata/dev_to_ia_engineer.git
-cd dev_to_ia_engineer
+### 1. Instala las herramientas básicas
 
-uv sync                # crea el entorno virtual e instala las dependencias
-uv run pytest          # ejecuta los tests
-uv run ruff check      # pasa el linter
+Necesitas [git](https://git-scm.com/downloads) y [VS Code](https://code.visualstudio.com/). Comprueba que git funciona:
+
+```sh title="Cualquier terminal"
+git --version
 ```
 
-Si todo va bien, pytest termina con una línea como `48 passed` (el número crece con el curso) y ruff con `All checks passed!`.
+### 2. Haz un fork del repositorio
 
-Si además quieres arrancar esta web en local (opcional; solo hace falta para contribuir al curso), necesitas [Node.js](https://nodejs.org/) 22.23.4 o superior:
+Entra en [github.com/alejbrata/dev_to_ia_engineer](https://github.com/alejbrata/dev_to_ia_engineer) con tu cuenta y pulsa **Fork** (arriba a la derecha). GitHub crea una copia en `github.com/TU_USUARIO/dev_to_ia_engineer`. Copia su URL desde el botón verde **Code**.
 
-```sh
-cd site
-npm install
-npm run dev
+### 3. Clónalo desde VS Code
+
+En VS Code, pulsa `Ctrl+Shift+P` (`Cmd+Shift+P` en macOS), escribe **Git: Clone** y pega la URL de tu fork. Elige la carpeta donde guardarlo y, cuando termine, pulsa **Abrir**.
+
+Si prefieres la terminal:
+
+```sh title="Cualquier terminal · en la carpeta donde guardas tus proyectos"
+git clone https://github.com/TU_USUARIO/dev_to_ia_engineer.git
+code dev_to_ia_engineer
 ```
 
-Abre la dirección que aparece en la terminal. Cualquier cambio en `site/src/content/docs/` se ve al momento.
+### 4. Abre la carpeta correcta y confía en ella
+
+VS Code tiene que tener abierta **la raíz del repositorio**, la carpeta `dev_to_ia_engineer`, no una subcarpeta. Toda la configuración del curso (tareas, depuración, extensiones) está en su carpeta `.vscode/` y solo funciona así.
+
+Al abrirla, VS Code te pregunta si confías en los autores de la carpeta: responde que sí. Después te ofrece instalar las **extensiones recomendadas** (Python, Ruff y TOML): acéptalo.
+
+### 5. Abre la terminal integrada
+
+Pulsa `` Ctrl+` `` (la tecla del acento grave, a la izquierda del 1). Se abre una terminal dentro de VS Code, ya situada en la raíz del repo. **Es la terminal que usarás en todo el curso**, y por eso cada bloque de comandos de las lecciones lleva un título que dice dónde ejecutarlo:
+
+```sh title="Terminal de VS Code · raíz del repo"
+git status
+```
+
+Si la terminal no está en la raíz, la ruta que aparece al principio de la línea no terminará en `dev_to_ia_engineer`. Ciérrala y abre otra con VS Code apuntando a la carpeta correcta.
+
+En la lección siguiente instalarás uv y Ollama; en la 05 aprenderás a ejecutar y depurar las prácticas sin teclear comandos.
+
+### 6. Mantén tu fork al día
+
+Cuando el curso publique lecciones nuevas, tu fork no se actualiza solo. En la página de tu fork en GitHub, pulsa **Sync fork** y después trae los cambios a tu máquina:
+
+```sh title="Terminal de VS Code · raíz del repo"
+git pull
+```
 
 ## Mide y depura
 
-Los tests y el linter son tu primera fuente de datos. Aprende a sacarles más información:
+Tu fork incluye los mismos workflows de GitHub Actions que el curso: tests, lint y build de la web. Por seguridad, GitHub los deja **desactivados en los forks**. Actívalos en la pestaña **Actions** de tu fork.
 
-```sh
-uv run pytest -v               # un resultado por test, no solo puntos
-uv run pytest --durations=5    # los cinco tests más lentos
-uv run pytest -x               # para en el primer fallo
-```
+A partir de ahí, cada `git push` lanza las comprobaciones y GitHub te muestra el resultado junto a cada commit: un check verde o una cruz roja. Es tu primera métrica: si algo que funcionaba se rompe, lo sabrás en minutos y sabrás en qué commit.
 
-Las mismas comprobaciones se ejecutan en GitHub Actions con cada push. Si un cambio pasa en tu máquina y falla allí, compara versiones (de Python, Node o dependencias) antes que nada: es la causa más habitual.
+Si un cambio pasa en tu máquina y falla en GitHub, compara versiones (de Python, de Node o de las dependencias) antes que nada. Es la causa más habitual.
 
 ## Errores frecuentes
 
-**Ejecutar los comandos desde la carpeta equivocada.** Los comandos de Python (`uv ...`) se ejecutan desde la raíz del repo. Los de la web (`npm ...`), desde `site/`. Si un comando no encuentra el fichero de proyecto, mira primero dónde estás.
+**Abrir una subcarpeta en VS Code.** Si abres `modulos/` o `site/` en lugar de la raíz, la terminal, las tareas y la depuración apuntan al sitio equivocado. Abre siempre la carpeta `dev_to_ia_engineer`.
+
+**Clonar el repositorio original en lugar de tu fork.** Podrás leerlo y ejecutarlo, pero no subir tus cambios: el repositorio es de otra persona. Si te pasa, haz el fork y cambia el remoto con `git remote set-url origin` y la URL de tu fork.
 
 **Leer sin ejecutar.** Cada práctica se diseña para que algo falle o sorprenda. Si no la ejecutas, te pierdes la parte que enseña.
 
-### Anatomía de un error: la web y el plan no coinciden
+### Anatomía de un error: el repositorio que no existe
 
-El repo tiene un test que comprueba que las páginas de la web coinciden con el temario de `docs/PLAN.md`. Si renombras una página a mano, falla:
+Escribes a mano la URL de tu fork y se te come una letra:
 
 ```text
-FAILED tests/test_plan_sync.py::test_paginas_coinciden_con_el_plan
-
->       assert existentes == esperadas
-E       AssertionError: assert {'00-introduc...exto.md', ...} == {'00-introduc...exto.md', ...}
-E
-E         Extra items in the left set:
-E         '03-rag/05-rerankers.md'
-E         Extra items in the right set:
-E         '03-rag/05-reranking.md'
-E         Use -v to get more diff
+Cloning into 'dev_to_ia_enginer'...
+remote: Repository not found.
+fatal: repository 'https://github.com/alejbrata/dev_to_ia_enginer.git/' not found
 ```
 
-**Cómo leerlo.** pytest compara dos conjuntos. A la izquierda, `existentes`: las páginas que hay en disco. A la derecha, `esperadas`: las que se derivan del plan. "Extra items in the left set" es lo que sobra en disco; "in the right set", lo que falta.
+**Cómo leerlo.** La línea que empieza por `remote:` la escribe el servidor (GitHub); la que empieza por `fatal:`, tu git. Las dos dicen lo mismo: el repositorio no existe en esa URL. Fíjate en la URL de la última línea: falta una "e" en `enginer`.
 
-**Causa.** Alguien renombró `05-reranking.md` a `05-rerankers.md` sin tocar el plan.
+**Causa.** Una errata en el nombre. GitHub responde igual si el repositorio no existe y si es privado y no tienes acceso, así que también puede ser que estés usando una cuenta distinta de la del fork.
 
-**Solución.** Decide cuál es la fuente de verdad. Si el nombre bueno es el del plan, deshaz el cambio de nombre. Si quieres cambiar el título, edita `docs/PLAN.md` y regenera con `uv run python scripts/plan_sync.py`. El patrón es el mismo que en cualquier sistema con datos derivados: se cambia el origen y se regenera, no al revés.
+**Solución.** No escribas URLs a mano: cópialas del botón **Code** de GitHub. Y si la URL es correcta, comprueba con qué cuenta está autenticado git.
 
 ## Bitácora
 
@@ -150,8 +171,8 @@ TODO(alex)
 
 ## Para profundizar
 
-- [Documentación de uv](https://docs.astral.sh/uv/): gestión de Python, entornos y dependencias.
-- [Documentación de pytest](https://docs.pytest.org/).
+- [Trabajar con forks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks) en la documentación de GitHub, incluida la sincronización de un fork.
+- [Git en VS Code](https://code.visualstudio.com/docs/sourcecontrol/overview): clonar, hacer commits y sincronizar desde el editor.
 - [Documentación de GitHub Actions](https://docs.github.com/actions).
 - [Conventional Commits](https://www.conventionalcommits.org/es/v1.0.0/): el formato de mensajes de commit que usa el repo.
 - [CONTRIBUTING.md](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/CONTRIBUTING.md): cómo proponer cambios al curso.

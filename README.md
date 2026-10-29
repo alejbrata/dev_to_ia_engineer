@@ -27,7 +27,7 @@ npm run dev
 
 ## Arrancar el código
 
-Requiere [uv](https://docs.astral.sh/uv/), que instala Python 3.12+ si no lo tienes, y [Ollama](https://ollama.com) para ejecutar modelos en local. La lección 04 del módulo 0 explica cómo prepararlo todo.
+Haz un fork del repositorio, clónalo y ábrelo en [VS Code](https://code.visualstudio.com/): viene configurado con extensiones recomendadas, tareas y depuración (carpeta `.vscode/`). Necesitas [uv](https://docs.astral.sh/uv/), que instala Python 3.12+ si no lo tienes, y [Ollama](https://ollama.com) para ejecutar modelos en local. Las lecciones 03, 04 y 05 del módulo 0 lo explican paso a paso.
 
 ```sh
 uv sync

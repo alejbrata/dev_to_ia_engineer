@@ -10,8 +10,9 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 
 1. **La rotación**: del folio en blanco al TFM *(guía general de la transición + historia personal de `bitacora/00-introduccion.md`)*
 2. Qué hace un AI Engineer (y qué no): frente a ML Engineer, Data Scientist y dev "que usa IA"
-3. Cómo usar este curso: estructura, prerrequisitos, ritmo
-4. Entorno de trabajo: Python, uv, VS Code, claves API, `.env`, primer "hola mundo" con un LLM
+3. Cómo usar este curso: estructura, prerrequisitos, ritmo, tu fork del repo
+4. Entorno de trabajo: Python, uv, Ollama, claves API, `.env`, primer "hola mundo" con un LLM
+5. Tu proyecto en VS Code: terminal integrada, tareas, depuración y tests
 
 ## Módulo 1 — Fundamentos de LLMs 🟨
 
@@ -92,7 +93,7 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 ## Módulo 8 — Proyecto final ⬜
 
 1. Especificación: el alumno elige dominio y problema
-2. Requisitos mínimos: desarrollo, evals, observabilidad, documentación y análisis de coste
+2. Requisitos mínimos: proyecto propio creado desde cero, desarrollo, evals, observabilidad, documentación y análisis de coste
 3. Rúbrica de evaluación
 4. Cómo presentarlo como proyecto de portafolio
 

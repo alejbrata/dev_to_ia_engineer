@@ -1,6 +1,6 @@
 ---
 title: "Entorno de trabajo"
-description: "Entorno de trabajo: Python, uv, VS Code, claves API, .env, primer \"hola mundo\" con un LLM"
+description: "Entorno de trabajo: Python, uv, Ollama, claves API, .env, primer \"hola mundo\" con un LLM"
 ---
 
 :::note[Revisado: 2026-10]
@@ -12,7 +12,6 @@ Las instrucciones de instalación cambian con las versiones de las herramientas.
 Al terminar esta lección podrás:
 
 - Instalar uv y crear el entorno del curso con un solo comando.
-- Configurar VS Code para que use el entorno virtual del repo.
 - Guardar claves de API en `.env` y explicar por qué los nombres de modelos viven en `config/models.toml`.
 - Instalar Ollama, elegir un modelo abierto según tu máquina y descargarlo.
 - Hacer tu primera llamada a un LLM desde Python y leer sus tokens y su latencia.
@@ -33,11 +32,11 @@ Si vienes de Java, piensa en Maven o Gradle con su wrapper:
 
 Un **entorno virtual** es una carpeta con su propio intérprete y sus propias dependencias, aislada del Python del sistema. Es lo que evita que dos proyectos con versiones distintas de una librería se pisen.
 
-### VS Code
+### Dónde se ejecuta todo
 
-Puedes usar cualquier editor. Si usas VS Code, instala dos extensiones: **Python** (de Microsoft) y **Ruff** (de Astral). La primera da autocompletado y depuración; la segunda marca los errores de lint y formatea al guardar.
+Trabajas en VS Code, con tu fork abierto en la raíz (lo preparaste en la lección anterior). Todos los comandos de esta lección van en su terminal integrada, salvo las instalaciones, que valen en cualquier terminal. Cada bloque de comandos lo indica en su título.
 
-Lo importante es que el editor use el intérprete de `.venv/`. Si no, marcará como inexistentes librerías que sí están instaladas.
+Cuando `uv sync` cree el entorno virtual, VS Code lo detectará. En la lección siguiente lo comprobarás y aprenderás a ejecutar y depurar las prácticas desde el editor.
 
 ### Claves de API y `.env`
 
@@ -99,17 +98,23 @@ Antes de elegir un modelo, lee su ficha. Fíjate en tres cosas: la licencia, los
 
 En macOS o Linux:
 
-```sh
+```sh title="Cualquier terminal"
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
 En Windows (PowerShell):
 
-```powershell
+```powershell title="Cualquier terminal · PowerShell"
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
 ```
 
-También puedes usar `brew install uv` o `winget install --id=astral-sh.uv -e`. Comprueba la instalación con `uv --version`.
+También puedes usar `brew install uv` o `winget install --id=astral-sh.uv -e`.
+
+Después de instalarlo, **cierra la terminal de VS Code y abre una nueva** (o reinicia VS Code). Una terminal que ya estaba abierta no ve los programas recién instalados. Comprueba la instalación:
+
+```sh title="Terminal de VS Code"
+uv --version
+```
 
 No hace falta que instales Python aparte. Si no tienes una versión compatible, uv la descarga.
 
@@ -117,7 +122,7 @@ No hace falta que instales Python aparte. Si no tienes una versión compatible, 
 
 Desde la raíz del repo:
 
-```sh
+```sh title="Terminal de VS Code · raíz del repo"
 uv sync
 ```
 
@@ -127,52 +132,48 @@ Copia la plantilla.
 
 En macOS o Linux:
 
-```sh
+```sh title="Terminal de VS Code · raíz del repo"
 cp .env.example .env
 ```
 
 En Windows (PowerShell):
 
-```powershell
+```powershell title="Terminal de VS Code · raíz del repo · PowerShell"
 Copy-Item .env.example .env
 ```
 
 De momento, déjalo vacío. Las claves se rellenan cuando una práctica las necesite.
 
-### 4. Configura VS Code
-
-Abre la carpeta del repo, pulsa `Ctrl+Shift+P` (`Cmd+Shift+P` en macOS) y elige **Python: Select Interpreter**. Selecciona el que está en `.venv`.
-
-### 5. Instala Ollama
+### 4. Instala Ollama
 
 Descarga el instalador desde [ollama.com/download](https://ollama.com/download) o usa la terminal.
 
 En macOS o Linux:
 
-```sh
+```sh title="Cualquier terminal"
 curl -fsSL https://ollama.com/install.sh | sh
 ```
 
 En Windows (PowerShell):
 
-```powershell
+```powershell title="Cualquier terminal · PowerShell"
 irm https://ollama.com/install.ps1 | iex
 ```
 
 En macOS y Windows, Ollama se queda arrancado en segundo plano. En Linux, si no arranca solo, lánzalo con `ollama serve`. Comprueba que responde:
 
-```sh
+```sh title="Cualquier terminal"
 ollama --version
 curl http://localhost:11434/api/version
 ```
 
 La segunda orden debe devolver un JSON con la versión. Si no responde, el servidor no está arrancado.
 
-### 6. Descarga el modelo
+### 5. Descarga el modelo
 
 Descarga el modelo con el que se ha construido el curso:
 
-```sh
+```sh title="Cualquier terminal"
 ollama pull qwen2.5:1.5b
 ```
 
@@ -186,23 +187,23 @@ model = "el-modelo-que-elijas"
 
 Sea cual sea, pruébalo desde la terminal antes de usarlo desde Python:
 
-```sh
+```sh title="Cualquier terminal"
 ollama run qwen2.5:1.5b "Hola, ¿en qué idioma me respondes?"
 ```
 
 Otras órdenes que vas a usar:
 
-```sh
+```sh title="Cualquier terminal"
 ollama list    # modelos descargados y lo que ocupan en disco
 ollama ps      # modelos cargados en memoria ahora mismo
 ollama rm <modelo>   # borra un modelo descargado
 ```
 
-### 7. Comprueba el entorno
+### 6. Comprueba el entorno
 
 El script [`comprobar_entorno.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/00-introduccion/comprobar_entorno.py) revisa tu configuración sin llamar a ningún modelo ni mostrar el valor de las claves:
 
-```sh
+```sh title="Terminal de VS Code · raíz del repo"
 uv run python modulos/00-introduccion/comprobar_entorno.py
 ```
 
@@ -231,11 +232,11 @@ Todo listo.
 
 `OK` indica que algo está configurado y `--` que no lo está. Las claves y los roles vacíos no son un problema todavía; solo cuentan como error un Python antiguo o la falta de `.env`. Los roles `chat_compatible` y `remoto` los usarás en el módulo 1.
 
-### 8. Tu primer "hola mundo" con un LLM
+### 7. Tu primer "hola mundo" con un LLM
 
 El script [`hola_mundo.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/00-introduccion/hola_mundo.py) lee el modelo de `config/models.toml`, le hace una pregunta por la API HTTP de Ollama e imprime la respuesta con sus métricas:
 
-```sh
+```sh title="Terminal de VS Code · raíz del repo"
 uv run python modulos/00-introduccion/hola_mundo.py
 ```
 
@@ -251,7 +252,7 @@ Tu respuesta será distinta: el modelo no devuelve siempre lo mismo. Fíjate en 
 
 Puedes pasarle tu propia pregunta:
 
-```sh
+```sh title="Terminal de VS Code · raíz del repo"
 uv run python modulos/00-introduccion/hola_mundo.py "¿Qué es un token?"
 ```
 
@@ -276,20 +277,20 @@ Ahora pregunta "¿Qué es un token?". En la misma máquina, la respuesta tuvo 42
 
 Cuando algo no funciona en Python, la primera pregunta es casi siempre la misma: ¿qué intérprete se está ejecutando? Compruébalo:
 
-```sh
+```sh title="Terminal de VS Code · raíz del repo"
 uv run python -c "import sys; print(sys.executable)"
 ```
 
 Debe apuntar a `.venv` dentro del repo. Otras órdenes útiles:
 
-```sh
+```sh title="Terminal de VS Code · raíz del repo"
 uv python list    # versiones de Python disponibles e instaladas
 uv tree           # árbol de dependencias del proyecto
 ```
 
 Los dos scripts terminan con código de salida 0 si todo va bien y 1 si no. Ese código lo puedes usar en scripts y en CI:
 
-```sh
+```sh title="Terminal de VS Code · raíz del repo"
 echo $?            # macOS / Linux
 echo $LASTEXITCODE # Windows (PowerShell)
 ```

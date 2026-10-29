@@ -67,7 +67,7 @@ Haz tu autodiagnóstico. Abre [`modulos/00-introduccion/autodiagnostico.toml`](h
 
 Sé honesto: nadie más lo va a ver, y un diagnóstico inflado solo te hace saltarte lo que necesitas. Luego ejecútalo:
 
-```sh
+```sh title="Terminal de VS Code · raíz del repo"
 uv run python modulos/00-introduccion/autodiagnostico.py
 ```
 
@@ -104,7 +104,7 @@ Lee el código. Usa Pydantic para validar el fichero, la misma herramienta con l
 
 El autodiagnóstico es tu línea base. Repítelo al terminar cada módulo. Si trabajas en un fork del repo y haces commit del `.toml` cada vez, tu historial de git es tu registro de progreso:
 
-```sh
+```sh title="Terminal de VS Code · raíz del repo"
 git log -p -- modulos/00-introduccion/autodiagnostico.toml
 ```
 

@@ -1,0 +1,15 @@
+{
+  // F5 depura el script abierto con el Python de .venv (el intérprete seleccionado).
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Curso: depurar el script abierto",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${file}",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    }
+  ]
+}

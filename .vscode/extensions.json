@@ -1,0 +1,9 @@
+{
+  // VS Code ofrece instalarlas al abrir la carpeta del curso.
+  "recommendations": [
+    "ms-python.python",
+    "ms-python.debugpy",
+    "charliermarsh.ruff",
+    "tamasfe.even-better-toml"
+  ]
+}

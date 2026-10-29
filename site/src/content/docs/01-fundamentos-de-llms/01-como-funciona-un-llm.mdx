@@ -67,11 +67,15 @@ Además, el modelo no recuerda nada entre llamadas. Si una aplicación de chat p
 
 Esta es la primera práctica que usa `curso_core`, la librería compartida del curso. Su cliente lee el modelo de `config/models.toml`, hace la llamada y la registra con sus tokens, latencia y coste.
 
+:::tip[Ejecutar sin teclear]
+Cada práctica trae su comando, para la terminal de VS Code. También puedes abrir el script y lanzarlo con la tarea **Curso: ejecutar el script abierto**, o depurarlo con **F5** para ver por dentro la llamada al modelo. Lo viste en la [lección 05 del módulo 0](../../00-introduccion/05-tu-proyecto-en-vs-code/).
+:::
+
 ### 1. Mira los tokens
 
 [`tokens.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/01-fundamentos-de-llms/tokens.py) descarga de Hugging Face el tokenizador del modelo y trocea varios textos. Necesitas Ollama arrancado con el modelo descargado (lo hiciste en el módulo 0):
 
-```sh
+```sh title="Terminal de VS Code · raíz del repo"
 uv run python modulos/01-fundamentos-de-llms/tokens.py
 ```
 
@@ -97,7 +101,7 @@ Fíjate en los espacios: van pegados al principio del token (` en`, ` una`). Y e
 
 Prueba con tus propios textos:
 
-```sh
+```sh title="Terminal de VS Code · raíz del repo"
 uv run python modulos/01-fundamentos-de-llms/tokens.py "tu texto aquí"
 ```
 
@@ -111,7 +115,7 @@ El mismo tokenizador, ejecutado en tu navegador. Escribe cualquier texto y mira 
 
 [`prediccion.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/01-fundamentos-de-llms/prediccion.py) pide una respuesta corta con temperatura 0 (siempre el token más probable) y muestra la probabilidad de cada token y las alternativas:
 
-```sh
+```sh title="Terminal de VS Code · raíz del repo"
 uv run python modulos/01-fundamentos-de-llms/prediccion.py
 ```
 

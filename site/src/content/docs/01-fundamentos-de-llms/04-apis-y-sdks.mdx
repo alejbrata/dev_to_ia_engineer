@@ -97,7 +97,7 @@ En esta lección hay cuatro scripts en `modulos/01-fundamentos-de-llms/`. Los tr
 
 [`tres_formas.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/01-fundamentos-de-llms/tres_formas.py) hace la misma pregunta, con el mismo mensaje de sistema, con HTTP a mano, con el SDK de OpenAI contra la API `/v1` de Ollama y con `curso_core` en sus dos dialectos:
 
-```sh
+```sh title="Terminal de VS Code · raíz del repo"
 uv run python modulos/01-fundamentos-de-llms/tres_formas.py
 ```
 
@@ -129,6 +129,10 @@ Lee el código de las tres funciones y compara cuánto trabajo hace cada una.
 
 [`conversacion.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/01-fundamentos-de-llms/conversacion.py) le cuenta al modelo que estás migrando un servicio llamado Atlas y luego le pregunta cómo se llama:
 
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/01-fundamentos-de-llms/conversacion.py
+```
+
 ```text
 1. Dos llamadas independientes
    > ¿Cómo se llama el servicio que estoy migrando? Responde solo con el nombre.
@@ -152,6 +156,10 @@ Fíjate también en que el contador no cambió al añadir el mensaje de sistema:
 
 [`streaming.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/01-fundamentos-de-llms/streaming.py) imprime la respuesta según llega y mide los tiempos:
 
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/01-fundamentos-de-llms/streaming.py
+```
+
 ```text
 231 fragmentos · 232 tokens de salida
 primer fragmento: 2.47 s · respuesta completa: 8.73 s
@@ -169,6 +177,10 @@ La misma diferencia, reproducida con los tiempos reales de una grabación de la 
 ### 4. Errores reales de un proveedor
 
 [`errores_api.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/01-fundamentos-de-llms/errores_api.py) llama a un modelo en la nube a través de Hugging Face (rol `remoto`) en varios escenarios, y termina con un timeout forzado contra el modelo local. Necesita `HF_TOKEN` en tu `.env`:
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/01-fundamentos-de-llms/errores_api.py
+```
 
 ```text
 [tu token]
