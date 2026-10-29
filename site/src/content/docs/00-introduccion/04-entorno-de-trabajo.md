@@ -76,8 +76,12 @@ La regla práctica: el modelo tiene que caber en tu memoria con margen. Lo que o
 
 Para este curso, el modelo de chat por defecto es pequeño a propósito. Funciona en casi cualquier portátil, sin GPU, y responde lo bastante bien para aprender. No esperes de él la calidad de un modelo comercial grande; esa diferencia también es algo que aprenderás a medir.
 
+Puedes usar el modelo que quieras o que tu máquina aguante. El curso no depende de ninguno: el código lee el nombre de `config/models.toml`, y cambiarlo es editar una línea.
+
 :::note[Revisado: 2026-10]
-`config/models.toml` apunta a **Qwen2.5 1.5B Instruct**, del equipo Qwen de Alibaba, con licencia Apache 2.0. Está en la biblioteca de Ollama y en el Hub de Hugging Face. La descarga ocupa unos 1 GB y, cargado, usa unos 1,2 GB de memoria. Es multilingüe y responde bien en español, algo que no todos los modelos pequeños hacen (lo verás en "Errores frecuentes").
+El curso se ha construido y probado con **Qwen2.5 1.5B Instruct** (`qwen2.5:1.5b` en Ollama), que es el que viene configurado. Es del equipo Qwen de Alibaba, tiene licencia Apache 2.0 y está en la biblioteca de Ollama y en el Hub de Hugging Face. La descarga ocupa unos 1 GB y, cargado, usa unos 1,2 GB de memoria. Es multilingüe y responde en español, algo que no todos los modelos pequeños hacen (lo verás en "Errores frecuentes").
+
+Las salidas y métricas de esta lección son de ese modelo. Con otro, los números y las respuestas cambiarán.
 :::
 
 ### De dónde salen los modelos
@@ -166,13 +170,21 @@ La segunda orden debe devolver un JSON con la versión. Si no responde, el servi
 
 ### 6. Descarga el modelo
 
-Mira qué modelo tiene configurado el rol `chat` en `config/models.toml` y descárgalo:
+Descarga el modelo con el que se ha construido el curso:
 
 ```sh
 ollama pull qwen2.5:1.5b
 ```
 
-Pruébalo desde la terminal antes de usarlo desde Python:
+Si prefieres otro, descárgalo con su nombre y cámbialo en `config/models.toml`:
+
+```toml
+[roles.chat]
+provider = "ollama"
+model = "el-modelo-que-elijas"
+```
+
+Sea cual sea, pruébalo desde la terminal antes de usarlo desde Python:
 
 ```sh
 ollama run qwen2.5:1.5b "Hola, ¿en qué idioma me respondes?"

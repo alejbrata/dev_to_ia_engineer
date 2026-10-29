@@ -58,7 +58,7 @@ Todas las lecciones siguen estas secciones, en este orden:
 - **Tipado** con type hints y Pydantic para los datos estructurados.
 - **Calidad**: ruff (lint y formato) y pytest. El código de las prácticas debe pasar ambos.
 - **Secretos**: solo en `.env` (está en `.gitignore`). Se versiona un `.env.example`. Nunca hardcodees claves.
-- **Modelos**: los nombres de modelos van en `config/models.toml`, nunca en el texto ni en el código de las prácticas. Cambian cada pocos meses.
+- **Modelos**: los nombres de modelos van en `config/models.toml`, nunca en el código de las prácticas. Cambian cada pocos meses. En el texto solo se nombra el modelo con el que se construyó y probó el curso, dentro de una nota `Revisado: AAAA-MM`, dejando claro que el alumno puede usar el que quiera o pueda.
 - **Contenido que caduca**: marca la sección con `Revisado: AAAA-MM`.
 - **`curso_core`** es la librería compartida (`packages/curso_core/`) con el cliente LLM con tracing, logging de métricas y utilidades. Crece módulo a módulo. No dupliques esa lógica en las prácticas.
 
