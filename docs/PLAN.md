@@ -55,7 +55,7 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 5. Evals de RAG: medir cada etapa y dónde se pierde cada fallo
 6. Análisis de errores: clasificar fallos e iterar con datos
 7. Evals en CI: detectar regresiones
-- **Decisiones**: se evalúan los sistemas ya construidos (tickets del módulo 2 y RAG del módulo 3); el núcleo de evals vive en `curso_core.evals`, sin frameworks (comparativa en el anexo F); en CI, métricas deterministas sobre respuestas grabadas en cada PR y la eval completa con modelo en un flujo manual o nocturno. Las evals de agentes van en el módulo 5
+- **Decisiones**: se evalúan los sistemas ya construidos (tickets del módulo 2 y RAG del módulo 3); el núcleo de evals vive en `curso_core.evals`, sin frameworks (comparativa en el anexo F); en CI, métricas deterministas sobre respuestas grabadas en cada PR y la eval completa con modelo en un flujo manual o nocturno. Las evals de agentes van en el módulo 5. El dataset se ancla al corpus: cada pregunta lleva sus segmentos de referencia (frases literales del corpus, comprobadas por un test) y un tipo (con respuesta, sin respuesta con el tema en el corpus, fuera de ámbito, guardarraíl) con su comportamiento esperado; en las que no deben responderse, la puntuación se invierte y se mide aparte. Las etiquetas para calibrar el juez también se anclan a segmentos
 - **Errores clave**: un juez que siempre aprueba (o que siempre suspende), datasets contaminados, sobreajuste al set de evaluación
 
 ## Módulo 5 — Agentes ⬜
