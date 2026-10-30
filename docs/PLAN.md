@@ -52,10 +52,11 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 2. Datasets de referencia: cómo construirlos y mantenerlos
 3. Métricas deterministas
 4. LLM-as-judge: cómo montarlo y sus sesgos
-5. Evals de RAG y de agentes
+5. Evals de RAG: medir cada etapa y dónde se pierde cada fallo
 6. Análisis de errores: clasificar fallos e iterar con datos
 7. Evals en CI: detectar regresiones
-- **Errores clave**: un juez que siempre aprueba, datasets contaminados, sobreajuste al set de evaluación
+- **Decisiones**: se evalúan los sistemas ya construidos (tickets del módulo 2 y RAG del módulo 3); el núcleo de evals vive en `curso_core.evals`, sin frameworks (comparativa en el anexo F); en CI, métricas deterministas sobre respuestas grabadas en cada PR y la eval completa con modelo en un flujo manual o nocturno. Las evals de agentes van en el módulo 5
+- **Errores clave**: un juez que siempre aprueba (o que siempre suspende), datasets contaminados, sobreajuste al set de evaluación
 
 ## Módulo 5 — Agentes ⬜
 
@@ -66,6 +67,7 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 5. Estado y memoria
 6. Multiagente: cuándo compensa y cuándo es complejidad gratuita
 7. MCP: conectar herramientas de forma estándar
+8. Evals de agentes: trayectorias, uso de herramientas y coste
 - **Mide y depura**: trazas de agente paso a paso
 - **Errores clave**: bucles infinitos, argumentos de herramienta alucinados, explosión de coste, pérdida de estado
 
@@ -106,3 +108,4 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 - **C. Herramientas y estrategias de desarrollo con IA**: agentes de código, graph prompting, flujos de trabajo y repos útiles
 - **D. Glosario**
 - **E. Recursos**: papers, blogs y cursos que merecen la pena
+- **F. Herramientas de evals**: Ragas, DeepEval, promptfoo e Inspect frente a lo construido en el módulo 4

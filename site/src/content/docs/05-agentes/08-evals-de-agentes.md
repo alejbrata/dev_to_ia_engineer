@@ -1,6 +1,6 @@
 ---
-title: "Evals de RAG y de agentes"
-description: "Evals de RAG y de agentes"
+title: "Evals de agentes"
+description: "Evals de agentes: trayectorias, uso de herramientas y coste"
 ---
 
 ## Objetivos
