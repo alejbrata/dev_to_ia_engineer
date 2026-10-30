@@ -1,27 +1,200 @@
 ---
 title: "Embeddings y bases vectoriales"
-description: "Embeddings y bases vectoriales"
+description: "Qué es un embedding, cómo se compara, por qué el modelo de indexar y el de consultar tienen que ser el mismo, y cómo llevar el índice a PostgreSQL con pgvector"
 ---
+
+import LabEmbeddings from '../../../components/LabEmbeddings.astro';
+
+:::note[Revisado: 2026-10]
+Las salidas son reales, con los modelos de embeddings bge-m3, nomic-embed-text y qwen3-embedding (0.6B) en Ollama, y PostgreSQL 18 con pgvector 0.8.7 en Docker. Puedes usar otros modelos: cámbialos en `config/models.toml` y vuelve a medir.
+:::
 
 ## Objetivos
 
-TODO
+Al terminar esta lección podrás:
+
+- Explicar qué es un embedding y cómo se compara la similitud entre dos textos.
+- Medir si un modelo de embeddings sirve para tus documentos y tu idioma.
+- Detectar un índice construido con un modelo distinto al que usa la consulta.
+- Montar el mismo índice en PostgreSQL con pgvector y comprobar que da los mismos resultados.
 
 ## Teoría
 
-TODO
+### Un texto, una lista de números
+
+Un **embedding** es un vector de números que representa un texto. Lo calcula un modelo entrenado para que textos con significado parecido den vectores que apuntan en direcciones parecidas. bge-m3 devuelve 1024 números por texto; nomic-embed-text, 768.
+
+No es un modelo de chat. No genera texto: recibe un texto y devuelve su vector. Es mucho más pequeño y rápido, y es lo que hace posible buscar por significado y no solo por palabras. Con `curso_core`:
+
+```python
+from curso_core import ClienteLLM
+
+cliente = ClienteLLM()
+resultado = cliente.embeber(["La base de datos de cobros no acepta más conexiones."])
+len(resultado.vectores[0])  # 1024 con bge-m3
+```
+
+### Comparar dos vectores
+
+La medida habitual es la **similitud del coseno**: el coseno del ángulo entre los dos vectores. Vale 1 si apuntan en la misma dirección, 0 si son perpendiculares. Si normalizas los vectores (longitud 1), es simplemente el producto escalar, que es lo que hace `IndiceVectorial`: guarda los vectores normalizados y, para buscar, multiplica la matriz por el vector de la pregunta.
+
+Dos cosas que conviene tener claras desde el principio:
+
+- **El número absoluto dice poco.** Cada modelo reparte sus similitudes en un rango distinto. Con bge-m3, dos frases sobre temas sin relación pueden dar 0,5. Lo que importa es el orden: qué fragmentos quedan por encima de cuáles.
+- **Solo se comparan vectores del mismo modelo.** Dos modelos distintos ponen los textos en espacios distintos. Aunque los vectores tengan la misma longitud, sus números no significan lo mismo.
+
+### Qué mirar al elegir un modelo
+
+- **Idioma.** Muchos modelos se entrenaron sobre todo en inglés. Si tus documentos están en español, compruébalo midiendo, no leyendo la ficha.
+- **Instrucciones o prefijos.** Algunos modelos esperan que marques qué es documento y qué es consulta. nomic-embed-text pide `search_document: ` delante de los documentos y `search_query: ` delante de las preguntas. Si no los pones, funciona, pero peor.
+- **Dimensiones y longitud máxima.** Más dimensiones ocupan más memoria y disco. La longitud máxima de entrada limita el tamaño de los fragmentos.
+- **Licencia y dónde se ejecuta.** Un modelo local no envía tus documentos a nadie. Uno remoto cobra por token y añade latencia de red.
+
+### Dónde guardar los vectores
+
+`IndiceVectorial` vive en memoria: rápido, sin dependencias, y se pierde al terminar el script. Para un servicio real necesitas que los vectores persistan, se actualicen documento a documento y convivan con el resto de los datos.
+
+Hay bases de datos vectoriales dedicadas (Qdrant, Weaviate, Milvus…) y extensiones para bases que ya usas. El curso usa **pgvector**, una extensión de PostgreSQL: añade el tipo `vector(n)`, operadores de distancia (`<=>` es la distancia del coseno, 1 menos la similitud) e índices para buscar vecinos sin recorrer toda la tabla. Si tu equipo ya opera PostgreSQL, es lo más parecido a lo que tienes: copias de seguridad, permisos, transacciones y `JOIN` con tus tablas, como siempre.
+
+El índice que usa el curso es **HNSW**, un grafo que permite encontrar vecinos cercanos sin compararlos todos. Es **aproximado**: a cambio de velocidad, puede no devolver exactamente los k más cercanos. La precisión se ajusta con parámetros como `hnsw.ef_search` (consulta la documentación de pgvector).
 
 ## Práctica
 
-TODO
+### 1. Mira el espacio
+
+Este laboratorio dibuja los vectores reales de las 97 secciones del corpus, proyectados a dos dimensiones con PCA (una técnica que busca los dos ejes en los que más varían los datos). Elige una pregunta: verás dónde cae y cuáles son sus 5 vecinos más cercanos, calculados con las 1024 dimensiones. Los puntos con borde blanco contienen la respuesta.
+
+<LabEmbeddings />
+
+Prueba la pregunta 2: la sección más parecida es del postmortem de pagos, no la que contiene el límite del pool. Y la 30, que no tiene respuesta en la documentación: sus vecinos más cercanos están en 0,60 o menos.
+
+### 2. Compara modelos
+
+[`embeddings.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/03-rag/embeddings.py) indexa las secciones con tres configuraciones y mide la recuperación con las 26 preguntas que tienen respuesta. Necesitas los otros dos modelos:
+
+```sh title="Terminal de VS Code · raíz del repo"
+ollama pull nomic-embed-text
+ollama pull qwen3-embedding:0.6b
+uv run python modulos/03-rag/embeddings.py
+```
+
+```text
+1. Recuperación con secciones, 26 preguntas
+   bge-m3                           recall@3  85% · MRR 0.72 · 1024 dimensiones
+   nomic-embed-text, sin prefijos   recall@3  81% · MRR 0.67 · 768 dimensiones
+   nomic-embed-text, con prefijos   recall@3  81% · MRR 0.71 · 768 dimensiones
+
+2. Similitud del coseno entre frases (bge-m3)
+   misma idea, otras palabras: 0.626
+   ideas distintas:            0.534
+
+3. Índice con bge-m3, consulta con otro modelo (alguien cambia la configuración)
+   con nomic-embed-text -> ValueError: matmul: Input operand 1 has a mismatch in its core dimension 0, with gufunc signature (n?,k),(k,m?)->(n?,m?) (size 768 is different from 1024)
+   con qwen3-embedding  -> sin error · recall@3   4% · MRR 0.02
+```
+
+La parte 3 se explica en la anatomía de errores, más abajo.
+
+### 3. Lleva el índice a PostgreSQL
+
+Necesitas Docker. En Windows y macOS, instala [Docker Desktop](https://docs.docker.com/desktop/); en Linux basta con Docker Engine y el plugin de Compose. Docker Desktop es gratuito para uso personal y empresas pequeñas, pero las grandes necesitan una suscripción de pago: si es tu caso, Podman y Rancher Desktop también ejecutan este `compose.yaml`.
+
+El repo trae un [`compose.yaml`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/compose.yaml) con PostgreSQL y pgvector, escuchando solo en tu máquina (puerto 5433, para no chocar con un PostgreSQL que ya tengas en el 5432). Levántalo y comprueba que está sano:
+
+```sh title="Terminal de VS Code · raíz del repo"
+docker compose up -d
+docker compose ps
+```
+
+La cadena de conexión está en `.env.example` como `PGVECTOR_URL`. Si copiaste el fichero antes de esta lección, añade esa línea a tu `.env`.
+
+`curso_core.rag.IndicePgvector` tiene los mismos métodos que `IndiceVectorial`. Por dentro crea una tabla con una columna `vector(1024)`, un índice HNSW con la distancia del coseno, y busca así:
+
+```sql
+SELECT id, doc, titulo, texto, 1 - (embedding <=> %s) AS similitud
+FROM fragmentos ORDER BY embedding <=> %s LIMIT 3
+```
+
+[`indice_pgvector.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/03-rag/indice_pgvector.py) indexa las secciones, las compara con el índice en memoria y enseña el plan de la consulta:
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/03-rag/indice_pgvector.py
+```
+
+La primera vez indexa (`97 fragmentos indexados en 16.7 s`). Las siguientes reutiliza lo guardado:
+
+```text
+1. Indexar en PostgreSQL
+   ya indexado: 97 fragmentos de 1024 dimensiones
+   (sigue ahí tras reiniciar el script o el contenedor; --reindexar lo rehace)
+
+2. Misma búsqueda, dos índices (26 preguntas)
+   numpy, en memoria  recall@3  85% · MRR 0.72 · 90 ms/búsqueda
+   pgvector           recall@3  85% · MRR 0.72 · 97 ms/búsqueda
+
+3. Plan de la consulta
+   por defecto:
+     Limit  (cost=6.47..6.47 rows=3 width=31)
+       ->  Sort  (cost=6.47..6.71 rows=97 width=31)
+             Sort Key: ((embedding <=> '[...]'::vector))
+             ->  Seq Scan on fragmentos  (cost=0.00..5.21 rows=97 width=31)
+   prohibiendo el recorrido secuencial:
+     Limit  (cost=392.73..393.26 rows=3 width=31)
+       ->  Index Scan using fragmentos_hnsw on fragmentos  (cost=392.73..409.94 rows=97 width=31)
+             Order By: (embedding <=> '[...]'::vector)
+
+4. Consulta con un vector de nomic-embed-text (768 dimensiones)
+   psycopg.errors.DataException: different vector dimensions 1024 and 768
+```
+
+(El script recorta el vector de 1024 números que aparece en el plan y lo deja en `'[...]'`.)
 
 ## Mide y depura
 
-TODO
+### Elegir modelo es medir con tus preguntas
+
+bge-m3 recupera mejor que nomic-embed-text en este corpus en español (85 % frente a 81 % de recall@3). Los prefijos de nomic no cambian el recall, pero mejoran el orden (MRR de 0,67 a 0,71): la respuesta sale antes. Ninguna de las dos cosas se deduce de la ficha del modelo. Se ve midiendo con preguntas reales sobre tus documentos, que es lo que hace `embeddings.py`.
+
+### La similitud no es un porcentaje de acierto
+
+"La base de datos de cobros no acepta más conexiones" y "too many connections contra Postgres en pagos" dicen lo mismo con palabras distintas, y en dos idiomas. Dan 0,626. Con una frase sobre una errata en un email, 0,534. La diferencia existe, pero es pequeña: no leas 0,53 como "un 53 % de relación". Por eso, en la lección 01, un umbral de similitud ayudaba a detectar preguntas sin respuesta, pero no bastaba.
+
+### El dibujo engaña
+
+El plano del laboratorio conserva solo el 14 % de la variación de los vectores. Sirve para hacerse una idea, pero no para depurar: dos puntos juntos en el dibujo pueden estar lejos en 1024 dimensiones. Para depurar una recuperación, mira la lista de vecinos con sus similitudes, como en el laboratorio.
+
+### Dónde se va el tiempo
+
+Las dos búsquedas tardan lo mismo (90 y 97 ms) y dan exactamente los mismos resultados. Separando las dos partes: calcular el embedding de la pregunta cuesta unos 75 ms; la consulta SQL, 2,3 ms. Con 97 fragmentos, la base de datos no es el cuello de botella; el modelo de embeddings sí.
+
+El plan lo confirma por otro lado: con 97 filas, PostgreSQL prefiere recorrer la tabla entera (`Seq Scan`) a usar el índice HNSW, porque estima que es más barato (coste 6,47 frente a 392,73). El índice empieza a compensar con tablas mucho más grandes. Usa `EXPLAIN` con tu volumen real de datos antes de concluir nada sobre el índice.
 
 ## Errores frecuentes
 
-TODO
+**Cambiar de modelo sin reindexar.** El índice guarda vectores de un modelo. Si cambias el rol `embeddings` en la configuración, tienes que recalcular todos los fragmentos. Guarda junto al índice qué modelo lo generó y compruébalo al arrancar.
+
+**Olvidar los prefijos o instrucciones del modelo.** No dan error. Solo empeoran la recuperación, y solo lo ves si mides.
+
+**Comparar similitudes entre modelos.** Un 0,7 en un modelo no equivale a un 0,7 en otro. Si cambias de modelo, recalibra cualquier umbral.
+
+**Conectar sin timeout.** Con el contenedor parado, `psycopg.connect` sin `connect_timeout` tardó 130 segundos en dar error en la máquina del curso. Con 5 segundos de timeout, el mismo error (`connection timeout expired`) llega en 5. `IndicePgvector` usa 5 segundos por defecto. En un servicio, un minuto colgado en cada petición es peor que un error rápido: es lo mismo que viste con los timeouts del cliente LLM en la lección 04 del módulo 1.
+
+### Anatomía de un error: el índice que no falla, pero no encuentra nada
+
+La parte 3 de `embeddings.py` simula algo que pasa en proyectos reales: alguien cambia el modelo de embeddings en la configuración y no reindexa. Hay dos casos:
+
+```text
+con nomic-embed-text -> ValueError: matmul: Input operand 1 has a mismatch in its core dimension 0, with gufunc signature (n?,k),(k,m?)->(n?,m?) (size 768 is different from 1024)
+con qwen3-embedding  -> sin error · recall@3   4% · MRR 0.02
+```
+
+**Cómo leerlo.** El primero es un error de numpy al multiplicar matrices: la matriz del índice tiene vectores de 1024 números y el de la pregunta tiene 768. El mensaje es críptico, pero la última parte lo dice todo: `size 768 is different from 1024`. En pgvector el mismo fallo es más claro: `different vector dimensions 1024 and 768`.
+
+El segundo caso no da ningún error. qwen3-embedding también genera vectores de 1024 números, así que la multiplicación funciona y devuelve resultados. Pero el recall@3 cae del 85 % al 4 %: los resultados son prácticamente aleatorios.
+
+**Causa.** Los vectores de dos modelos distintos no son comparables. Que tengan la misma longitud es una coincidencia que oculta el problema: el código no tiene forma de saber que esos números vienen de espacios distintos.
+
+**Solución.** El error ruidoso es el bueno: te avisa. El silencioso solo lo detectas de dos formas. Guardando con el índice el nombre del modelo y negándote a consultar si no coincide con el de la configuración. Y midiendo la recuperación con tus preguntas de evaluación después de cada cambio de configuración, como harás en el módulo 4. Un recall que pasa del 85 % al 4 % no necesita interpretación.
 
 ## Bitácora
 
@@ -29,4 +202,8 @@ TODO(alex)
 
 ## Para profundizar
 
-TODO
+- [pgvector](https://github.com/pgvector/pgvector): documentación de la extensión, con los tipos de índice y sus parámetros.
+- Malkov y Yashunin, [Efficient and robust approximate nearest neighbor search using Hierarchical Navigable Small World graphs](https://arxiv.org/abs/1603.09320) (2016). El paper de HNSW.
+- Chen et al., [BGE M3-Embedding](https://arxiv.org/abs/2402.03216) (2024). El modelo de embeddings del curso.
+- [MTEB](https://huggingface.co/spaces/mteb/leaderboard): comparativa pública de modelos de embeddings. Útil para preseleccionar; la decisión final, con tus datos.
+- [Ficha de nomic-embed-text](https://huggingface.co/nomic-ai/nomic-embed-text-v1.5), con los prefijos de tarea.

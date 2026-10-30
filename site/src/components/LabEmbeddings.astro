@@ -1,0 +1,230 @@
+---
+// Laboratorio del espacio de embeddings: vectores reales de bge-m3 (secciones y preguntas
+// del corpus del módulo 3) proyectados a 2D con PCA. Los vecinos se calcularon con las
+// 1024 dimensiones, no en el plano. Datos: scripts/datos_embeddings.py.
+import datos from '../data/embeddings.json';
+
+const ANCHO = 640;
+const ALTO = 400;
+const MARGEN = 16;
+const xs = [...datos.fragmentos, ...datos.preguntas].map((p) => p.xy[0]);
+const ys = [...datos.fragmentos, ...datos.preguntas].map((p) => p.xy[1]);
+const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+const px = (x: number) => MARGEN + ((x - x0) / (x1 - x0)) * (ANCHO - 2 * MARGEN);
+const py = (y: number) => ALTO - MARGEN - ((y - y0) / (y1 - y0)) * (ALTO - 2 * MARGEN);
+const puntos = datos.fragmentos.map((f) => ({ ...f, x: px(f.xy[0]), y: py(f.xy[1]) }));
+const preguntas = datos.preguntas.map((p) => ({ ...p, x: px(p.xy[0]), y: py(p.xy[1]) }));
+const grupos = ['runbook', 'postmortem', 'arquitectura', 'otros'];
+---
+
+<div
+	class="laboratorio lab-embeddings not-content"
+	data-puntos={JSON.stringify(puntos.map(({ id, titulo, x, y }) => ({ id, titulo, x, y })))}
+	data-preguntas={JSON.stringify(preguntas)}
+>
+	<div class="laboratorio-cabecera">
+		<strong>Laboratorio · espacio de embeddings</strong>
+		<span>{datos.fragmentos.length} secciones reales · bge-m3, {datos.modelo_dimensiones} dimensiones</span>
+	</div>
+	<div class="laboratorio-cuerpo">
+		<label class="pregunta">
+			Pregunta
+			<select data-pregunta>
+				{
+					preguntas.map((p) => (
+						<option value={p.id}>
+							{p.id}. {p.texto}
+							{p.respondible ? '' : ' (sin respuesta en la documentación)'}
+						</option>
+					))
+				}
+			</select>
+		</label>
+		<svg viewBox={`0 0 ${ANCHO} ${ALTO}`} role="img" aria-label="Secciones del corpus proyectadas en dos dimensiones">
+			<g data-lineas></g>
+			{
+				puntos.map((p, i) => (
+					<circle cx={p.x} cy={p.y} r="4" class={`punto ${p.grupo}`} data-i={i}>
+						<title>{p.titulo}</title>
+					</circle>
+				))
+			}
+			<g data-consulta></g>
+		</svg>
+		<p class="leyenda">
+			{grupos.map((g) => <span class={g}><i></i>{g}</span>)}
+			<span class="q"><i></i>pregunta</span>
+		</p>
+		<ol class="vecinos" data-vecinos></ol>
+		<p class="nota">
+			El plano conserva el {Math.round(datos.varianza_2d * 100)} % de la variación de los vectores. Dos puntos
+			cercanos en el dibujo pueden no serlo en las {datos.modelo_dimensiones} dimensiones, y al revés: fíate de la
+			lista, no del dibujo.
+		</p>
+	</div>
+</div>
+
+<style>
+	.pregunta {
+		display: flex;
+		gap: 0.5rem;
+		align-items: center;
+		font-size: var(--sl-text-sm);
+	}
+	select {
+		flex: 1;
+		min-width: 0;
+		font: inherit;
+		padding: 0.2rem 0.4rem;
+		background: var(--sl-color-black);
+		color: var(--sl-color-white);
+		border: 1px solid var(--sl-color-gray-5);
+		border-radius: 0.3rem;
+	}
+	svg {
+		width: 100%;
+		height: auto;
+		background: var(--sl-color-black);
+		border-radius: 0.3rem;
+	}
+	.punto {
+		opacity: 0.55;
+		transition: opacity 0.2s, r 0.2s;
+	}
+	.runbook {
+		--c: var(--sl-color-accent-high);
+	}
+	.postmortem {
+		--c: var(--curso-senal);
+	}
+	.arquitectura {
+		--c: hsl(262, 70%, 70%);
+	}
+	.otros {
+		--c: var(--sl-color-gray-3);
+	}
+	.punto {
+		fill: var(--c);
+	}
+	.punto:global(.vecino) {
+		opacity: 1;
+		r: 6;
+	}
+	.punto:global(.relevante) {
+		stroke: var(--sl-color-white);
+		stroke-width: 2;
+	}
+	.lab-embeddings :global(.linea) {
+		stroke: var(--sl-color-white);
+		stroke-opacity: 0.35;
+		stroke-dasharray: 3 3;
+	}
+	.lab-embeddings :global(.q-punto) {
+		fill: var(--sl-color-white);
+		stroke: var(--sl-color-black);
+		stroke-width: 2;
+	}
+	.leyenda {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.9rem;
+		margin: 0;
+		font-size: var(--sl-text-xs);
+		color: var(--sl-color-gray-3);
+	}
+	.leyenda i {
+		display: inline-block;
+		width: 0.6rem;
+		height: 0.6rem;
+		margin-right: 0.3rem;
+		border-radius: 50%;
+		background: var(--c);
+	}
+	.leyenda .q {
+		--c: var(--sl-color-white);
+	}
+	.vecinos {
+		margin: 0;
+		padding-left: 1.4rem;
+		font-size: var(--sl-text-sm);
+	}
+	.vecinos :global(li) {
+		margin-top: 0.2rem;
+	}
+	.vecinos :global(.s) {
+		font-family: var(--sl-font-mono);
+		color: var(--sl-color-accent-high);
+		margin-right: 0.4rem;
+	}
+	.vecinos :global(.marca) {
+		margin-left: 0.4rem;
+		font-size: var(--sl-text-xs);
+		color: var(--curso-senal);
+	}
+	.nota {
+		margin: 0;
+		font-size: var(--sl-text-xs);
+		color: var(--sl-color-gray-3);
+	}
+</style>
+
+<script>
+	type Punto = { id: string; titulo: string; x: number; y: number };
+	type Pregunta = {
+		id: number;
+		respondible: boolean;
+		x: number;
+		y: number;
+		vecinos: { i: number; s: number }[];
+		relevantes: number[];
+	};
+	const SVG = 'http://www.w3.org/2000/svg';
+
+	function escapar(t: string): string {
+		return t.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!);
+	}
+
+	document.querySelectorAll<HTMLElement>('.lab-embeddings').forEach((lab) => {
+		const puntos = JSON.parse(lab.dataset.puntos!) as Punto[];
+		const preguntas = JSON.parse(lab.dataset.preguntas!) as Pregunta[];
+		const sel = lab.querySelector<HTMLSelectElement>('[data-pregunta]')!;
+		const circulos = [...lab.querySelectorAll<SVGCircleElement>('circle[data-i]')];
+		const lineas = lab.querySelector('[data-lineas]')!;
+		const consulta = lab.querySelector('[data-consulta]')!;
+		const lista = lab.querySelector('[data-vecinos]')!;
+
+		const pintar = () => {
+			const p = preguntas.find((q) => q.id === Number(sel.value))!;
+			const vecinos = new Set(p.vecinos.map((v) => v.i));
+			circulos.forEach((c, i) => {
+				c.classList.toggle('vecino', vecinos.has(i));
+				c.classList.toggle('relevante', p.relevantes.includes(i));
+			});
+			lineas.replaceChildren(
+				...p.vecinos.map(({ i }) => {
+					const l = document.createElementNS(SVG, 'line');
+					l.setAttribute('class', 'linea');
+					l.setAttribute('x1', String(p.x));
+					l.setAttribute('y1', String(p.y));
+					l.setAttribute('x2', String(puntos[i].x));
+					l.setAttribute('y2', String(puntos[i].y));
+					return l;
+				}),
+			);
+			const q = document.createElementNS(SVG, 'circle');
+			q.setAttribute('class', 'q-punto');
+			q.setAttribute('cx', String(p.x));
+			q.setAttribute('cy', String(p.y));
+			q.setAttribute('r', '7');
+			consulta.replaceChildren(q);
+			lista.innerHTML = p.vecinos
+				.map(({ i, s }) => {
+					const marca = p.relevantes.includes(i) ? '<span class="marca">contiene la respuesta</span>' : '';
+					return `<li><span class="s">${s.toFixed(3)}</span>${escapar(puntos[i].titulo)}${marca}</li>`;
+				})
+				.join('');
+		};
+		sel.addEventListener('input', pintar);
+		pintar();
+	});
+</script>
