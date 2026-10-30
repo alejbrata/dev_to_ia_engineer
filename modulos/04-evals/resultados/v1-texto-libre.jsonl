@@ -1,0 +1,31 @@
+{"version": "v1-texto-libre"}
+{"caso":"1","ok":false,"salida":"Si pagos devuelve 'too many connections', sigue estos pasos:\n\n1. Comprueba el log de errores para identificar el origen del problema.\n2. Verifica si el problema es temporal o persistente.\n3. Si es temporal, intenta reducir el número de reintentos al conectar con la pasarela de pago.\n4. Si persiste, comunica el problema al equipo de atención al cliente y abre una incidencia con el proveedor de la pasarela de pago.\n5. Si el problema es causado por una nueva versión del conector de pasarela, considera actualizar el conector para evitar futuros problemas.","detalle":{"respondible":true,"citas":null}}
+{"caso":"2","ok":true,"salida":"El límite actual del pool de conexiones de pagos es de 200 conexiones.","detalle":{"respondible":true,"citas":null}}
+{"caso":"3","ok":true,"salida":"El token de la API del banco caduca cada 90 días.","detalle":{"respondible":true,"citas":null}}
+{"caso":"4","ok":true,"salida":"El error invalid_grant se produce cuando el secreto de cliente de OAuth ha caducado o se ha rotado sin que se haya actualizado la configuración del servicio de usuarios. También puede deberse a que el reloj del servidor esté desincronizado más de cinco minutos.","detalle":{"respondible":true,"citas":null}}
+{"caso":"5","ok":false,"salida":"Según el runbook proporcionado, si en 15 minutos los cobros no se recuperan, deberías escalar al responsable del equipo Cobros.","detalle":{"respondible":true,"citas":null}}
+{"caso":"6","ok":true,"salida":"El servicio de notificaciones envía emails a través del puerto 587 debido a que es el protocolo SMTP utilizado para enviar correo electrónico.","detalle":{"respondible":true,"citas":null}}
+{"caso":"7","ok":true,"salida":"La disponibilidad comprometida del servicio de notificaciones es del 99,5 % mensual.","detalle":{"respondible":true,"citas":null}}
+{"caso":"8","ok":true,"salida":"Según la documentación, para una incidencia crítica, la primera respuesta debe darse en 15 minutos, a cualquier hora.","detalle":{"respondible":true,"citas":null}}
+{"caso":"9","ok":false,"salida":"No aparece en la documentación.","detalle":{"respondible":true,"citas":null}}
+{"caso":"10","ok":true,"salida":"Una migración que borra una columna necesita la aprobación de dos personas del equipo y una copia de seguridad verificada justo antes del despliegue.","detalle":{"respondible":true,"citas":null}}
+{"caso":"11","ok":false,"salida":"La causa de la caída de pagos en marzo de 2026 fue la alerta que se activó a los 3 minutos, lo que llevó a una vuelta a la versión anterior del servicio de pagos, que tardó 40 minutos en completarse debido a la falta de conocimiento de los guardias sobre el procedimiento.","detalle":{"respondible":true,"citas":null}}
+{"caso":"12","ok":true,"salida":"La caída de pagos de marzo de 2026 duró 47 minutos.","detalle":{"respondible":true,"citas":null}}
+{"caso":"13","ok":true,"salida":"A partir del 85 % de uso de disco, la alerta de la búsqueda se activa.","detalle":{"respondible":true,"citas":null}}
+{"caso":"14","ok":true,"salida":"Los productos que no se indexaron durante el problema se reindexan solos en el siguiente ciclo nocturno, a las 03:00.","detalle":{"respondible":true,"citas":null}}
+{"caso":"15","ok":true,"salida":"Comprueba si hay alguna consulta pesada en la réplica que bloquee la replicación. Si la hay, cancelala. Si el retraso sigue creciendo, redirige temporalmente las lecturas de precios a la base de datos principal con el interruptor precios_desde_principal.","detalle":{"respondible":true,"citas":null}}
+{"caso":"16","ok":true,"salida":"Un retraso de hasta 30 segundos es normal. A partir de 5 minutos salta una alerta. A partir de 15 minutos, los precios que ve la tienda pueden diferir de los reales y conviene avisar al equipo de atención al cliente.","detalle":{"respondible":true,"citas":null}}
+{"caso":"17","ok":true,"salida":"Las copias diarias se guardan 30 días.","detalle":{"respondible":true,"citas":null}}
+{"caso":"18","ok":false,"salida":"No aparece en la documentación.","detalle":{"respondible":true,"citas":null}}
+{"caso":"19","ok":false,"salida":"Si perdemos el índice de búsqueda, se tarda aproximadamente 4 horas en restaurarlo, según el postmortem mencionado.","detalle":{"respondible":true,"citas":null}}
+{"caso":"20","ok":true,"salida":"Revócala inmediatamente en su origen y genera uno nuevo en el gestor de secretos. Avisa al equipo de seguridad y borra el secreto del repositorio.","detalle":{"respondible":true,"citas":null}}
+{"caso":"21","ok":false,"salida":"La alerta PagosLatenciaP95Alta saltó a los 3 minutos.","detalle":{"respondible":true,"citas":null}}
+{"caso":"22","ok":false,"salida":"Si nadie de la guardia confirma una alerta crítica en 30 minutos, se avisa al responsable del equipo.","detalle":{"respondible":true,"citas":null}}
+{"caso":"23","ok":true,"salida":"En la documentación se indica que cada semana de guardia se compensa con un día libre, que debe disfrutarse en el mes siguiente.","detalle":{"respondible":true,"citas":null}}
+{"caso":"24","ok":false,"salida":"Desde anoche no llegan avances a los móviles de los clientes. Puede deberse a que la notificación push no esté configurada correctamente en los dispositivos o a una falla en la plataforma que no ha sido reportada en los postmortems mencionados.","detalle":{"respondible":true,"citas":null}}
+{"caso":"25","ok":true,"salida":"La búsqueda necesita la variable de entorno OPENSEARCH_URL para arrancar.","detalle":{"respondible":true,"citas":null}}
+{"caso":"26","ok":false,"salida":"Sí, hay que avisar a la atención al cliente de una incidencia de severidad media.","detalle":{"respondible":true,"citas":null}}
+{"caso":"27","ok":true,"salida":"No aparece en la documentación.","detalle":{"respondible":false,"citas":null}}
+{"caso":"28","ok":false,"salida":"El servicio de recomendaciones utiliza PostgreSQL como base de datos principal.","detalle":{"respondible":false,"citas":null}}
+{"caso":"29","ok":true,"salida":"No aparece en la documentación.","detalle":{"respondible":false,"citas":null}}
+{"caso":"30","ok":false,"salida":"El responsable del equipo Cobros es el responsable del equipo Cobros.","detalle":{"respondible":false,"citas":null}}

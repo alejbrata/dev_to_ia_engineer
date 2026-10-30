@@ -1,0 +1,31 @@
+{"version": "v2-con-citas"}
+{"caso":"1","ok":false,"salida":"Si pagos devuelve 'too many connections', debes revisar el código del conector de pasarela de pago para asegurarte de que no esté creando conexiones a la base de datos por cada reintento. Si el problema es del proveedor, comunica con ellos para solucionarlo. Si el problema es del equipo de atención al cliente, informa al equipo de soporte para que sepa sobre la saturación del pool de conexiones.","detalle":{"respondible":true,"citas":[1,2]}}
+{"caso":"2","ok":true,"salida":"El límite actual del pool de conexiones de pagos es de 200 conexiones.","detalle":{"respondible":true,"citas":[1,2]}}
+{"caso":"3","ok":true,"salida":"El token de la API del banco caduca cada 90 días.","detalle":{"respondible":true,"citas":[1,2]}}
+{"caso":"4","ok":true,"salida":"El error invalid_grant se produce cuando el secreto de cliente de OAuth ha caducado o se ha rotado sin actualizar la configuración del servicio de usuarios. También puede deberse a que el reloj del servidor esté desincronizado más de cinco minutos.","detalle":{"respondible":true,"citas":[2]}}
+{"caso":"5","ok":false,"salida":"Reinicia PgBouncer de forma ordenada, una réplica cada vez, para liberar las conexiones bloqueadas.","detalle":{"respondible":true,"citas":[2]}}
+{"caso":"6","ok":true,"salida":"El servicio de notificaciones envía emails a través del puerto 587.","detalle":{"respondible":true,"citas":[1]}}
+{"caso":"7","ok":true,"salida":"La disponibilidad comprometida del servicio de notificaciones es del 99,5 %","detalle":{"respondible":true,"citas":[2,3]}}
+{"caso":"8","ok":true,"salida":"15 minutos, a cualquier hora","detalle":{"respondible":true,"citas":[1]}}
+{"caso":"9","ok":true,"salida":"No se despliega a producción los viernes después de las 15:00 ni en vísperas de festivo, salvo correcciones de incidentes críticos aprobadas por el responsable del equipo.","detalle":{"respondible":true,"citas":[1]}}
+{"caso":"10","ok":true,"salida":"Una migración que borra una columna necesita la aprobación de dos personas del equipo y una copia de seguridad verificada justo antes del despliegue.","detalle":{"respondible":true,"citas":[1,2]}}
+{"caso":"11","ok":false,"salida":"La causa de la caída de pagos de marzo de 2026 fue la alerta que se activó a los 3 minutos, lo que llevó a una vuelta a la versión anterior que tardó 40 minutos debido a la falta de conocimiento sobre el procedimiento.","detalle":{"respondible":true,"citas":[2]}}
+{"caso":"12","ok":true,"salida":"La caída de pagos de marzo de 2026 duró 47 minutos.","detalle":{"respondible":true,"citas":[1]}}
+{"caso":"13","ok":true,"salida":"La alerta de disco se activa cuando el uso del disco de un nodo supera el 85 %.","detalle":{"respondible":true,"citas":[1,2]}}
+{"caso":"14","ok":true,"salida":"Los productos que no se indexaron durante el problema se reindexan solos en el siguiente ciclo nocturno, a las 03:00.","detalle":{"respondible":true,"citas":[1,2]}}
+{"caso":"15","ok":true,"salida":"Comprueba si hay alguna consulta pesada en la réplica que bloquee la replicación. Si la hay, cancélala. Si el retraso sigue creciendo, redirige temporalmente las lecturas de precios a la base de datos principal con el interruptor precios_desde_principal.","detalle":{"respondible":true,"citas":[2,3]}}
+{"caso":"16","ok":true,"salida":"Un retraso de hasta 30 segundos es normal.","detalle":{"respondible":true,"citas":[1]}}
+{"caso":"17","ok":true,"salida":"Las copias diarias se guardan 30 días.","detalle":{"respondible":true,"citas":[1]}}
+{"caso":"18","ok":false,"salida":"No aparece en la documentación","detalle":{"respondible":true,"citas":[1]}}
+{"caso":"19","ok":false,"salida":"Si perdemos el índice de búsqueda, se tarda en reconstruirlo alrededor de 4 horas, según el postmortem de la pérdida de teléfonos de usuarios en julio de 2026.","detalle":{"respondible":true,"citas":[2]}}
+{"caso":"20","ok":true,"salida":"Revócala inmediatamente en su origen y genera uno nuevo en el gestor de secretos. Avisa al equipo de seguridad.","detalle":{"respondible":true,"citas":[1,2]}}
+{"caso":"21","ok":false,"salida":"La alerta PagosLatenciaP95Alta saltó a los 3 minutos.","detalle":{"respondible":true,"citas":[1]}}
+{"caso":"22","ok":false,"salida":"Si nadie de guardia confirma una alerta crítica en 30 minutos, se avisa al responsable del equipo.","detalle":{"respondible":true,"citas":[2]}}
+{"caso":"23","ok":true,"salida":"Una semana de guardia se compensa con un día libre, que se debe disfrutar en el mes siguiente.","detalle":{"respondible":true,"citas":[1]}}
+{"caso":"24","ok":false,"salida":"El problema podría estar relacionado con la caída de pagos que ocurrió el 12 de marzo de 2026, ya que no se han recibido las notificaciones push desde entonces. Además, la pérdida de teléfonos de usuarios en julio de 2026 podría estar causando la falta de notificaciones, dado que los datos de los teléfonos que los usuarios cambiaron ese día se perdieron.","detalle":{"respondible":true,"citas":[1,2,3]}}
+{"caso":"25","ok":true,"salida":"La búsqueda necesita la variable de entorno OPENSEARCH_URL para arrancar.","detalle":{"respondible":true,"citas":[1]}}
+{"caso":"26","ok":false,"salida":"No, no es necesario avisar a la atención al cliente de una incidencia de severidad media.","detalle":{"respondible":true,"citas":[2]}}
+{"caso":"27","ok":true,"salida":"No aparece en la documentación","detalle":{"respondible":false,"citas":[]}}
+{"caso":"28","ok":true,"salida":"No aparece en la documentación","detalle":{"respondible":false,"citas":[]}}
+{"caso":"29","ok":true,"salida":"No aparece en la documentación","detalle":{"respondible":false,"citas":[]}}
+{"caso":"30","ok":false,"salida":"El responsable del equipo Cobros es el responsable del escalado.","detalle":{"respondible":false,"citas":[1]}}
