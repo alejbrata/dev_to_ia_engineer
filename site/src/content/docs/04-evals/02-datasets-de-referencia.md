@@ -57,7 +57,7 @@ Las preguntas sin respuesta más útiles son las que tienen **el tema en el corp
 
 ### Etiquetas
 
-Cada caso lleva etiquetas que describen qué lo hace difícil: `identificador`, `coloquial`, `parafrasis`, `varios_documentos`, `varios_datos`, `conflicto_versiones`, `tema_en_corpus`, `inyeccion`… Sirven para desglosar el resultado. Un 69 % global no dice dónde fallar; un 33 % en paráfrasis sí.
+Cada caso lleva etiquetas que describen qué lo hace difícil: `identificador`, `coloquial`, `parafrasis`, `varios_documentos`, `varios_datos`, `conflicto_versiones`, `tema_en_corpus`, `inyeccion`… Sirven para desglosar el resultado. Un 67 % global no dice dónde fallar; un 33 % en paráfrasis sí.
 
 ### Desarrollo y prueba
 
@@ -74,6 +74,8 @@ El dataset del módulo está en `modulos/04-evals/datos/casos.jsonl`: las 30 pre
 ```sh title="Terminal de VS Code · raíz del repo"
 uv run python modulos/04-evals/datasets.py
 ```
+
+La salida es la de los resultados grabados en el repo, puntuados con el comprobador corregido en la lección 03 (`--grabadas` vuelve a puntuar las respuestas guardadas sin llamar al modelo).
 
 [`datasets.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/04-evals/datasets.py) valida el anclaje de los dos datasets, enseña la composición del anclado y evalúa el mismo RAG con los dos:
 
@@ -92,7 +94,7 @@ uv run python modulos/04-evals/datasets.py
 
 3. El mismo RAG con los dos datasets (preguntas con respuesta)
    dataset-anclado
-   aciertos                            29 de 42  ( 69%)
+   aciertos                            28 de 42  ( 67%)
    el dato esperado está en el contexto  36 de 42  ( 86%)
    el sistema dice que no aparece       2 de 42  (  5%)
    dataset-sin-anclar
@@ -100,7 +102,7 @@ uv run python modulos/04-evals/datasets.py
    el dato esperado está en el contexto   1 de 10  ( 10%)
    el sistema dice que no aparece       3 de 10  ( 30%)
    dataset-anclado, por tipo, etiqueta y partición
-   con_respuesta                       29 de 42  ( 69%)
+   con_respuesta                       28 de 42  ( 67%)
    sin_respuesta                        6 de 10  ( 60%)
    fuera_de_ambito                      2 de  3  ( 67%)
    guardarrail                          1 de  3  ( 33%)
@@ -108,14 +110,14 @@ uv run python modulos/04-evals/datasets.py
    etiqueta identificador               5 de  8  ( 62%)
    etiqueta coloquial                   4 de  5  ( 80%)
    etiqueta parafrasis                  1 de  3  ( 33%)
-   etiqueta varios_datos                3 de  3  (100%)
+   etiqueta varios_datos                2 de  3  ( 67%)
    etiqueta conflicto_versiones         1 de  2  ( 50%)
    etiqueta inyeccion                   0 de  2  (  0%)
-   etiqueta varios_documentos           1 de  1  (100%)
+   etiqueta varios_documentos           0 de  1  (  0%)
    etiqueta accion_peligrosa            1 de  1  (100%)
    etiqueta fuga_de_prompt              0 de  1  (  0%)
    partición desarrollo                26 de 39  ( 67%)
-   partición prueba                    12 de 19  ( 63%)
+   partición prueba                    11 de 19  ( 58%)
 
 4. Preguntas que no deben responderse: sin invertir la puntuación y con ella
    sin invertir: acierto = contesta     7 de 16  ( 44%)
@@ -162,13 +164,13 @@ Ten en cuenta que los dos números suman 16. No es casualidad: en estos casos, s
 
 ### Lo que el desglose enseña
 
-El 69 % global de las preguntas con respuesta esconde diferencias grandes: 80 % en preguntas coloquiales, 33 % en paráfrasis, 50 % con versiones en conflicto. Este último es instructivo: a "¿Qué objetivo de disponibilidad tiene el servicio de notificaciones?" el sistema responde 99,9 %, la cifra del documento de arquitectura antiguo. El SLA, que prevalece, ni siquiera llegó al contexto. Es un fallo de recuperación, y es probable que influya la formulación: la pregunta dice "objetivo", la misma palabra que el documento antiguo. Lo comprobarás en la lección 05, midiendo cada etapa por separado.
+El 67 % global de las preguntas con respuesta esconde diferencias grandes: 80 % en preguntas coloquiales, 33 % en paráfrasis, 50 % con versiones en conflicto. Este último es instructivo: a "¿Qué objetivo de disponibilidad tiene el servicio de notificaciones?" el sistema responde 99,9 %, la cifra del documento de arquitectura antiguo. El SLA, que prevalece, ni siquiera llegó al contexto. Es un fallo de recuperación, y es probable que influya la formulación: la pregunta dice "objetivo", la misma palabra que el documento antiguo. Lo comprobarás en la lección 05, midiendo cada etapa por separado.
 
 Los guardarraíles están en 1 de 3. El g-03 es discutible: se le pidió copiar sus instrucciones, no lo hizo (no filtra el prompt), pero tampoco se negó, sino que copió un fragmento de la documentación. La regla del dataset dice que debe negarse, así que cuenta como fallo. Decidir qué cuenta como acierto en casos así forma parte de construir el dataset, y conviene dejarlo escrito.
 
 ### Desarrollo frente a prueba
 
-67 % en desarrollo y 63 % en prueba. Con 39 y 19 casos, esa diferencia está dentro del ruido (lo calcularás en la lección 03). Lo importante es tener la partición de prueba desde el principio, antes de empezar a iterar.
+67 % en desarrollo y 58 % en prueba. Con 39 y 19 casos, esa diferencia está dentro del ruido (lo calcularás en la lección 03). Lo importante es tener la partición de prueba desde el principio, antes de empezar a iterar.
 
 ## Errores frecuentes
 
