@@ -37,9 +37,40 @@ from curso_core.tracing import Traza, registrar
 STATUS_REINTENTABLES = {429, 500, 502, 503, 504}
 
 
+class LlamadaHerramienta(BaseModel):
+    """Una herramienta que el modelo pide ejecutar, con sus argumentos."""
+
+    nombre: str
+    argumentos: dict
+    # Identificador que la API compatible con OpenAI exige para devolver el resultado.
+    id: str | None = None
+
+
 class Mensaje(BaseModel):
-    role: Literal["system", "user", "assistant"]
-    content: str
+    role: Literal["system", "user", "assistant", "tool"]
+    content: str = ""
+    # En mensajes del asistente: las herramientas que pidió ejecutar.
+    llamadas: list[LlamadaHerramienta] = []
+    # En mensajes "tool": a qué llamada responde este resultado.
+    respuesta_a: LlamadaHerramienta | None = None
+
+
+class Herramienta(BaseModel):
+    """Una función que el modelo puede pedir que ejecutes.
+
+    `parametros` es el JSON Schema de sus argumentos. Lo más cómodo es crearla con
+    `Herramienta.desde(nombre, descripcion, ModeloDeArgumentos)`.
+    """
+
+    nombre: str
+    descripcion: str
+    parametros: dict
+
+    @classmethod
+    def desde(cls, nombre: str, descripcion: str, argumentos: type[BaseModel]) -> Herramienta:
+        return cls(
+            nombre=nombre, descripcion=descripcion, parametros=argumentos.model_json_schema()
+        )
 
 
 class Opciones(BaseModel):
@@ -57,6 +88,8 @@ class Opciones(BaseModel):
     # JSON Schema que la respuesta debe cumplir. El servidor restringe la generación a él
     # (salida estructurada). Lo rellena `extraer` a partir de un modelo de Pydantic.
     formato: dict | None = None
+    # Herramientas que el modelo puede pedir que ejecutes (tool calling).
+    herramientas: list[Herramienta] | None = None
 
 
 class Alternativa(BaseModel):
@@ -85,6 +118,12 @@ class Respuesta(BaseModel):
     # Solo en streaming: segundos hasta recibir el primer fragmento de texto.
     primer_token_s: float | None = None
     tokens: list[TokenGenerado] | None = None
+    # Herramientas que el modelo pidió ejecutar en lugar de (o además de) responder.
+    llamadas: list[LlamadaHerramienta] = []
+
+    def como_mensaje(self) -> Mensaje:
+        """Esta respuesta como mensaje del asistente, para continuar la conversación."""
+        return Mensaje(role="assistant", content=self.texto, llamadas=self.llamadas)
 
 
 class ErrorLLM(Exception):
@@ -125,6 +164,7 @@ class Bruto(NamedTuple):
     # Lista de {token, logprob, top_logprobs: [{token, logprob}]}; mismo formato en ambos.
     logprobs: list[dict] | None
     motivo_fin: str | None
+    llamadas: list[LlamadaHerramienta] = []
 
 
 class Trozo(NamedTuple):
@@ -152,6 +192,48 @@ def _tokens_generados(logprobs: list[dict] | None) -> list[TokenGenerado] | None
     ]
 
 
+def _herramientas_api(herramientas: list[Herramienta]) -> list[dict]:
+    """El formato de herramientas es el mismo en Ollama y en la API compatible con OpenAI."""
+    return [
+        {
+            "type": "function",
+            "function": {
+                "name": h.nombre,
+                "description": h.descripcion,
+                "parameters": h.parametros,
+            },
+        }
+        for h in herramientas
+    ]
+
+
+def _mensaje_ollama(m: Mensaje) -> dict:
+    datos: dict = {"role": m.role, "content": m.content}
+    if m.llamadas:
+        datos["tool_calls"] = [
+            {"function": {"name": ll.nombre, "arguments": ll.argumentos}} for ll in m.llamadas
+        ]
+    if m.respuesta_a:
+        datos["tool_name"] = m.respuesta_a.nombre
+    return datos
+
+
+def _mensaje_openai(m: Mensaje) -> dict:
+    datos: dict = {"role": m.role, "content": m.content}
+    if m.llamadas:
+        datos["tool_calls"] = [
+            {
+                "id": ll.id,
+                "type": "function",
+                "function": {"name": ll.nombre, "arguments": json.dumps(ll.argumentos)},
+            }
+            for ll in m.llamadas
+        ]
+    if m.respuesta_a:
+        datos["tool_call_id"] = m.respuesta_a.id
+    return datos
+
+
 def _peticion_ollama(
     modelo: str, mensajes: list[Mensaje], op: Opciones, stream: bool
 ) -> tuple[str, dict]:
@@ -164,7 +246,7 @@ def _peticion_ollama(
     }
     cuerpo = {
         "model": modelo,
-        "messages": [m.model_dump() for m in mensajes],
+        "messages": [_mensaje_ollama(m) for m in mensajes],
         "stream": stream,
         "options": {k: v for k, v in opciones.items() if v is not None},
     }
@@ -172,16 +254,23 @@ def _peticion_ollama(
         cuerpo |= {"logprobs": True, "top_logprobs": op.alternativas}
     if op.formato is not None:
         cuerpo["format"] = op.formato
+    if op.herramientas:
+        cuerpo["tools"] = _herramientas_api(op.herramientas)
     return "/api/chat", cuerpo
 
 
 def _respuesta_ollama(datos: dict) -> Bruto:
+    llamadas = [
+        LlamadaHerramienta(nombre=ll["function"]["name"], argumentos=ll["function"]["arguments"])
+        for ll in datos["message"].get("tool_calls") or []
+    ]
     return Bruto(
         datos["message"]["content"],
         datos.get("prompt_eval_count", 0),
         datos["eval_count"],
         datos.get("logprobs"),
         datos.get("done_reason"),
+        llamadas,
     )
 
 
@@ -201,7 +290,7 @@ def _peticion_openai(
 ) -> tuple[str, dict]:
     cuerpo = {
         "model": modelo,
-        "messages": [m.model_dump() for m in mensajes],
+        "messages": [_mensaje_openai(m) for m in mensajes],
         "temperature": op.temperatura,
         "top_p": op.top_p,
         "seed": op.semilla,
@@ -214,6 +303,8 @@ def _peticion_openai(
             "type": "json_schema",
             "json_schema": {"name": "respuesta", "schema": op.formato, "strict": True},
         }
+    if op.herramientas:
+        cuerpo["tools"] = _herramientas_api(op.herramientas)
     if stream:
         # Sin include_usage, la API no informa de los tokens en streaming.
         cuerpo |= {"stream": True, "stream_options": {"include_usage": True}}
@@ -224,13 +315,30 @@ def _respuesta_openai(datos: dict) -> Bruto:
     uso = datos["usage"]
     eleccion = datos["choices"][0]
     logprobs = (eleccion.get("logprobs") or {}).get("content")
+    llamadas = [
+        LlamadaHerramienta(
+            id=ll.get("id"),
+            nombre=ll["function"]["name"],
+            # En esta API los argumentos llegan como texto JSON, y puede no ser válido.
+            argumentos=_argumentos_openai(ll["function"]["arguments"]),
+        )
+        for ll in eleccion["message"].get("tool_calls") or []
+    ]
     return Bruto(
-        eleccion["message"]["content"],
+        eleccion["message"]["content"] or "",
         uso["prompt_tokens"],
         uso["completion_tokens"],
         logprobs,
         eleccion.get("finish_reason"),
+        llamadas,
     )
+
+
+def _argumentos_openai(texto: str) -> dict:
+    try:
+        return json.loads(texto)
+    except json.JSONDecodeError:
+        return {"_sin_interpretar": texto}
 
 
 def _trozo_openai(linea: str) -> Trozo:
@@ -555,6 +663,7 @@ class ClienteLLM:
             motivo_fin=bruto.motivo_fin,
             primer_token_s=primer_token,
             tokens=_tokens_generados(bruto.logprobs),
+            llamadas=bruto.llamadas,
         )
 
     def _registrar_fallo(self, llamada: _Llamada, inicio: float, error: ErrorLLM) -> None:
