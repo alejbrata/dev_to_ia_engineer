@@ -6,7 +6,17 @@ import pytest
 from curso_core import ClienteLLM
 from curso_core import config as cfg
 from curso_core.metrics import mrr, precision_at_k, recall_at_k
-from curso_core.rag import IndicePgvector, IndiceVectorial, trocear_fijo, trocear_por_secciones
+from curso_core.rag import (
+    Fragmento,
+    IndiceLexico,
+    IndicePgvector,
+    IndiceVectorial,
+    Resultado,
+    fusion_rrf,
+    tokenizar,
+    trocear_fijo,
+    trocear_por_secciones,
+)
 
 DOC = "# Runbook\n\nIntro breve.\n\n## Diagnóstico\n\nMira los logs.\n\n## Mitigación\n\nReinicia."
 
@@ -90,3 +100,41 @@ def test_metricas_de_recuperacion() -> None:
     assert recall_at_k(consultas, 3) == pytest.approx(2 / 3)
     assert precision_at_k(consultas, 3) == pytest.approx(2 / 9)
     assert mrr(consultas) == pytest.approx((1 / 2 + 1) / 3)
+
+
+def _frag(id: str, texto: str) -> Fragmento:
+    return Fragmento(id=id, doc=id, titulo="", texto=texto)
+
+
+def test_tokenizar_quita_tildes_y_palabras_vacias() -> None:
+    assert tokenizar("¿Qué variable necesita la búsqueda? OPENSEARCH_URL") == [
+        "variable",
+        "necesita",
+        "busqueda",
+        "opensearch_url",
+    ]
+
+
+def test_bm25_premia_palabras_raras_y_descarta_sin_coincidencias() -> None:
+    indice = IndiceLexico()
+    indice.añadir(
+        [
+            _frag("a", "pagos conexiones base de datos"),
+            _frag("b", "pagos despliegue versión anterior"),
+            _frag("c", "pagos OPENSEARCH_URL arranque"),
+            _frag("d", "guardias y escalado"),
+        ]
+    )
+    # "pagos" está en 3 de 4 fragmentos y apenas puntúa; OPENSEARCH_URL decide.
+    assert [r.fragmento.id for r in indice.buscar("pagos OPENSEARCH_URL", k=4)][0] == "c"
+    assert indice.buscar("pagos OPENSEARCH_URL", k=4)[-1].fragmento.id != "d"
+    assert indice.buscar("nada que ver") == []
+
+
+def test_fusion_rrf_suma_por_posicion() -> None:
+    a, b, c = _frag("a", ""), _frag("b", ""), _frag("c", "")
+    densa = [Resultado(fragmento=a, puntuacion=0.9), Resultado(fragmento=b, puntuacion=0.8)]
+    lexica = [Resultado(fragmento=b, puntuacion=12.0), Resultado(fragmento=c, puntuacion=3.0)]
+    fusion = fusion_rrf([densa, lexica], k=3)
+    assert [r.fragmento.id for r in fusion] == ["b", "a", "c"]
+    assert fusion[0].puntuacion == pytest.approx(1 / 62 + 1 / 61)

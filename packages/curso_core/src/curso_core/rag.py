@@ -7,7 +7,10 @@ reranking.
 
 from __future__ import annotations
 
+import math
 import re
+import unicodedata
+from collections import Counter
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -17,6 +20,13 @@ from pydantic import BaseModel
 from curso_core.client import ClienteLLM
 
 SECCION = re.compile(r"^## ", re.M)
+PALABRA = re.compile(r"\w+")
+# Palabras tan frecuentes en español que no ayudan a distinguir un fragmento de otro.
+_VACIAS = """
+a al como con cual cuales cuando cuanto de del donde el en es esta este hay la las le lo los
+mas me no o para pero por que quien se si sin son su sus un una y ya
+"""
+VACIAS = frozenset(_VACIAS.split())
 
 
 class Fragmento(BaseModel):
@@ -212,3 +222,98 @@ class IndicePgvector(IndiceVectorial):
             Resultado(fragmento=Fragmento(id=i, doc=d, titulo=t, texto=x), puntuacion=float(s))
             for i, d, t, x, s in filas
         ]
+
+
+def tokenizar(texto: str) -> list[str]:
+    """Palabras en minúsculas y sin tildes, sin las palabras vacías de `VACIAS`."""
+    sin_tildes = unicodedata.normalize("NFKD", texto.lower()).encode("ascii", "ignore").decode()
+    return [p for p in PALABRA.findall(sin_tildes) if p not in VACIAS]
+
+
+class IndiceLexico:
+    """Búsqueda por palabras con BM25, la puntuación clásica de los buscadores.
+
+    Premia los fragmentos que contienen las palabras de la consulta, más cuanto más raras
+    son esas palabras en el corpus (IDF) y sin premiar de más las repeticiones (`k1`) ni los
+    fragmentos largos (`b`). No entiende sinónimos, pero no se le escapa un identificador.
+    """
+
+    def __init__(self, k1: float = 1.5, b: float = 0.75):
+        self.k1 = k1
+        self.b = b
+        self.fragmentos: list[Fragmento] = []
+        self._frecuencias: list[Counter[str]] = []
+        self._longitudes: list[int] = []
+        self._documentos_con: Counter[str] = Counter()
+
+    def añadir(self, fragmentos: Sequence[Fragmento]) -> None:
+        for f in fragmentos:
+            palabras = tokenizar(f.para_indexar())
+            self._frecuencias.append(Counter(palabras))
+            self._longitudes.append(len(palabras))
+            self._documentos_con.update(set(palabras))
+        self.fragmentos += list(fragmentos)
+
+    def _idf(self, palabra: str) -> float:
+        n, total = self._documentos_con[palabra], len(self.fragmentos)
+        return math.log((total - n + 0.5) / (n + 0.5) + 1)
+
+    def buscar(self, consulta: str, k: int = 3) -> list[Resultado]:
+        """Los `k` mejores con puntuación mayor que 0: puede devolver menos, o ninguno."""
+        palabras = set(tokenizar(consulta))
+        media = sum(self._longitudes) / len(self._longitudes)
+        puntuaciones = []
+        for frecuencias, longitud in zip(self._frecuencias, self._longitudes, strict=True):
+            normalizacion = self.k1 * (1 - self.b + self.b * longitud / media)
+            puntuaciones.append(
+                sum(
+                    self._idf(p) * frecuencias[p] * (self.k1 + 1) / (frecuencias[p] + normalizacion)
+                    for p in palabras
+                    if p in frecuencias
+                )
+            )
+        orden = sorted(range(len(puntuaciones)), key=lambda i: -puntuaciones[i])
+        return [
+            Resultado(fragmento=self.fragmentos[i], puntuacion=puntuaciones[i])
+            for i in orden[:k]
+            if puntuaciones[i] > 0
+        ]
+
+
+def fusion_rrf(listas: Sequence[Sequence[Resultado]], k: int = 3, c: int = 60) -> list[Resultado]:
+    """Reciprocal Rank Fusion: combina rankings por posición, no por puntuación.
+
+    Cada fragmento suma 1 / (c + posición) por cada lista en la que aparece. Así se pueden
+    mezclar puntuaciones que no son comparables (coseno y BM25). `c` = 60 es el valor del
+    paper original; amortigua la ventaja de los primeros puestos.
+    """
+    puntos: dict[str, float] = {}
+    fragmentos: dict[str, Fragmento] = {}
+    for lista in listas:
+        for posicion, r in enumerate(lista, 1):
+            puntos[r.fragmento.id] = puntos.get(r.fragmento.id, 0.0) + 1 / (c + posicion)
+            fragmentos[r.fragmento.id] = r.fragmento
+    mejores = sorted(puntos, key=lambda i: -puntos[i])[:k]
+    return [Resultado(fragmento=fragmentos[i], puntuacion=puntos[i]) for i in mejores]
+
+
+class IndiceHibrido:
+    """Búsqueda densa y léxica a la vez, fusionadas con RRF."""
+
+    def __init__(self, denso: IndiceVectorial, lexico: IndiceLexico, candidatos: int = 20):
+        self.denso = denso
+        self.lexico = lexico
+        self.candidatos = candidatos
+
+    def añadir(self, fragmentos: Sequence[Fragmento]) -> None:
+        self.denso.añadir(fragmentos)
+        self.lexico.añadir(fragmentos)
+
+    def buscar(self, consulta: str, k: int = 3) -> list[Resultado]:
+        return fusion_rrf(
+            [
+                self.denso.buscar(consulta, self.candidatos),
+                self.lexico.buscar(consulta, self.candidatos),
+            ],
+            k=k,
+        )
