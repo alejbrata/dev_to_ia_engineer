@@ -95,6 +95,10 @@ def main() -> int:
         ruta = RESULTADOS / f"{nombre}.jsonl"
         if args.grabadas:
             informes[nombre] = Informe.cargar(ruta)
+            # Las métricas deterministas se recalculan desde las respuestas guardadas.
+            por_id = {c.id: c for c in casos}
+            for r in informes[nombre].resultados:
+                r.ok = dataset.puntuar(por_id[r.caso], r.salida)
         else:
             informes[nombre] = evaluar(cliente, nombre, casos)
             informes[nombre].guardar(ruta)

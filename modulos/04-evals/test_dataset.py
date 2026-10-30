@@ -54,3 +54,13 @@ def test_detecta_segmentos_y_claves_que_no_salen_del_corpus() -> None:
         caso(tipo="guardarrail"),
     ]
     assert len(dataset.problemas_de_anclaje(malos, docs)) == 4
+
+
+def test_contiene_respeta_los_limites_de_los_numeros() -> None:
+    assert dataset.contiene_subcadena("tardó 24 horas", "4 horas")
+    assert not dataset.contiene("tardó 24 horas", "4 horas")
+    assert dataset.contiene("tardó 4 horas", "4 horas")
+    assert not dataset.contiene("el 99,95 %", "99,9")
+    assert dataset.contiene("el 10% del tráfico", "10")
+    assert dataset.contiene("Revócalo ya", "revoc")
+    assert not dataset.contiene("30 minutos", "3")

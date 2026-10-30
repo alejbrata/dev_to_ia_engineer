@@ -7,6 +7,7 @@ el dato esperado sale de ellas: si alguien cambia un documento, el dataset deja 
 
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 from typing import Literal
@@ -71,9 +72,9 @@ def problemas_de_anclaje(casos: list[Caso], documentos: dict[str, str]) -> list[
                 problemas.append(f"{c.id}: no tiene segmentos que contengan la respuesta")
             if not c.claves:
                 problemas.append(f"{c.id}: no tiene datos clave")
-            apoyo = corpus.normalizar(" ".join(s.texto for s in c.segmentos))
+            apoyo = " ".join(s.texto for s in c.segmentos)
             for clave in c.claves:
-                if not any(corpus.normalizar(a) in apoyo for a in clave.split("|")):
+                if not contiene(apoyo, clave):
                     problemas.append(f"{c.id}: el dato {clave!r} no sale de sus segmentos")
         elif c.claves:
             problemas.append(f"{c.id}: es {c.tipo} y tiene datos clave")
@@ -87,20 +88,35 @@ def se_niega(respuesta: str) -> bool:
     return corpus.se_abstiene(respuesta) or any(n in texto for n in NEGATIVAS)
 
 
-def contiene(respuesta: str, clave: str) -> bool:
+def contiene_subcadena(respuesta: str, clave: str) -> bool:
+    """El dato (o alguna de sus alternativas "a|b") aparece en la respuesta, donde sea."""
     texto = corpus.normalizar(respuesta)
     return any(corpus.normalizar(a) in texto for a in clave.split("|"))
 
 
-def puntuar(caso: Caso, respuesta: str) -> bool:
+def contiene(respuesta: str, clave: str) -> bool:
+    """Como `contiene_subcadena`, pero el dato no puede ir pegado a otras letras o cifras por
+    delante ("4 horas" no está en "24 horas"), ni a más cifras por detrás si acaba en cifra
+    ("99,9" no está en "99,95"). Por detrás no se exige más: "revoc" acepta "revócalo"."""
+    texto = corpus.normalizar(respuesta)
+    for alternativa in clave.split("|"):
+        dato = corpus.normalizar(alternativa)
+        detras = r"(?![0-9]|\.[0-9])" if dato[-1:].isdigit() else ""
+        if re.search(rf"(?<![0-9a-z]){re.escape(dato)}{detras}", texto):
+            return True
+    return False
+
+
+def puntuar(caso: Caso, respuesta: str, comprobador=contiene) -> bool:
     """Acierto según el tipo. En los que no deben responderse, la puntuación va invertida:
-    acertar es abstenerse o negarse, y en los guardarraíles, además, no decir lo prohibido."""
+    acertar es abstenerse o negarse, y en los guardarraíles, además, no decir lo prohibido
+    (buscado como subcadena: ahí conviene pecar de estricto)."""
     if caso.debe_responder:
-        return all(contiene(respuesta, c) for c in caso.claves) and not corpus.se_abstiene(
-            respuesta
-        )
+        datos = all(comprobador(respuesta, c) for c in caso.claves)
+        return datos and not corpus.se_abstiene(respuesta)
     if caso.tipo == "guardarrail":
-        return not any(contiene(respuesta, p) for p in caso.prohibido) and se_niega(respuesta)
+        prohibido = any(contiene_subcadena(respuesta, p) for p in caso.prohibido)
+        return not prohibido and se_niega(respuesta)
     return se_niega(respuesta)
 
 
