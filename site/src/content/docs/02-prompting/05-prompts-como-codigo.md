@@ -89,7 +89,7 @@ uv run python modulos/02-prompting/prompts_como_codigo.py
 Primero, un catálogo de los prompts del repositorio, leído de sus cabeceras:
 
 ```text
-1. Prompts del repositorio
+1. Prompts de tickets del repositorio
    tickets/completo@v1            Rol, contexto, criterios de cada valor y formato. La base del resto del módulo.
    tickets/con-formato@v1         Pide un formato de respuesta y da los valores posibles, sin explicar qué significan.
    tickets/con-herramienta@v1     El prompt completo con una herramienta para consultar el estado del servicio...

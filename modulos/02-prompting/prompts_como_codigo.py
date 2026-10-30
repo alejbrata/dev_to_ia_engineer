@@ -25,9 +25,10 @@ OPCIONES = Opciones(temperatura=0, max_tokens=200)
 
 
 def catalogo() -> None:
-    print("1. Prompts del repositorio")
+    # Solo los de este módulo: en prompts/ hay también los de los módulos siguientes.
+    print("1. Prompts de tickets del repositorio")
     carpeta = prompts.carpeta_por_defecto()
-    for fichero in sorted(carpeta.rglob("*.md")):
+    for fichero in sorted((carpeta / "tickets").glob("*.md")):
         if fichero.name == "README.md":
             continue
         nombre = fichero.relative_to(carpeta).with_suffix("").as_posix()
