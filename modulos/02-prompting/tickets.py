@@ -52,10 +52,11 @@ def leer_lineas(texto: str) -> Clasificacion | None:
     """Lee una respuesta con líneas `campo: valor`. None si no se puede usar."""
     valores = {}
     for campo in CAMPOS:
-        m = re.search(rf"{campo}\s*:\s*\**\s*([a-z_]+)", normalizar(texto))
-        if not m:
+        # La última aparición: si el modelo razona antes, la respuesta va al final.
+        encontrados = re.findall(rf"{campo}\s*:\s*\**\s*([a-z_]+)", normalizar(texto))
+        if not encontrados:
             return None
-        valores[campo] = m[1]
+        valores[campo] = encontrados[-1]
     try:
         return Clasificacion.model_validate(valores)
     except ValueError:

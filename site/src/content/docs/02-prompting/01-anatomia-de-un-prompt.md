@@ -102,9 +102,14 @@ Primero muestra cómo responde cada variante al ticket 1. Sin formato, el modelo
 ```text
 [tickets/minimo@v1] primera respuesta:
 Este ticket de soporte parece estar relacionado con un problema de conexión a un servicio de pago
-en una aplicación o sistema de base de datos. Aquí hay algunas clasificaciones posibles:
+en una aplicación o sistema. Aquí hay algunas consideraciones clave:
 
-1. Servicio de pago: El problema parece estar relacionado con el servicio de pago en cuestión...
+1. La fecha y hora de inicio del problema (9:40) sugiere que el problema podría estar relacionado
+con la carga o la capacidad del sistema.
+
+2. La respuesta 'too many connections' en los logs Postgres sugiere que hay un problema con la
+capacidad de conexión a la base de datos Postgres.
+...
 ```
 
 Con formato, contesta lo que pediste, aunque no siempre bien:
@@ -125,9 +130,9 @@ Y después, el resultado de los diez tickets:
 
 ```text
 variante                   utilizables categoría severidad servicio las 3 tokens latencia
-tickets/minimo@v1                 0/10       0/10       0/10      0/10   0/10     74    2.73s
-tickets/con-formato@v1           10/10       6/10       4/10      9/10   4/10    145    0.78s
-tickets/completo@v1               8/10       6/10       4/10      7/10   3/10    345    0.83s
+tickets/minimo@v1                 0/10       0/10       0/10      0/10   0/10     74    4.04s
+tickets/con-formato@v1           10/10       5/10       4/10      9/10   3/10    145    0.91s
+tickets/completo@v1               8/10       6/10       4/10      7/10   3/10    345    1.08s
 ```
 
 Para ver ticket a ticket qué respondió cada variante, añade `--detalle`:
@@ -157,7 +162,7 @@ El prompt mínimo falla en lo primero: ninguna respuesta se puede usar, aunque e
 
 ### Lo que no mejoró
 
-El prompt completo añade rol, contexto y criterios. Cuesta 345 tokens de entrada por ticket, frente a 145. Y el resultado no mejora: 8 respuestas utilizables en lugar de 10, y 3 tickets con los tres campos correctos en lugar de 4.
+El prompt completo añade rol, contexto y criterios. Cuesta 345 tokens de entrada por ticket, frente a 145. Y el resultado apenas cambia: 8 respuestas utilizables en lugar de 10, una categoría acertada más (6 frente a 5) y los mismos 3 tickets con los tres campos correctos.
 
 Mira el detalle. En los tickets 2 y 6, el modelo pone una categoría en el campo del servicio (`servicio: autenticacion`, `servicio: despliegue`). Con tantas listas de valores en el prompt, un modelo de 1.5B mezcla los campos. A cambio, acierta el ticket 1 (`base_de_datos/critica`), que la variante con formato falla. Los criterios ayudan en unos casos y estorban en otros.
 
@@ -167,7 +172,7 @@ En las dos variantes, solo 4 de 10 severidades son correctas. El modelo tiende a
 
 ### La latencia la decide la salida
 
-Fíjate en la última columna. El prompt completo tiene más del doble de tokens de entrada y apenas tarda más (0,83 s frente a 0,78 s). El mínimo, con la mitad de tokens de entrada, es el más lento con diferencia (2,73 s), porque responde con un ensayo. Procesar la entrada es barato; generar la salida, no (módulo 1).
+Fíjate en la última columna. El prompt completo tiene más del doble de tokens de entrada y apenas tarda más (1,08 s frente a 0,91 s). El mínimo, con la mitad de tokens de entrada, es el más lento con diferencia (4,04 s), porque responde con un ensayo. Las tres cifras incluyen cargar el modelo una vez: el script lo descarga antes de cada variante para que todas partan del mismo estado (verás por qué en la lección siguiente). Procesar la entrada es barato; generar la salida, no (módulo 1).
 
 ## Errores frecuentes
 
@@ -175,7 +180,7 @@ Fíjate en la última columna. El prompt completo tiene más del doble de tokens
 
 **Dar por bueno el prompt "más profesional".** Más texto, más listas y más reglas no garantizan mejores resultados, sobre todo con modelos pequeños. Quita piezas y mide.
 
-**Juzgar un prompt por un ejemplo.** En el ticket 1, el prompt completo acierta y el de formato falla. Con ese único caso, habrías elegido el completo. Con los diez, el resultado es otro.
+**Juzgar un prompt por un ejemplo.** En el ticket 1, el prompt completo acierta y el de formato falla. Con ese único caso, habrías elegido el completo. Con los diez, empatan en aciertos completos y el completo da menos respuestas utilizables.
 
 **Etiquetas discutibles.** En el ticket 5 (una errata en el email de bienvenida), la respuesta esperada es `notificaciones`, pero el texto no nombra ningún servicio y cada variante elige uno distinto. Cuando un caso es ambiguo, el problema puede estar en el caso, no en el modelo. Lo tratarás en el módulo de evals.
 
