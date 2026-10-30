@@ -3,25 +3,122 @@ title: "Ingesta y chunking"
 description: "Ingesta y chunking: estrategias y sus consecuencias"
 ---
 
+import LabChunking from '../../../components/LabChunking.astro';
+
+:::note[Revisado: 2026-10]
+Las medidas son reales, con el modelo de embeddings bge-m3 en Ollama y el corpus del módulo. Los tamaños de fragmento que funcionan mejor dependen de tu documentación: el método para elegirlos, no.
+:::
+
 ## Objetivos
 
-TODO
+Al terminar esta lección podrás:
+
+- Explicar por qué hay que trocear los documentos antes de indexarlos.
+- Comparar troceado por estructura (secciones) y por tamaño fijo, con y sin solape.
+- Medir el efecto del troceado en la recuperación con recall@k y MRR.
+- Detectar fragmentos que parten la información que una pregunta necesita.
 
 ## Teoría
 
-TODO
+### Por qué trocear
+
+No se indexan documentos enteros por tres motivos:
+
+1. **El embedding de un documento largo es una media borrosa.** Un runbook que habla de diagnóstico, mitigación y escalado acaba en un vector que no se parece mucho a ninguna pregunta concreta.
+2. **El contexto es limitado y caro.** Si recuperas documentos enteros, metes en el prompt mucho texto que no hace falta (lección 01).
+3. **Las citas pierden precisión.** "Lo dice el runbook de pagos" ayuda menos que "lo dice la sección de mitigación".
+
+Así que, antes de indexar, cada documento se divide en **fragmentos** (*chunks*). Esa decisión condiciona todo lo que viene después: si un dato queda partido entre dos fragmentos, ninguna búsqueda lo encontrará entero.
+
+### Estrategias
+
+- **Por estructura.** Usar las divisiones que ya tiene el documento: secciones de Markdown, apartados de un PDF, artículos de una norma. Los fragmentos tienen sentido por sí mismos, pero sus tamaños son irregulares.
+- **Por tamaño fijo.** Cortar cada N palabras (o tokens), sin mirar el contenido. Tamaños regulares, pero los cortes caen donde caen: a mitad de una frase o de una lista.
+- **Tamaño fijo con solape.** Cada fragmento repite las últimas palabras del anterior. Reduce el riesgo de partir una idea, a cambio de indexar texto repetido.
+
+Hay estrategias más elaboradas (cortar por frases, por cambios de tema detectados con embeddings, fragmentos jerárquicos). Empieza siempre por la más simple que respete la estructura de tus documentos, y mide antes de complicarla.
+
+### Qué se indexa de cada fragmento
+
+`curso_core.rag` indexa cada fragmento con su título delante (por ejemplo, `Runbook: pagos sin conexiones a la base de datos > Mitigación`). El título da contexto que el fragmento solo no tiene: una sección que dice "vuelve a la versión anterior" no menciona pagos, pero su título sí.
+
+### Cómo se mide
+
+Las preguntas del módulo llevan las frases exactas de la documentación que las responden (sus **evidencias**). Un fragmento es relevante para una pregunta si contiene alguna entera. Con eso se calculan, para los 3 primeros resultados de cada pregunta:
+
+- **recall@3**: en qué fracción de preguntas aparece al menos un fragmento relevante.
+- **MRR** (*mean reciprocal rank*): la media de 1/posición del primer fragmento relevante. Vale 1 si siempre sale el primero; 0,5 si siempre sale el segundo.
+- **Evidencias partidas**: frases clave que no están enteras en ningún fragmento.
 
 ## Práctica
 
-TODO
+### 1. Juega con el troceado
+
+El laboratorio trocea documentos reales del corpus con el mismo algoritmo que `curso_core` y marca si las frases clave de las preguntas quedan enteras. Prueba `arquitectura-busqueda` con 50 palabras y sin solape, y después súbele el solape.
+
+<LabChunking />
+
+### 2. Mide cuatro estrategias
+
+[`chunking.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/03-rag/chunking.py) trocea toda la documentación de cuatro formas, indexa cada versión con bge-m3 y mide la recuperación con las 26 preguntas que tienen respuesta:
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/03-rag/chunking.py
+```
+
+```text
+estrategia                     fragmentos  partidas  recall@3    MRR  tokens
+secciones de Markdown                  97         0       85%   0.72     137
+fijo, 50 palabras                      79         2       81%   0.68     180
+fijo, 50 palabras, solape 15           89         0       81%   0.74     199
+fijo, 200 palabras                     29         0       92%   0.79     467
+
+Evidencias partidas (ejemplos):
+  [fijo, 50 palabras] pregunta 10: 'necesitan la aprobación de dos personas'
+  [fijo, 50 palabras] pregunta 25: 'necesita la variable de entorno OPENSEARCH_URL'
+```
+
+La columna `tokens` estima lo que ocupan en el prompt los 3 fragmentos recuperados, de media.
 
 ## Mide y depura
 
-TODO
+### El compromiso, en números
+
+- **Fragmentos de 200 palabras** recuperan mejor (92 % de recall@3, MRR de 0,79). Pero son casi documentos enteros: meten 467 tokens en el prompt, tres veces y media más que las secciones. Más contexto es más coste, más latencia y más texto irrelevante para el modelo.
+- **Fragmentos de 50 palabras sin solape** parten dos evidencias y son los que peor recuperan.
+- **El solape** arregla las evidencias partidas (de 2 a 0) y mejora el orden (MRR de 0,68 a 0,74), con un 13 % más de fragmentos que indexar.
+- **Las secciones** no parten nada, porque respetan la estructura, y dan el contexto más pequeño. Son el mejor equilibrio para esta documentación.
+
+No hay un tamaño correcto universal. Lo que sí hay es una forma de elegir: mide recall y MRR con tus preguntas, y mira cuánto contexto metes para conseguirlos.
+
+### Recall y precisión no son lo mismo
+
+Un recall alto con fragmentos grandes puede ser engañoso. Si el fragmento recuperado tiene 200 palabras y la respuesta es una frase, el modelo tiene que encontrarla entre 199 palabras más. La recuperación "acierta", pero el contexto que recibe el modelo está diluido. Lo comprobarás en la lección 06, midiendo la respuesta y no solo la recuperación.
 
 ## Errores frecuentes
 
-TODO
+**Elegir el tamaño de fragmento sin medir.** "512 tokens con un 10 % de solape" es un valor por defecto de muchas librerías, no una recomendación para tu documentación.
+
+**Trocear sin mirar la estructura.** El troceado fijo convierte `## Despliegue` en una palabra más en mitad del texto, y el encabezado deja de dar contexto.
+
+**Fragmentos sin contexto.** Una sección que dice "vuelve a la versión anterior" no dice de qué servicio. Añade al fragmento el título del documento y de la sección al indexarlo.
+
+**Olvidar reindexar.** Si cambias la estrategia de troceado, hay que volver a calcular todos los embeddings. Un índice con fragmentos de dos estrategias distintas es difícil de depurar.
+
+### Anatomía de un error: la variable partida en dos
+
+Con fragmentos de 50 palabras, la pregunta 25 (*"¿Qué variable de entorno necesita la búsqueda para arrancar?"*) tiene una evidencia que no está entera en ningún fragmento. El documento `arquitectura-busqueda` queda así:
+
+```text
+arquitectura-busqueda@50  ... si no lo hacen, revisa la configuración del analizador. ## Despliegue La búsqueda necesita
+arquitectura-busqueda@100 la variable de entorno OPENSEARCH_URL para arrancar. Sin ella, el pod no pasa la comprobac...
+```
+
+**Cómo leerlo.** El primer fragmento termina en "La búsqueda necesita" y el segundo empieza en "la variable de entorno OPENSEARCH_URL". La frase que responde la pregunta está cortada justo por la mitad. Fíjate también en `## Despliegue`, aplastado en mitad del texto del primer fragmento.
+
+**Causa.** El troceado fijo cuenta palabras sin mirar el contenido. Cada corte cae donde toque, y aquí tocó en la frase importante. El segundo fragmento tiene el nombre de la variable, pero ha perdido el sujeto ("la búsqueda") y el título de la sección.
+
+**Solución.** Respeta la estructura (secciones) o añade solape: con 15 palabras de solape, la frase cabe entera en uno de los dos fragmentos. Y mide las evidencias partidas de tu corpus antes de dar por buena una estrategia: es un número barato de calcular que te avisa antes de que fallen las respuestas.
 
 ## Bitácora
 
@@ -29,4 +126,6 @@ TODO(alex)
 
 ## Para profundizar
 
-TODO
+- [Chunking](https://www.pinecone.io/learn/chunking-strategies/) en la guía de Pinecone: estrategias habituales y sus compromisos.
+- Gao et al., [Retrieval-Augmented Generation for Large Language Models: A Survey](https://arxiv.org/abs/2312.10997) (2023). Panorama de técnicas de RAG, incluido el troceado.
+- [Mean reciprocal rank](https://en.wikipedia.org/wiki/Mean_reciprocal_rank) en Wikipedia.

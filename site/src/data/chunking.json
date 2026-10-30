@@ -1,0 +1,27 @@
+{
+  "documentos": [
+    {
+      "nombre": "arquitectura-busqueda",
+      "texto": "# Arquitectura del servicio de búsqueda\n\nEl servicio de búsqueda indexa el catálogo en OpenSearch y responde a las búsquedas de la tienda.\n\n## Indexación\n\nCada cambio en el catálogo genera un evento que el indexador recoge y aplica al índice en menos de un minuto. Si el índice no puede escribir (por ejemplo, por falta de disco), los productos nuevos no aparecen en la búsqueda, pero los antiguos siguen funcionando.\n\n## Análisis de texto\n\nEl índice usa un analizador para español. Las búsquedas deberían encontrar los productos con y sin tilde; si no lo hacen, revisa la configuración del analizador.\n\n## Despliegue\n\nLa búsqueda necesita la variable de entorno OPENSEARCH_URL para arrancar. Sin ella, el pod no pasa la comprobación de arranque.\n",
+      "evidencias": [
+        "necesita la variable de entorno OPENSEARCH_URL"
+      ]
+    },
+    {
+      "nombre": "runbook-pagos-conexiones",
+      "texto": "# Runbook: pagos sin conexiones a la base de datos\n\nUsa este runbook cuando el servicio de pagos devuelva errores 500 y en los logs aparezca too many connections contra PostgreSQL.\n\n## Diagnóstico\n\n1. Abre el panel de PgBouncer y mira el número de conexiones activas.\n2. Comprueba si ha habido un despliegue de pagos en la última hora: la mayoría de incidentes de este tipo empiezan con una versión que no devuelve las conexiones al pool.\n3. Revisa si alguna consulta lleva más de 30 segundos ejecutándose.\n\n## Mitigación\n\nSi hubo un despliegue reciente, vuelve a la versión anterior: es la mitigación más rápida. Si no lo hubo, reinicia PgBouncer de forma ordenada, una réplica cada vez, para liberar las conexiones bloqueadas.\n\nNo subas el límite del pool por encima de 200 conexiones sin hablar con el equipo de bases de datos: PostgreSQL tiene un máximo de 250 conexiones y el resto de procesos necesitan margen.\n\n## Escalado\n\nSi en 15 minutos los cobros no se recuperan, escala al responsable del equipo Cobros.\n",
+      "evidencias": [
+        "No subas el límite del pool por encima de 200 conexiones",
+        "Si hubo un despliegue reciente, vuelve a la versión anterior"
+      ]
+    },
+    {
+      "nombre": "postmortem-pagos-2026-03",
+      "texto": "# Postmortem: caída de pagos (marzo de 2026)\n\n## Resumen\n\nEl 12 de marzo de 2026, el servicio de pagos estuvo caído 47 minutos. Ningún cliente pudo pagar.\n\n## Causa raíz\n\nUna nueva versión del conector de pasarela abría una conexión a la base de datos por cada reintento y no la devolvía al pool. Con el tráfico de la mañana, el pool se agotó en 20 minutos y la base de datos empezó a rechazar conexiones con too many connections.\n\n## Qué funcionó y qué no\n\nLa alerta saltó a los 3 minutos. La vuelta a la versión anterior tardó 40 minutos porque nadie de guardia conocía el procedimiento.\n\n## Acciones\n\n- Se subió el límite del pool de 100 a 200 conexiones.\n- Se escribió el runbook de pagos sin conexiones a la base de datos.\n- Se añadió una alerta cuando el pool supera el 80 % de uso.\n",
+      "evidencias": [
+        "abría una conexión a la base de datos por cada reintento",
+        "estuvo caído 47 minutos"
+      ]
+    }
+  ]
+}

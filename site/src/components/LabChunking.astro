@@ -1,0 +1,173 @@
+---
+// Laboratorio de chunking sobre documentos reales del corpus del módulo 3.
+// Trocea en el navegador con el mismo algoritmo que curso_core.rag (trocear_fijo y
+// trocear_por_secciones) y marca qué evidencias quedan enteras en algún fragmento.
+import datos from '../data/chunking.json';
+---
+
+<div class="laboratorio lab-chunking not-content" data-docs={JSON.stringify(datos.documentos)}>
+	<div class="laboratorio-cabecera">
+		<strong>Laboratorio · chunking</strong>
+		<span>documentos reales del corpus del módulo 3</span>
+	</div>
+	<div class="laboratorio-cuerpo">
+		<div class="controles">
+			<label>
+				Documento
+				<select data-doc>
+					{datos.documentos.map((d) => <option value={d.nombre}>{d.nombre}</option>)}
+				</select>
+			</label>
+			<label>
+				Estrategia
+				<select data-modo>
+					<option value="fijo">tamaño fijo</option>
+					<option value="secciones">secciones de Markdown</option>
+				</select>
+			</label>
+		</div>
+		<label class="deslizador" data-solo-fijo>
+			<span>palabras <b data-v-palabras>50</b></span>
+			<input type="range" min="10" max="200" step="5" value="50" data-palabras />
+		</label>
+		<label class="deslizador" data-solo-fijo>
+			<span>solape <b data-v-solape>0</b></span>
+			<input type="range" min="0" max="60" step="5" value="0" data-solape />
+		</label>
+		<p class="cifras" data-resumen aria-live="polite"></p>
+		<ul class="evidencias" data-evidencias></ul>
+		<div class="fragmentos" data-fragmentos></div>
+	</div>
+</div>
+
+<style>
+	.controles {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1rem;
+		font-size: var(--sl-text-sm);
+	}
+	.controles label {
+		display: flex;
+		gap: 0.5rem;
+		align-items: center;
+	}
+	select {
+		font: inherit;
+		padding: 0.2rem 0.4rem;
+		background: var(--sl-color-black);
+		color: var(--sl-color-white);
+		border: 1px solid var(--sl-color-gray-5);
+		border-radius: 0.3rem;
+	}
+	.evidencias {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		font-size: var(--sl-text-sm);
+	}
+	.evidencias :global(li) {
+		margin-top: 0.25rem;
+	}
+	.evidencias :global(.partida) {
+		color: var(--curso-senal);
+	}
+	.evidencias :global(.entera) {
+		color: var(--sl-color-accent-high);
+	}
+	.fragmentos {
+		display: grid;
+		gap: 0.5rem;
+		max-height: 26rem;
+		overflow-y: auto;
+		font-size: var(--sl-text-xs);
+	}
+	.fragmentos :global(.fragmento) {
+		padding: 0.5rem 0.6rem;
+		border-left: 3px solid var(--sl-color-accent);
+		background: var(--sl-color-black);
+		border-radius: 0.2rem;
+		white-space: pre-wrap;
+	}
+	.fragmentos :global(.fragmento:nth-child(even)) {
+		border-left-color: hsl(262, 70%, 65%);
+	}
+	.fragmentos :global(.id) {
+		display: block;
+		font-family: var(--sl-font-mono);
+		color: var(--sl-color-gray-3);
+		margin-bottom: 0.2rem;
+	}
+	.fragmentos :global(mark) {
+		background: hsla(38, 92%, 58%, 0.35);
+		color: inherit;
+		border-radius: 0.15rem;
+	}
+</style>
+
+<script>
+	type Doc = { nombre: string; texto: string; evidencias: string[] };
+
+	// Mismo algoritmo que curso_core.rag.trocear_fijo.
+	function trocearFijo(texto: string, palabras: number, solape: number): string[] {
+		const cuerpo = texto.slice(texto.indexOf('\n') + 1);
+		const tokens = cuerpo.split(/\s+/).filter(Boolean);
+		const paso = palabras - solape;
+		const trozos = [];
+		for (let i = 0; i < Math.max(1, tokens.length - solape); i += paso) {
+			trozos.push(tokens.slice(i, i + palabras).join(' '));
+		}
+		return trozos;
+	}
+
+	// Mismo criterio que curso_core.rag.trocear_por_secciones.
+	function trocearSecciones(texto: string): string[] {
+		const cuerpo = texto.slice(texto.indexOf('\n') + 1);
+		return cuerpo
+			.split(/^## /m)
+			.map((s) => s.trim())
+			.filter(Boolean);
+	}
+
+	function escapar(t: string): string {
+		return t.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!);
+	}
+
+	document.querySelectorAll<HTMLElement>('.lab-chunking').forEach((lab) => {
+		const docs = JSON.parse(lab.dataset.docs!) as Doc[];
+		const $ = <T extends Element>(s: string) => lab.querySelector<T>(s)!;
+		const selDoc = $<HTMLSelectElement>('[data-doc]');
+		const selModo = $<HTMLSelectElement>('[data-modo]');
+		const palabras = $<HTMLInputElement>('[data-palabras]');
+		const solape = $<HTMLInputElement>('[data-solape]');
+
+		const pintar = () => {
+			const doc = docs.find((d) => d.nombre === selDoc.value)!;
+			const fijo = selModo.value === 'fijo';
+			lab.querySelectorAll<HTMLElement>('[data-solo-fijo]').forEach((e) => (e.hidden = !fijo));
+			const p = Number(palabras.value);
+			const s = Math.min(Number(solape.value), p - 5);
+			$('[data-v-palabras]').textContent = String(p);
+			$('[data-v-solape]').textContent = String(s);
+			const trozos = fijo ? trocearFijo(doc.texto, p, s) : trocearSecciones(doc.texto);
+
+			const estados = doc.evidencias.map((e) => ({ e, entera: trozos.some((t) => t.includes(e)) }));
+			$('[data-resumen]').innerHTML =
+				`<span><b>${trozos.length}</b> fragmentos</span>` +
+				`<span><b>${estados.filter((x) => !x.entera).length}</b> de ${estados.length} evidencias partidas</span>`;
+			$('[data-evidencias]').innerHTML = estados
+				.map(({ e, entera }) => `<li class="${entera ? 'entera' : 'partida'}">${entera ? '✓ entera' : '✗ partida'}: «${escapar(e)}»</li>`)
+				.join('');
+
+			$('[data-fragmentos]').innerHTML = trozos
+				.map((t, i) => {
+					let html = escapar(t);
+					for (const e of doc.evidencias) html = html.split(escapar(e)).join(`<mark>${escapar(e)}</mark>`);
+					return `<div class="fragmento"><span class="id">fragmento ${i + 1} · ${t.split(/\s+/).length} palabras</span>${html}</div>`;
+				})
+				.join('');
+		};
+		[selDoc, selModo, palabras, solape].forEach((c) => c.addEventListener('input', pintar));
+		pintar();
+	});
+</script>
