@@ -89,14 +89,14 @@ class Afirmaciones(BaseModel):
     afirmaciones: list[Afirmacion]
 
 
-def _renderizar(prompt: str, e: Etiqueta, ctx: str):
+def _renderizar(prompt: str, pregunta: str, respuesta: str, ctx: str):
     return prompts.renderizar(
-        prompts.cargar(prompt), contexto=ctx, pregunta=e.pregunta, respuesta=e.respuesta
+        prompts.cargar(prompt), contexto=ctx, pregunta=pregunta, respuesta=respuesta
     )
 
 
 def juez_v1(cliente: ClienteLLM, e: Etiqueta, ctx: str, rol: str = "judge") -> Veredicto:
-    mensajes = _renderizar("rag/juez-fidelidad", e, ctx)
+    mensajes = _renderizar("rag/juez-fidelidad", e.pregunta, e.respuesta, ctx)
     try:
         r, _ = cliente.extraer(mensajes, Fidelidad, rol=rol, opciones=OPCIONES)
     except ErrorFormato as error:
@@ -128,7 +128,19 @@ def veredicto_v2(afirmaciones: int, sin_cita: list[str], citas_no_encontradas: l
 def juez_v2(
     cliente: ClienteLLM, e: Etiqueta, ctx: str, rol: str = "judge", comprobar=cita_valida
 ) -> Veredicto:
-    mensajes = _renderizar("rag/juez-fidelidad-citas", e, ctx)
+    return juzgar_v2(cliente, e.pregunta, e.respuesta, ctx, rol=rol, comprobar=comprobar)
+
+
+def juzgar_v2(
+    cliente: ClienteLLM,
+    pregunta: str,
+    respuesta: str,
+    ctx: str,
+    rol: str = "judge",
+    comprobar=cita_valida,
+) -> Veredicto:
+    """El juez v2 sobre cualquier respuesta: el modelo cita, el código comprueba."""
+    mensajes = _renderizar("rag/juez-fidelidad-citas", pregunta, respuesta, ctx)
     try:
         r, _ = cliente.extraer(mensajes, Afirmaciones, rol=rol, opciones=OPCIONES)
     except ErrorFormato as error:
