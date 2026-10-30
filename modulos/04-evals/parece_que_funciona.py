@@ -18,36 +18,30 @@ import sys
 from itertools import combinations
 from pathlib import Path
 
+import sistema  # el sistema que evaluamos: el RAG del módulo 3
+from curso_core import ClienteLLM
+from curso_core.evals import Informe, ResultadoCaso, comparar
+from sistema import corpus
+
 AQUI = Path(__file__).resolve().parent
-sys.path.insert(0, str(AQUI.parent / "03-rag"))  # el sistema que evaluamos: el RAG del módulo 3
-
-import corpus  # noqa: E402
-import generacion  # noqa: E402
-from curso_core import ClienteLLM  # noqa: E402
-from curso_core.evals import Informe, ResultadoCaso, comparar  # noqa: E402
-from curso_core.rag import IndiceVectorial, trocear_por_secciones  # noqa: E402
-
 RESULTADOS = AQUI / "resultados"
 VERSIONES = {"v1-texto-libre": "rag/con-contexto", "v2-con-citas": "rag/con-citas"}
-K = 3
 MUESTRAS_10 = 100_000
 
 
 def ejecutar(cliente: ClienteLLM, version: str, prompt: str) -> Informe:
-    """Responde las 30 preguntas con el RAG (búsqueda densa, 3 fragmentos) y un prompt."""
-    indice = IndiceVectorial(cliente)
-    indice.añadir([f for d, t in corpus.documentos().items() for f in trocear_por_secciones(d, t)])
+    """Responde las 30 preguntas del módulo 3 con el RAG y un prompt."""
+    indice = sistema.indice(cliente)
     cliente.descargar_modelo()
     resultados = []
     for p in corpus.preguntas():
-        contexto = generacion.contexto(indice.buscar(p.pregunta, K))
-        g = generacion.generar(cliente, prompt, contexto, p)
+        r = sistema.responder(cliente, indice, p.pregunta, prompt)
         resultados.append(
             ResultadoCaso(
                 caso=str(p.id),
-                ok=corpus.es_correcta(g.texto, p),
-                salida=g.texto,
-                detalle={"respondible": p.respondible, "citas": g.citas},
+                ok=corpus.es_correcta(r.texto, p),
+                salida=r.texto,
+                detalle={"respondible": p.respondible, "citas": r.citas},
             )
         )
     return Informe(version=version, resultados=resultados)
