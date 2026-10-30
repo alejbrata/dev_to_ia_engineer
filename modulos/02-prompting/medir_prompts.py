@@ -45,14 +45,15 @@ def empezar_de_cero(cliente: ClienteLLM, rol: str = "chat") -> None:
 
 def medir(
     cliente: ClienteLLM,
-    variante: str,
+    variante: str | prompts.Prompt,
     casos: list[tickets.Ticket],
     opciones: Opciones = OPCIONES,
     aislar: bool = True,
 ) -> Medida:
+    """Mide un prompt: por nombre (`tickets/completo`) o ya cargado."""
     if aislar:
         empezar_de_cero(cliente)
-    prompt = prompts.cargar(variante)
+    prompt = prompts.cargar(variante) if isinstance(variante, str) else variante
     medida = Medida(variante=prompt.id)
     for caso in casos:
         r = cliente.chat(prompts.renderizar(prompt, ticket=caso.texto), opciones=opciones)

@@ -10,5 +10,6 @@ El caso del módulo: clasificar tickets de incidencias de un backend.
 - `salida_estructurada.py`: pedir JSON en el prompt frente a imponer un esquema, y el JSON cortado.
 - `herramientas.py`: tool calling de un paso con una página de estado simulada, 1.5B frente a 7B.
 - `prompts_como_codigo.py`: catálogo de prompts, variables comprobadas y trazas por versión.
+- `evaluar.py`: tu primera eval; con `--contra HEAD` compara tu versión del prompt con la de git.
 
 Los prompts están en `prompts/tickets/`, en la raíz del repo.
