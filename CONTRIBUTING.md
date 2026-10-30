@@ -17,6 +17,16 @@ Gracias por querer mejorar el curso. Las contribuciones se aceptan por pull requ
 
 5. Usa [Conventional Commits](https://www.conventionalcommits.org/es/) en los mensajes (`feat:`, `fix:`, `docs:`…).
 
+## Dependencias
+
+Las dependencias se gestionan con uv (`pyproject.toml` y `uv.lock`). Si añades o cambias alguna, regenera también `requirements.txt` para quien use pip:
+
+```sh
+uv export --format requirements-txt --no-hashes -o requirements.txt
+```
+
+CI falla si `requirements.txt` no coincide con `uv.lock`.
+
 ## Temario
 
 `docs/PLAN.md` es la fuente de verdad del temario. Si añades, quitas o renombras una lección, edita el plan y ejecuta:

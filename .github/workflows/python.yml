@@ -14,6 +14,8 @@ jobs:
         with:
           enable-cache: true
       - run: uv sync --locked
+      - name: requirements.txt al día con uv.lock
+        run: uv export --format requirements-txt --no-hashes -o requirements.txt && git diff --exit-code requirements.txt
       - run: uv run ruff check
       - run: uv run ruff format --check
       - run: uv run pytest
