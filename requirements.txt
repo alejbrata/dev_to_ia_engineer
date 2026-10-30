@@ -64,8 +64,14 @@ packaging==26.3
     # via
     #   huggingface-hub
     #   pytest
+pgvector==0.5.1
+    # via curso-core
 pluggy==1.7.0
     # via pytest
+psycopg==3.3.6
+    # via curso-core
+psycopg-binary==3.3.6 ; implementation_name != 'pypy'
+    # via psycopg
 pydantic==2.14.1
     # via
     #   curso-ai-engineering
@@ -99,8 +105,11 @@ typing-extensions==4.16.0
     #   httpx2
     #   huggingface-hub
     #   openai
+    #   psycopg
     #   pydantic
     #   pydantic-core
     #   typing-inspection
 typing-inspection==0.4.4
     # via pydantic
+tzdata==2026.6 ; sys_platform == 'win32'
+    # via psycopg

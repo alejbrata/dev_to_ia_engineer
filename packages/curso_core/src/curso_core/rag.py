@@ -1,7 +1,8 @@
 """Piezas de RAG: trocear documentos e indexarlos para buscar por similitud.
 
-Todo en memoria y con numpy, para que se vea cómo funciona. Crece en el módulo 3:
-troceado, índice vectorial, búsqueda léxica, híbrida y reranking.
+El índice vive en memoria con numpy, para que se vea cómo funciona, o en PostgreSQL con
+pgvector. Crece en el módulo 3: troceado, índice vectorial, búsqueda léxica, híbrida y
+reranking.
 """
 
 from __future__ import annotations
@@ -88,12 +89,28 @@ def trocear_fijo(doc: str, texto: str, palabras: int, solape: int = 0) -> list[F
 class IndiceVectorial:
     """Índice en memoria: guarda los embeddings normalizados y busca por coseno."""
 
-    def __init__(self, cliente: ClienteLLM, rol: str = "embeddings", lote: int = 32):
+    def __init__(
+        self,
+        cliente: ClienteLLM,
+        rol: str = "embeddings",
+        lote: int = 32,
+        prefijo_documento: str = "",
+        prefijo_consulta: str = "",
+    ):
+        """Algunos modelos de embeddings piden prefijos de tarea (por ejemplo,
+        `search_document: ` y `search_query: `): consulta la ficha del tuyo."""
         self.cliente = cliente
         self.rol = rol
         self.lote = lote
+        self.prefijo_documento = prefijo_documento
+        self.prefijo_consulta = prefijo_consulta
         self.fragmentos: list[Fragmento] = []
         self._matriz = np.zeros((0, 0), dtype=np.float32)
+
+    @property
+    def dimensiones(self) -> int:
+        """Longitud de los vectores del índice (0 si está vacío)."""
+        return self._matriz.shape[1] if self.fragmentos else 0
 
     def _vectores(self, textos: Sequence[str]) -> np.ndarray:
         vectores = []
@@ -104,15 +121,94 @@ class IndiceVectorial:
         return matriz / np.linalg.norm(matriz, axis=1, keepdims=True)
 
     def añadir(self, fragmentos: Sequence[Fragmento]) -> None:
-        nuevos = self._vectores([f.para_indexar() for f in fragmentos])
+        nuevos = self._vectores([self.prefijo_documento + f.para_indexar() for f in fragmentos])
         self._matriz = nuevos if not self.fragmentos else np.vstack([self._matriz, nuevos])
         self.fragmentos += list(fragmentos)
 
     def buscar(self, consulta: str, k: int = 3) -> list[Resultado]:
-        vector = self._vectores([consulta])[0]
+        vector = self._vectores([self.prefijo_consulta + consulta])[0]
         puntuaciones = self._matriz @ vector
         mejores = np.argsort(-puntuaciones)[:k]
         return [
             Resultado(fragmento=self.fragmentos[i], puntuacion=float(puntuaciones[i]))
             for i in mejores
+        ]
+
+
+class IndicePgvector(IndiceVectorial):
+    """El mismo índice, guardado en PostgreSQL con la extensión pgvector.
+
+    Mismos métodos que `IndiceVectorial`; cambia dónde viven los vectores. La búsqueda la
+    hace la base de datos con el operador de distancia del coseno (`<=>`) y un índice HNSW.
+    Necesita un PostgreSQL con pgvector (en el repo: `docker compose up -d`).
+    """
+
+    def __init__(
+        self,
+        cliente: ClienteLLM,
+        url: str,
+        tabla: str = "fragmentos",
+        timeout: int = 5,
+        **kwargs,
+    ):
+        """`timeout`: segundos para conectar. Sin él, una base caída puede tardar minutos en
+        dar error."""
+        import psycopg
+        from pgvector.psycopg import register_vector
+
+        super().__init__(cliente, **kwargs)
+        if not tabla.isidentifier():
+            raise ValueError(f"Nombre de tabla no válido: {tabla!r}")
+        self.tabla = tabla
+        self.conexion = psycopg.connect(url, autocommit=True, connect_timeout=timeout)
+        self.conexion.execute("CREATE EXTENSION IF NOT EXISTS vector")
+        register_vector(self.conexion)
+
+    @property
+    def dimensiones(self) -> int:
+        fila = self.conexion.execute(
+            "SELECT atttypmod FROM pg_attribute "
+            "WHERE attrelid = to_regclass(%s) AND attname = 'embedding'",
+            (self.tabla,),
+        ).fetchone()
+        return fila[0] if fila else 0
+
+    def vaciar(self) -> None:
+        self.conexion.execute(f"DROP TABLE IF EXISTS {self.tabla}")
+        self.fragmentos = []
+
+    def añadir(self, fragmentos: Sequence[Fragmento]) -> None:
+        vectores = self._vectores([self.prefijo_documento + f.para_indexar() for f in fragmentos])
+        self.conexion.execute(
+            f"CREATE TABLE IF NOT EXISTS {self.tabla} ("
+            "id text PRIMARY KEY, doc text, titulo text, texto text, "
+            f"embedding vector({vectores.shape[1]}))"
+        )
+        with self.conexion.cursor() as cursor:
+            cursor.executemany(
+                f"INSERT INTO {self.tabla} (id, doc, titulo, texto, embedding) "
+                "VALUES (%s, %s, %s, %s, %s) ON CONFLICT (id) DO UPDATE SET "
+                "doc = EXCLUDED.doc, titulo = EXCLUDED.titulo, texto = EXCLUDED.texto, "
+                "embedding = EXCLUDED.embedding",
+                [
+                    (f.id, f.doc, f.titulo, f.texto, v)
+                    for f, v in zip(fragmentos, vectores, strict=True)
+                ],
+            )
+        self.conexion.execute(
+            f"CREATE INDEX IF NOT EXISTS {self.tabla}_hnsw ON {self.tabla} "
+            "USING hnsw (embedding vector_cosine_ops)"
+        )
+        self.fragmentos += list(fragmentos)
+
+    def buscar(self, consulta: str, k: int = 3) -> list[Resultado]:
+        vector = self._vectores([self.prefijo_consulta + consulta])[0]
+        filas = self.conexion.execute(
+            f"SELECT id, doc, titulo, texto, 1 - (embedding <=> %s) AS similitud "
+            f"FROM {self.tabla} ORDER BY embedding <=> %s LIMIT %s",
+            (vector, vector, k),
+        ).fetchall()
+        return [
+            Resultado(fragmento=Fragmento(id=i, doc=d, titulo=t, texto=x), puntuacion=float(s))
+            for i, d, t, x, s in filas
         ]

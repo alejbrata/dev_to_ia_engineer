@@ -1,0 +1,23 @@
+# Servicios de apoyo para las prácticas que los necesitan. Arráncalos con:
+#   docker compose up -d
+# Solo escuchan en tu máquina (127.0.0.1). Las credenciales son de desarrollo local.
+services:
+  pgvector:
+    image: pgvector/pgvector:pg18
+    environment:
+      POSTGRES_USER: curso
+      POSTGRES_PASSWORD: curso
+      POSTGRES_DB: curso
+    ports:
+      # 5433 y no 5432, para no chocar con un PostgreSQL que ya tengas instalado.
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - pgvector:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U curso -d curso"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  pgvector:
