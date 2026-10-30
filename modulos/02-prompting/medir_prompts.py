@@ -11,7 +11,6 @@ con temperatura 0 (lección 02 del módulo 2).
 
 from __future__ import annotations
 
-import httpx
 import tickets
 from curso_core import ClienteLLM, Opciones, prompts
 from pydantic import BaseModel
@@ -33,14 +32,8 @@ class Medida(BaseModel):
 
 
 def empezar_de_cero(cliente: ClienteLLM, rol: str = "chat") -> None:
-    """Descarga el modelo de Ollama (keep_alive=0): la siguiente llamada lo carga limpio."""
-    _, proveedor, modelo = cliente.config.resolver(rol)
-    if proveedor.tipo == "ollama":
-        httpx.post(
-            f"{proveedor.base_url}/api/generate",
-            json={"model": modelo, "keep_alive": 0},
-            timeout=60,
-        )
+    """Descarga el modelo de Ollama: la siguiente llamada lo carga limpio."""
+    cliente.descargar_modelo(rol)
 
 
 def medir(

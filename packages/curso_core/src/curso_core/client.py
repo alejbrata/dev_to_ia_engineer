@@ -463,6 +463,18 @@ class ClienteLLM:
         # se crea un cliente HTTP por proveedor y se reutiliza.
         self._clientes: dict[str, httpx.Client] = {}
 
+    def descargar_modelo(self, rol: str = "chat") -> None:
+        """Pide al servidor que saque el modelo de memoria, para medir desde un estado limpio.
+
+        Solo tiene efecto en Ollama (keep_alive=0). Sin esto, la caché del prompt de una
+        medición anterior puede cambiar los resultados de la siguiente (módulo 2, lección 02).
+        """
+        nombre, proveedor, modelo = self.config.resolver(rol)
+        if proveedor.tipo == "ollama":
+            self._http(nombre, proveedor).post(
+                "/api/generate", json={"model": modelo, "keep_alive": 0}
+            )
+
     def cerrar(self) -> None:
         for http in self._clientes.values():
             http.close()
