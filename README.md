@@ -55,8 +55,8 @@ En las lecciones, sustituye `uv run python` por `python` con el entorno activado
 
 ### Opcional, para algunas lecciones
 
-- `ollama pull qwen2.5:0.5b` y `ollama pull qwen2.5:7b`: comparar tamaños de modelo (lección 05 del módulo 1, ~5 GB).
-- [llama.cpp](https://github.com/ggml-org/llama.cpp): comparar cómo tratan dos servidores un prompt demasiado largo (lección 02 del módulo 1) y servir el reranker (lección 05 del módulo 3, ~0,6 GB).
+- `ollama pull qwen2.5:0.5b` y `ollama pull qwen2.5:7b`: comparar tamaños de modelo (lección 05 del módulo 1, ~5 GB). El de 7B es también el juez de las lecciones 06 del módulo 3 y 04-05 del módulo 4, y el modelo del sistema que se elige en las lecciones 06-07 del módulo 4.
+- [llama.cpp](https://github.com/ggml-org/llama.cpp): comparar cómo tratan dos servidores un prompt demasiado largo (lección 02 del módulo 1) y servir el reranker (lección 05 del módulo 3 y lecciones 05-07 del módulo 4, ~0,6 GB).
 - `ollama pull nomic-embed-text` y `ollama pull qwen3-embedding:0.6b`: comparar modelos de embeddings (lección 03 del módulo 3, ~1 GB).
 - Docker con Compose y `docker compose up -d`: el índice vectorial en PostgreSQL con pgvector (lección 03 del módulo 3).
 - `HF_TOKEN` en `.env`: ver los errores reales de un proveedor en la nube (lección 04 del módulo 1). Sin créditos en Hugging Face solo verás errores; la práctica lo explica.
