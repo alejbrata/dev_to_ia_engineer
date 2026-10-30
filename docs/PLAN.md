@@ -46,7 +46,7 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 - **Métricas**: recall@k, MRR, fidelidad de la respuesta al contexto
 - **Errores clave**: chunks que parten la idea, recuperación vacía, alucinación pese a buen contexto, modelo de embeddings distinto en indexación y consulta
 
-## Módulo 4 — Evals ⬜
+## Módulo 4 — Evals 🟨
 
 1. Por qué evaluar: "parece que funciona" no es una métrica
 2. Datasets de referencia: cómo construirlos y mantenerlos
