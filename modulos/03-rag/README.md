@@ -6,5 +6,6 @@ El caso del módulo: la documentación interna (inventada) de la plataforma de l
 - `datos/preguntas.jsonl`: 30 preguntas (26 con respuesta, 4 sin ella), con evidencias y dato clave.
 - `corpus.py`: carga, relevancia de un fragmento, abstención y corrección de una respuesta.
 - `cuando_rag.py`: sin documentación, todo en el prompt o RAG.
+- `chunking.py`: cuatro formas de trocear, con evidencias partidas, recall@3 y MRR.
 
 Los prompts están en `prompts/rag/`, en la raíz del repo.
