@@ -126,6 +126,18 @@ class Respuesta(BaseModel):
         return Mensaje(role="assistant", content=self.texto, llamadas=self.llamadas)
 
 
+class Embeddings(BaseModel):
+    """Vectores de varios textos, en el mismo orden, con las métricas de la llamada."""
+
+    vectores: list[list[float]]
+    proveedor: str
+    modelo: str
+    tokens_entrada: int
+    latencia_s: float
+    intentos: int
+    id_traza: str
+
+
 class ErrorLLM(Exception):
     """Error de una llamada al modelo, con el código HTTP y el cuerpo de la respuesta."""
 
@@ -503,6 +515,57 @@ class ClienteLLM:
             raise ErrorFormato(
                 f"La respuesta no cumple {modelo.__name__}: {e}", respuesta.texto, respuesta
             ) from e
+
+    def embeber(self, textos: list[str], *, rol: str = "embeddings") -> Embeddings:
+        """Convierte textos en vectores con el modelo de embeddings del rol."""
+        nombre, proveedor, modelo = self.config.resolver(rol)
+        if proveedor.tipo == "ollama":
+            ruta, cuerpo = "/api/embed", {"model": modelo, "input": textos}
+        else:
+            ruta, cuerpo = "/embeddings", {"model": modelo, "input": textos}
+        llamada = _Llamada(
+            nombre,
+            proveedor,
+            modelo,
+            DIALECTOS[proveedor.tipo],
+            ruta,
+            cuerpo,
+            dict(rol=rol, proveedor=nombre, modelo=modelo),
+        )
+        inicio = time.perf_counter()
+        try:
+            http = self._http(nombre, proveedor)
+            r, intentos = self._abrir(http, ruta, cuerpo)
+            datos = r.json()
+        except ErrorLLM as e:
+            self._registrar_fallo(llamada, inicio, e)
+            raise
+        if proveedor.tipo == "ollama":
+            vectores, tokens = datos["embeddings"], datos.get("prompt_eval_count", 0)
+        else:
+            vectores = [d["embedding"] for d in sorted(datos["data"], key=lambda d: d["index"])]
+            tokens = datos.get("usage", {}).get("prompt_tokens", 0)
+        latencia = time.perf_counter() - inicio
+        coste = self._coste(nombre, modelo, tokens, 0)
+        registro = Traza(
+            **llamada.traza,
+            ok=True,
+            intentos=intentos,
+            latencia_s=latencia,
+            tokens_entrada=tokens,
+            tokens_salida=0,
+            coste_usd=coste,
+        )
+        registrar(registro, self.trazas)
+        return Embeddings(
+            vectores=vectores,
+            proveedor=nombre,
+            modelo=modelo,
+            tokens_entrada=tokens,
+            latencia_s=latencia,
+            intentos=intentos,
+            id_traza=registro.id,
+        )
 
     def chat_stream(
         self,

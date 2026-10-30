@@ -3,6 +3,7 @@
 from curso_core.client import (
     Alternativa,
     ClienteLLM,
+    Embeddings,
     ErrorFormato,
     ErrorLLM,
     Flujo,
@@ -18,6 +19,7 @@ from curso_core.client import (
 __all__ = [
     "Alternativa",
     "ClienteLLM",
+    "Embeddings",
     "ErrorFormato",
     "ErrorLLM",
     "Flujo",

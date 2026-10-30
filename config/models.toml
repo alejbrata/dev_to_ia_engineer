@@ -69,8 +69,17 @@ model = ""
 
 [roles.embeddings]
 # Modelo de embeddings para RAG. Debe ser el mismo al indexar y al consultar.
-provider = ""
-model = ""
+# Multilingüe (el corpus del curso está en español). Revisado: 2026-10.
+provider = "ollama"
+model = "bge-m3"
+hf_repo = "BAAI/bge-m3"
+
+[roles.embeddings_ingles]
+# Un modelo de embeddings entrenado sobre todo en inglés, para comparar en la lección 03
+# del módulo 3. Revisado: 2026-10.
+provider = "ollama"
+model = "nomic-embed-text"
+hf_repo = "nomic-ai/nomic-embed-text-v1.5"
 
 [providers.ollama]
 # Servidor local de Ollama. No necesita clave.
@@ -126,3 +135,12 @@ salida = 0.0
 # sirve, en USD por millón de tokens. Cambia con el tiempo. Revisado: 2026-10.
 entrada = 0.01
 salida = 0.03
+
+
+[precios."ollama/bge-m3"]
+entrada = 0.0
+salida = 0.0
+
+[precios."ollama/nomic-embed-text"]
+entrada = 0.0
+salida = 0.0

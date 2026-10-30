@@ -130,3 +130,21 @@ def test_openai_devuelve_el_resultado_con_su_id(tmp_path: Path) -> None:
     asistente, herramienta = cuerpos[0]["messages"]
     assert asistente["tool_calls"][0]["function"]["arguments"] == '{"servicio": "x"}'
     assert herramienta["tool_call_id"] == "c1"
+
+
+def test_embeber_ollama_y_openai(tmp_path: Path) -> None:
+    def ollama(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/api/embed"
+        return httpx.Response(
+            200, json={"embeddings": [[1.0, 0.0], [0.0, 1.0]], "prompt_eval_count": 4}
+        )
+
+    def openai(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/v1/embeddings"
+        datos = [{"index": 1, "embedding": [0.0, 1.0]}, {"index": 0, "embedding": [1.0, 0.0]}]
+        return httpx.Response(200, json={"data": datos, "usage": {"prompt_tokens": 4}})
+
+    e = cliente(ollama, tmp_path).embeber(["a", "b"], rol="chat")
+    assert e.vectores == [[1.0, 0.0], [0.0, 1.0]] and e.tokens_entrada == 4
+    e = cliente(openai, tmp_path).embeber(["a", "b"], rol="remoto")
+    assert e.vectores == [[1.0, 0.0], [0.0, 1.0]]  # ordenados por index
