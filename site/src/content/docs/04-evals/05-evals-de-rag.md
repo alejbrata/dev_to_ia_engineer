@@ -43,7 +43,7 @@ La casilla "correcta sin el segmento" no debería existir. Si aparece, o el dato
 
 La fidelidad añade otra dimensión. Una respuesta puede ser **fiel e incorrecta**, si el contexto que recibió era el equivocado. Y puede ser **correcta y no fiel**, si acierta el dato pero inventa lo que lo rodea. Por eso se miden las dos.
 
-Las librerías de evals de RAG ponen nombre a estas métricas: *context recall* (el dato llega), *context precision* (cuánto de lo que llega sirve), *faithfulness* (fidelidad) y *answer correctness* o *answer relevancy* (la respuesta responde a lo que se preguntó). Aquí se calculan con el código de las lecciones anteriores; el anexo F compara cómo lo hacen esas librerías. La *context precision* no se mide en esta lección.
+Las librerías de evals de RAG ponen nombre a estas métricas: *context recall* (el dato llega), *context precision* (cuánto de lo que llega sirve), *faithfulness* (fidelidad) y *answer correctness* o *answer relevancy* (la respuesta responde a lo que se preguntó). Aquí se calculan con el código de las lecciones anteriores; el anexo F (en preparación) comparará cómo lo hacen esas librerías. La *context precision* no se mide en esta lección.
 
 ## Práctica
 
@@ -103,7 +103,7 @@ Además, cada fragmento de más son tokens de más en cada llamada. En tus traza
 
 ### No atribuyas a una etapa lo que hace la otra
 
-El reranker gana 7 preguntas y pierde 2. Parece que todas las ganancias son mérito de la recuperación, pero el desglose dice otra cosa. Solo 3 de las 7 (m3-11, m3-19 y m3-24) eran fallos de recuperación que el reranker arregla. Las otras 4 (m3-21, m3-26, n-07 y n-15) ya tenían el segmento delante con la búsqueda densa y fallaban en la generación: con el reranker, el contexto cambia de orden y de compañía, y el modelo acierta. Y de las 2 que pierde, la n-04 tiene el segmento en las dos configuraciones.
+El reranker gana 7 preguntas y pierde 2. Parece que todas las ganancias son mérito de la recuperación, pero el desglose dice otra cosa. Solo 3 de las 7 (m3-11, m3-19 y m3-24) eran fallos de recuperación que el reranker arregla, y son justo las tres preguntas que la lección 05 del módulo 3 vio subir desde fuera del top 3. Las otras 4 (m3-21, m3-26, n-07 y n-15) ya tenían el segmento delante con la búsqueda densa y fallaban en la generación: con el reranker, el contexto cambia de orden y de compañía, y el modelo acierta. Y de las 2 que pierde, la n-04 tiene el segmento en las dos configuraciones.
 
 Es decir, el generador es sensible a qué fragmentos le llegan y en qué orden, aunque el dato esté. Parte de la diferencia entre configuraciones es esa sensibilidad, no la calidad de la recuperación.
 
