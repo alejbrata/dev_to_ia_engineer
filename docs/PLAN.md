@@ -35,7 +35,7 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 6. **Tu primera eval**: 10 casos, una aserción, un número
 - **Errores clave**: JSON inválido, fallos de validación, truncamiento por `max_tokens`, regresiones al cambiar un prompt
 
-## Módulo 3 — RAG ⬜
+## Módulo 3 — RAG 🟨
 
 1. Cuándo usar RAG (y cuándo no)
 2. Ingesta y chunking: estrategias y sus consecuencias
