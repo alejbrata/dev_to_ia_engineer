@@ -56,6 +56,8 @@ iniconfig==2.3.1
     # via pytest
 jiter==0.18.0
     # via openai
+numpy==2.5.4
+    # via curso-core
 openai==3.41.0
     # via curso-ai-engineering
 packaging==26.3
