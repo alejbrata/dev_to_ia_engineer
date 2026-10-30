@@ -1,0 +1,140 @@
+---
+title: "Por qué evaluar"
+description: "\"Parece que funciona\" no es una métrica: el mismo cambio, probado a mano y medido con todas las preguntas"
+---
+
+import LabMuestras from '../../../components/LabMuestras.astro';
+
+:::note[Revisado: 2026-10]
+Las salidas son reales, con el modelo con el que se construyó el curso (Qwen2.5 1.5B Instruct) y bge-m3 en Ollama. Los resultados grabados en el repo son los de esa ejecución; con otro modelo, los tuyos serán distintos.
+:::
+
+## Objetivos
+
+Al terminar esta lección podrás:
+
+- Explicar por qué probar unas pocas preguntas a mano no basta para decidir un cambio.
+- Ejecutar una eval que guarda el resultado de cada caso y compara dos versiones caso a caso.
+- Calcular con qué frecuencia una muestra pequeña lleva a la conclusión equivocada.
+- Reutilizar resultados grabados para repetir el análisis sin volver a llamar al modelo.
+
+## Teoría
+
+### Cómo se prueba casi siempre
+
+Cambias el prompt. Lanzas tres o cuatro preguntas que tienes en la cabeza, lees las respuestas y decides: "parece que va mejor", o "no ha cambiado nada". Es lo que hace casi todo el mundo, y tiene tres problemas:
+
+- **La muestra es pequeña.** Tres preguntas no distinguen un sistema que acierta el 60 % de uno que acierta el 70 %.
+- **La muestra no es al azar.** Pruebas las preguntas que se te ocurren, que suelen ser las fáciles o las que ya sabes que funcionan.
+- **No queda nada.** Si mañana alguien pregunta por qué se cambió el prompt, solo hay una impresión.
+
+En backend no se te ocurriría desplegar un cambio porque "he probado tres peticiones con Postman y parece que va". Tienes tests, que se ejecutan siempre, sobre los mismos casos, y dejan constancia. Una **eval** es lo mismo para un sistema con LLMs: un conjunto fijo de casos, una forma automática de decidir si cada respuesta es correcta y un resultado que se guarda. Con una diferencia importante: un test pasa o falla, y una eval da una tasa de acierto. Un sistema con LLMs casi nunca acierta el 100 %, así que la pregunta no es "¿funciona?" sino "¿funciona mejor o peor que antes, y en qué casos?".
+
+### Qué guarda una eval
+
+`curso_core.evals`, que nace en esta lección y crece en el módulo, guarda un `ResultadoCaso` por pregunta: si acertó, qué respondió y los detalles útiles (las citas, si la pregunta tenía respuesta…). Un `Informe` junta los de una versión del sistema y se guarda en JSONL.
+
+Guardar el detalle, y no solo el total, tiene dos ventajas. Puedes comparar dos versiones **caso a caso** (`comparar` dice qué preguntas gana y cuáles pierde la nueva). Y puedes repetir el análisis, o hacer otros, sin volver a llamar al modelo: es lo que permitirá ejecutar evals en CI sin GPU (lección 07).
+
+## Práctica
+
+El sistema que evaluamos es el RAG del módulo 3, con búsqueda densa y 3 fragmentos. El cambio: pasar del prompt de texto libre (`rag/con-contexto`) al de JSON con citas (`rag/con-citas`), como en la lección 06 de ese módulo. Esta vez sin reranker, para que solo cambie el prompt.
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/04-evals/parece_que_funciona.py
+```
+
+[`parece_que_funciona.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/04-evals/parece_que_funciona.py) ejecuta las dos versiones sobre las 30 preguntas, guarda los resultados en `modulos/04-evals/resultados/` y los analiza de tres formas:
+
+```text
+1. A mano: las tres primeras preguntas
+   1. ¿Qué hago si pagos devuelve 'too many connections'?
+      v1-texto-libre  MAL   "Si pagos devuelve 'too many connections', sigue estos pasos:\n\n1. Comprueba el lo"
+      v2-con-citas    MAL   "Si pagos devuelve 'too many connections', debes revisar el código del conector d"
+   2. ¿Cuál es el límite del pool de conexiones de pagos?
+      v1-texto-libre  bien  'El límite actual del pool de conexiones de pagos es de 200 conexiones.'
+      v2-con-citas    bien  'El límite actual del pool de conexiones de pagos es de 200 conexiones.'
+   3. ¿Cada cuánto caduca el token de la API del banco?
+      v1-texto-libre  bien  'El token de la API del banco caduca cada 90 días.'
+      v2-con-citas    bien  'El token de la API del banco caduca cada 90 días.'
+   v1-texto-libre: 2 de 3 · v2-con-citas: 2 de 3
+
+2. Las 30 preguntas
+   v1-texto-libre  18 de 30
+   v2-con-citas    20 de 30
+   v2-con-citas gana ['9', '28'] y pierde []
+
+3. ¿Cuántas muestras hacen parecer que v1-texto-libre es igual o mejor?
+   de 3 preguntas:  80.7% de las 4060 posibles
+   de 10 preguntas: 43.7% de 100000 muestras al azar
+```
+
+Aquí "acertar" es dar el dato clave en las preguntas con respuesta y abstenerse en las que no la tienen (`corpus.es_correcta`, del módulo 3). Ejecutado dos veces, el resultado es idéntico respuesta a respuesta: con temperatura 0 y el modelo descargado antes de cada versión, el sistema es reproducible.
+
+Una vez grabados, puedes repetir el análisis sin modelo. Tarda menos de un segundo:
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/04-evals/parece_que_funciona.py --grabadas
+```
+
+### Prueba tú a mano
+
+El laboratorio usa esos resultados grabados. Marca las preguntas que probarías tú, o pide una muestra al azar, y mira qué concluirías.
+
+<LabMuestras />
+
+## Mide y depura
+
+### Con tres preguntas, el cambio no existe
+
+Probando a mano las tres primeras preguntas, las dos versiones empatan: fallan la 1 y aciertan la 2 y la 3, con respuestas casi idénticas. La conclusión natural sería "el prompt con citas no aporta nada". Y no es un caso raro: en el 80,7 % de las 4 060 combinaciones posibles de 3 preguntas, la versión peor parece igual o mejor. Con 10 preguntas sigue pasando en el 43,7 % de las muestras. Probar a mano diez preguntas es casi como tirar una moneda.
+
+### Con las 30, se ve dónde está la diferencia
+
+La versión con citas acierta 20 y la de texto libre 18. Lo más informativo no es el total, sino la comparación caso a caso: la nueva gana 2 preguntas y no pierde ninguna. Las dos que gana son las que importan:
+
+- **Pregunta 28** (*¿Qué base de datos usa el servicio de recomendaciones?*, sin respuesta en la documentación). El texto libre repite la invención de la lección 01 del módulo 3: "El servicio de recomendaciones utiliza PostgreSQL como base de datos principal". La versión con citas responde "No aparece en la documentación".
+- **Pregunta 9** (*¿Puedo desplegar a producción un viernes a las 17:00?*). El texto libre se abstiene sin razón: "No aparece en la documentación". La versión con citas responde con la norma de despliegues y cita el fragmento 1.
+
+### Dos de treinta no es mucho
+
+Que la versión nueva gane 2 y no pierda ninguna es una buena señal, pero 2 casos de 30 son pocos. Si alguna de esas dos respuestas hubiera salido distinta por azar, la diferencia sería de 1. En la lección 03 calcularás el margen de error de estas cifras y verás cuántas preguntas hacen falta para que una diferencia así sea fiable. De momento, la regla práctica: un cambio que gana casos y no pierde ninguno es más convincente que uno que gana 5 y pierde 3, aunque el total sea el mismo.
+
+### Fija todo lo que no estás comparando
+
+En la lección 01 del módulo 3, este mismo RAG con el prompt de texto libre acertaba 17 de las 26 preguntas con respuesta. Aquí acierta 16. No es el mismo montaje: aquí los fragmentos van numerados (`[1]`, `[2]`…), para que la versión con citas pueda citarlos, y el límite de salida es de 200 tokens en vez de 150. Ese cambio de formato basta para mover una pregunta.
+
+Por eso las dos versiones de esta práctica comparten exactamente el mismo contexto y las mismas opciones, y solo cambia el prompt. Si cambias dos cosas a la vez, no sabrás cuál de las dos produjo la diferencia.
+
+## Errores frecuentes
+
+**Probar con las preguntas que ya funcionan.** Las primeras preguntas que se te ocurren suelen ser las del diseño original. Las que fallan en producción son otras. En la lección 02 construirás un conjunto de preguntas pensado para encontrar fallos.
+
+**Mirar solo el total.** Dos versiones con 18 aciertos pueden fallar preguntas completamente distintas. Guarda el resultado de cada caso y compara caso a caso.
+
+**No guardar los resultados.** Sin el detalle de cada ejecución no puedes comparar con la siguiente, ni explicar por qué se tomó una decisión.
+
+**Comparar ejecuciones que no son comparables.** Otro modelo, otro contexto u otras opciones de generación cambian el resultado aunque el prompt sea el mismo, como en el 16 frente a 17 de esta lección.
+
+### Anatomía de un error: la demo que no detecta la alucinación
+
+Alguien cambia el prompt de un RAG y, antes de desplegarlo, prueba tres preguntas:
+
+```text
+v1-texto-libre: 2 de 3 · v2-con-citas: 2 de 3
+```
+
+**Cómo leerlo.** Mismo resultado y respuestas casi idénticas. La conclusión de la demo es "da igual qué prompt usemos". Y es razonable con lo que se ha visto.
+
+**Causa.** La diferencia entre las dos versiones está en dos preguntas que nadie probó. Una es la peor posible para un sistema interno: con el prompt antiguo, el asistente afirma que el servicio de recomendaciones usa PostgreSQL, un dato que no aparece en ninguna parte. La muestra era demasiado pequeña y no incluía ninguna pregunta sin respuesta, que es justo donde el prompt nuevo marca la diferencia.
+
+**Solución.** Un conjunto de preguntas fijo, que cubra los tipos de pregunta que importan (con respuesta, sin respuesta, de guardarraíl…) y que se ejecute entero en cada cambio, guardando el resultado de cada caso. Es lo que construirás en las próximas lecciones: el conjunto en la 02, las métricas en la 03 y la ejecución automática en cada cambio en la 07.
+
+## Bitácora
+
+TODO(alex)
+
+## Para profundizar
+
+- Hamel Husain, [Your AI Product Needs Evals](https://hamel.dev/blog/posts/evals/) (2024). Por qué las evals son la base de cualquier mejora en un producto con LLMs.
+- Shankar et al., [Who Validates the Validators?](https://arxiv.org/abs/2404.12272) (2024). Cómo se construyen evals en la práctica y por qué los criterios cambian al ver los datos.

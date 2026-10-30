@@ -1,0 +1,158 @@
+---
+// Laboratorio "parece que funciona": el lector elige qué preguntas prueba a mano y ve qué
+// versión del RAG gana con esa muestra. Resultados reales grabados por
+// modulos/04-evals/parece_que_funciona.py (datos: scripts/datos_evals.py).
+import datos from '../data/parece_que_funciona.json';
+
+const [v1, v2] = datos.versiones;
+---
+
+<div class="laboratorio lab-muestras not-content" data-preguntas={JSON.stringify(datos.preguntas)}>
+	<div class="laboratorio-cabecera">
+		<strong>Laboratorio · probar a mano</strong>
+		<span>resultados reales de las 30 preguntas, dos versiones del RAG</span>
+	</div>
+	<div class="laboratorio-cuerpo">
+		<p class="instrucciones">
+			Marca las preguntas que probarías a mano, o pide una muestra al azar. Debajo, lo que concluirías con esa
+			muestra.
+		</p>
+		<div class="botones">
+			<button type="button" data-azar="3">3 al azar</button>
+			<button type="button" data-azar="10">10 al azar</button>
+			<button type="button" data-azar="30">las 30</button>
+			<button type="button" data-azar="0">ninguna</button>
+		</div>
+		<p class="veredicto" data-veredicto aria-live="polite"></p>
+		<ul class="preguntas">
+			{
+				datos.preguntas.map((p) => (
+					<li>
+						<label>
+							<input type="checkbox" value={p.id} />
+							<span class="texto">
+								{p.id}. {p.texto}
+								{!p.respondible && <em> (sin respuesta en la documentación)</em>}
+							</span>
+							<span class="marcas" data-marcas={p.id} hidden>
+								<span class={p.resultados[0].ok ? 'bien' : 'mal'} title={p.resultados[0].salida}>
+									{v1} {p.resultados[0].ok ? '✓' : '✗'}
+								</span>
+								<span class={p.resultados[1].ok ? 'bien' : 'mal'} title={p.resultados[1].salida}>
+									{v2} {p.resultados[1].ok ? '✓' : '✗'}
+								</span>
+							</span>
+						</label>
+					</li>
+				))
+			}
+		</ul>
+	</div>
+</div>
+
+<style>
+	.instrucciones {
+		margin: 0;
+		font-size: var(--sl-text-sm);
+	}
+	.botones {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+	.veredicto {
+		margin: 0;
+		min-height: 3rem;
+		font-size: var(--sl-text-sm);
+	}
+	.veredicto :global(b) {
+		font-family: var(--sl-font-mono);
+		color: var(--sl-color-accent-high);
+	}
+	.veredicto :global(.aviso) {
+		color: var(--curso-senal);
+	}
+	.preguntas {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		max-height: 24rem;
+		overflow-y: auto;
+		font-size: var(--sl-text-sm);
+	}
+	.preguntas li + li {
+		border-top: 1px solid var(--sl-color-gray-6);
+	}
+	label {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		align-items: baseline;
+		padding: 0.35rem 0.2rem;
+		cursor: pointer;
+	}
+	.texto {
+		flex: 1;
+		min-width: 12rem;
+	}
+	.marcas {
+		display: flex;
+		gap: 0.6rem;
+		font-family: var(--sl-font-mono);
+		font-size: var(--sl-text-xs);
+	}
+	.marcas[hidden] {
+		display: none;
+	}
+	.bien {
+		color: var(--sl-color-accent-high);
+	}
+	.mal {
+		color: var(--curso-senal);
+	}
+</style>
+
+<script>
+	type Pregunta = { id: number; resultados: { ok: boolean }[] };
+
+	document.querySelectorAll<HTMLElement>('.lab-muestras').forEach((lab) => {
+		const preguntas = JSON.parse(lab.dataset.preguntas!) as Pregunta[];
+		const casillas = [...lab.querySelectorAll<HTMLInputElement>('input[type=checkbox]')];
+		const veredicto = lab.querySelector<HTMLElement>('[data-veredicto]')!;
+
+		const pintar = () => {
+			const elegidas = preguntas.filter((_, i) => casillas[i].checked);
+			preguntas.forEach((p, i) => {
+				lab.querySelector<HTMLElement>(`[data-marcas="${p.id}"]`)!.hidden = !casillas[i].checked;
+			});
+			if (!elegidas.length) {
+				veredicto.textContent = 'Todavía no has probado ninguna pregunta.';
+				return;
+			}
+			const [a, b] = [0, 1].map((v) => elegidas.filter((p) => p.resultados[v].ok).length);
+			const n = elegidas.length;
+			const conclusion =
+				a === b
+					? '<span class="aviso">Con esta muestra, las dos versiones parecen iguales.</span>'
+					: a > b
+						? '<span class="aviso">Con esta muestra, el texto libre parece mejor.</span>'
+						: 'Con esta muestra, la versión con citas parece mejor.';
+			const [ta, tb] = [0, 1].map((v) => preguntas.filter((p) => p.resultados[v].ok).length);
+			const real =
+				n === preguntas.length ? '' : ` Con las ${preguntas.length}: texto libre <b>${ta}</b>, con citas <b>${tb}</b>.`;
+			veredicto.innerHTML = `Texto libre <b>${a}</b> de ${n} · con citas <b>${b}</b> de ${n}. ${conclusion}${real}`;
+		};
+
+		lab.querySelectorAll<HTMLButtonElement>('[data-azar]').forEach((boton) =>
+			boton.addEventListener('click', () => {
+				const n = Number(boton.dataset.azar);
+				const orden = casillas.map((_, i) => i).sort(() => Math.random() - 0.5);
+				const elegidas = new Set(orden.slice(0, n));
+				casillas.forEach((c, i) => (c.checked = elegidas.has(i)));
+				pintar();
+			}),
+		);
+		casillas.forEach((c) => c.addEventListener('change', pintar));
+		pintar();
+	});
+</script>
