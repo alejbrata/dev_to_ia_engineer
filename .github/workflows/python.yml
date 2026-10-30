@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # regresion.py compara con la rama base
       - uses: astral-sh/setup-uv@v10.3.3
         with:
           enable-cache: true
@@ -19,3 +21,7 @@ jobs:
       - run: uv run ruff check
       - run: uv run ruff format --check
       - run: uv run pytest
+      - name: Evals sin modelo (módulo 4, lección 07)
+        env:
+          REF: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
+        run: uv run python modulos/04-evals/regresion.py --contra "$REF"

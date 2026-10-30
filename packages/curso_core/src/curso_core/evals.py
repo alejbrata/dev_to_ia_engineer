@@ -25,10 +25,15 @@ class ResultadoCaso(BaseModel):
 
 
 class Informe(BaseModel):
-    """Los resultados de una versión del sistema sobre todos los casos."""
+    """Los resultados de una versión del sistema sobre todos los casos.
+
+    `meta` guarda lo que haga falta para saber qué se evaluó (por ejemplo, una huella de los
+    ficheros de los que dependen los resultados).
+    """
 
     version: str
     resultados: list[ResultadoCaso]
+    meta: dict[str, Any] = {}
 
     @property
     def aciertos(self) -> int:
@@ -44,15 +49,18 @@ class Informe(BaseModel):
     def guardar(self, ruta: Path) -> None:
         """Un JSON por línea: la cabecera con la versión y después un caso por línea."""
         ruta.parent.mkdir(parents=True, exist_ok=True)
-        lineas = [json.dumps({"version": self.version}, ensure_ascii=False)]
+        cabecera = {"version": self.version} | ({"meta": self.meta} if self.meta else {})
+        lineas = [json.dumps(cabecera, ensure_ascii=False)]
         lineas += [r.model_dump_json() for r in self.resultados]
         ruta.write_text("\n".join(lineas) + "\n", encoding="utf-8", newline="\n")
 
     @classmethod
     def cargar(cls, ruta: Path) -> Informe:
-        cabecera, *casos = ruta.read_text(encoding="utf-8").splitlines()
+        primera, *casos = ruta.read_text(encoding="utf-8").splitlines()
+        cabecera = json.loads(primera)
         return cls(
-            version=json.loads(cabecera)["version"],
+            version=cabecera["version"],
+            meta=cabecera.get("meta", {}),
             resultados=[ResultadoCaso.model_validate_json(c) for c in casos if c.strip()],
         )
 

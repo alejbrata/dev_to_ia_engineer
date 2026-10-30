@@ -22,6 +22,16 @@ def test_guardar_y_cargar(tmp_path) -> None:
     original.guardar(ruta)
     assert Informe.cargar(ruta) == original
     assert original.aciertos == 1 and original.total == 2
+    # Sin meta, la cabecera es solo la versión: los ficheros antiguos no cambian.
+    assert ruta.read_text(encoding="utf-8").splitlines()[0] == '{"version": "v1"}'
+
+
+def test_guardar_y_cargar_con_meta(tmp_path) -> None:
+    original = informe("v1", {"1": True})
+    original.meta = {"huella": "abc"}
+    ruta = tmp_path / "v1.jsonl"
+    original.guardar(ruta)
+    assert Informe.cargar(ruta).meta == {"huella": "abc"}
 
 
 def test_comparar_caso_a_caso() -> None:

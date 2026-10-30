@@ -1,0 +1,33 @@
+name: Evals completas
+
+# La eval con modelos del módulo 4 (lección 07). Necesita una máquina con Ollama y los modelos
+# de config/models.toml descargados, y el reranker en llama-server: un runner propio
+# (self-hosted). Los runners de GitHub no tienen GPU y tendrían que descargar varios GB de
+# modelos en cada ejecución. Con un proveedor remoto, bastaría un runner de GitHub y la clave
+# en los secretos del repositorio.
+on:
+  workflow_dispatch:
+  # Para ejecutarla cada noche, descomenta (hora UTC):
+  # schedule:
+  #   - cron: "0 3 * * *"
+
+jobs:
+  evals:
+    runs-on: self-hosted
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v10.3.3
+      - run: uv sync --locked
+      - name: Eval completa del sistema vigente
+        run: uv run python modulos/04-evals/evaluar.py
+      - name: Comparar con main
+        run: uv run python modulos/04-evals/regresion.py --contra origin/main
+      - name: Guardar los resultados
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: evals-vigente
+          path: modulos/04-evals/resultados/vigente.jsonl
