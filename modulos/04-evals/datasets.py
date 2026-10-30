@@ -47,6 +47,7 @@ def evaluar(cliente: ClienteLLM, nombre: str, casos: list[dataset.Caso]) -> Info
                     ),
                     "se_abstiene": corpus.se_abstiene(r.texto),
                     "citas": r.citas,
+                    "recuperados": [f.id for f in r.recuperados],
                 },
             )
         )

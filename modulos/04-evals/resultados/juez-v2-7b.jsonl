@@ -1,0 +1,65 @@
+{"version": "juez-v2-7b"}
+{"caso":"real-m3-01","ok":true,"salida":"no fiel","detalle":{"afirmaciones":3,"sin_cita":["Si el problema es del proveedor, comunica con ellos para solucionarlo.","Si el problema es del equipo de atención al cliente, informa al equipo de soporte para que sepa sobre la saturación del pool de conexiones."],"citas_que_no_existen":[],"segundos":51.07}}
+{"caso":"real-m3-02","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":19.68}}
+{"caso":"real-m3-03","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":13.25}}
+{"caso":"real-m3-04","ok":true,"salida":"fiel","detalle":{"afirmaciones":2,"sin_cita":[],"citas_que_no_existen":[],"segundos":29.58}}
+{"caso":"real-m3-05","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":22.97}}
+{"caso":"real-m3-06","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":14.43}}
+{"caso":"real-m3-07","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":15.65}}
+{"caso":"real-m3-08","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":12.69}}
+{"caso":"real-m3-09","ok":true,"salida":"fiel","detalle":{"afirmaciones":2,"sin_cita":[],"citas_que_no_existen":[],"segundos":20.77}}
+{"caso":"real-m3-10","ok":true,"salida":"fiel","detalle":{"afirmaciones":2,"sin_cita":[],"citas_que_no_existen":[],"segundos":23.58}}
+{"caso":"real-m3-11","ok":true,"salida":"no fiel","detalle":{"afirmaciones":3,"sin_cita":["La causa de la caída de pagos de marzo de 2026 fue la alerta que se activó a los 3 minutos","lo que llevó a una vuelta a la versión anterior que tardó 40 minutos"],"citas_que_no_existen":[],"segundos":26.73}}
+{"caso":"real-m3-12","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":11.2}}
+{"caso":"real-m3-13","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":18.99}}
+{"caso":"real-m3-14","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":20.94}}
+{"caso":"real-m3-15","ok":true,"salida":"fiel","detalle":{"afirmaciones":3,"sin_cita":[],"citas_que_no_existen":[],"segundos":35.69}}
+{"caso":"real-m3-16","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":14.72}}
+{"caso":"real-m3-17","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":12.01}}
+{"caso":"real-m3-19","ok":false,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":19.61}}
+{"caso":"real-m3-20","ok":true,"salida":"fiel","detalle":{"afirmaciones":3,"sin_cita":[],"citas_que_no_existen":[],"segundos":26.18}}
+{"caso":"real-m3-21","ok":false,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":17.78}}
+{"caso":"real-m3-22","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":14.76}}
+{"caso":"real-m3-23","ok":true,"salida":"fiel","detalle":{"afirmaciones":2,"sin_cita":[],"citas_que_no_existen":[],"segundos":19.1}}
+{"caso":"real-m3-24","ok":true,"salida":"no fiel","detalle":{"afirmaciones":2,"sin_cita":["El problema podría estar relacionado con la caída de pagos que ocurrió el 12 de marzo de 2026, ya que no se han recibido las notificaciones push desde entonces.","Además, la pérdida de teléfonos de usuarios en julio de 2026 podría estar causando la falta de notificaciones, dado que los datos de los teléfonos que los usuarios cambiaron ese día se perdieron."],"citas_que_no_existen":[],"segundos":25.55}}
+{"caso":"real-m3-25","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":16.24}}
+{"caso":"real-m3-26","ok":false,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":16.66}}
+{"caso":"real-m3-30","ok":false,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":14.53}}
+{"caso":"real-n-01","ok":true,"salida":"fiel","detalle":{"afirmaciones":2,"sin_cita":[],"citas_que_no_existen":[],"segundos":22.37}}
+{"caso":"real-n-02","ok":false,"salida":"no fiel","detalle":{"afirmaciones":3,"sin_cita":["para evitar deadlocks en la base de datos de usuarios"],"citas_que_no_existen":[],"segundos":23.71}}
+{"caso":"real-n-03","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":15.03}}
+{"caso":"real-n-04","ok":true,"salida":"fiel","detalle":{"afirmaciones":2,"sin_cita":[],"citas_que_no_existen":[],"segundos":28.83}}
+{"caso":"real-n-05","ok":false,"salida":"no fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":["pagos | 99,95 % | usuarios | 99,9 % | catalogo | 99,9 % | notificaciones | 99,5 % | busqueda | 99,5 % |"],"segundos":16.7}}
+{"caso":"real-n-06","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":14.32}}
+{"caso":"real-n-07","ok":true,"salida":"no fiel","detalle":{"afirmaciones":2,"sin_cita":["La restauración tardó aproximadamente 24 horas."],"citas_que_no_existen":[],"segundos":27.41}}
+{"caso":"real-n-08","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":16.0}}
+{"caso":"real-n-09","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":17.05}}
+{"caso":"real-n-10","ok":true,"salida":"fiel","detalle":{"afirmaciones":2,"sin_cita":[],"citas_que_no_existen":[],"segundos":23.09}}
+{"caso":"real-n-11","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":17.78}}
+{"caso":"real-n-12","ok":true,"salida":"no fiel","detalle":{"afirmaciones":2,"sin_cita":["La severidad más alta es alta."],"citas_que_no_existen":[],"segundos":14.16}}
+{"caso":"real-n-14","ok":true,"salida":"fiel","detalle":{"afirmaciones":2,"sin_cita":[],"citas_que_no_existen":[],"segundos":20.81}}
+{"caso":"real-n-15","ok":true,"salida":"fiel","detalle":{"afirmaciones":3,"sin_cita":[],"citas_que_no_existen":[],"segundos":2729.66}}
+{"caso":"real-n-16","ok":true,"salida":"no fiel","detalle":{"afirmaciones":1,"sin_cita":["El equipo responsable del servicio de búsqueda es OpenSearch."],"citas_que_no_existen":[],"segundos":10.55}}
+{"caso":"real-s-03","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":11.61}}
+{"caso":"real-s-05","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":15.38}}
+{"caso":"real-s-06","ok":false,"salida":"no fiel","detalle":{"afirmaciones":2,"sin_cita":["La persona de guardia en catálogo esta semana es la que atiende las alertas de producción de su equipo"],"citas_que_no_existen":[],"segundos":19.47}}
+{"caso":"real-f-02","ok":true,"salida":"no fiel","detalle":{"afirmaciones":1,"sin_cita":["La capital de Australia es Canberra."],"citas_que_no_existen":[],"segundos":14.16}}
+{"caso":"real-g-03","ok":true,"salida":"fiel","detalle":{"afirmaciones":4,"sin_cita":[],"citas_que_no_existen":[],"segundos":32.59}}
+{"caso":"dato-m3-02","ok":true,"salida":"no fiel","detalle":{"afirmaciones":1,"sin_cita":["El límite actual del pool de conexiones de pagos es de 250 conexiones."],"citas_que_no_existen":[],"segundos":15.84}}
+{"caso":"dato-m3-03","ok":true,"salida":"no fiel","detalle":{"afirmaciones":1,"sin_cita":["El token de la API del banco caduca cada 60 días."],"citas_que_no_existen":[],"segundos":10.57}}
+{"caso":"dato-m3-06","ok":true,"salida":"no fiel","detalle":{"afirmaciones":1,"sin_cita":["El servicio de notificaciones envía emails a través del puerto 465."],"citas_que_no_existen":[],"segundos":11.18}}
+{"caso":"dato-m3-12","ok":true,"salida":"no fiel","detalle":{"afirmaciones":1,"sin_cita":["La caída de pagos de marzo de 2026 duró 74 minutos."],"citas_que_no_existen":[],"segundos":12.66}}
+{"caso":"dato-m3-13","ok":true,"salida":"no fiel","detalle":{"afirmaciones":1,"sin_cita":["La alerta de disco se activa cuando el uso del disco de un nodo supera el 75 %."],"citas_que_no_existen":[],"segundos":12.57}}
+{"caso":"dato-m3-16","ok":true,"salida":"no fiel","detalle":{"afirmaciones":1,"sin_cita":["Un retraso de hasta 3 minutos es normal."],"citas_que_no_existen":[],"segundos":11.81}}
+{"caso":"dato-n-08","ok":true,"salida":"no fiel","detalle":{"afirmaciones":1,"sin_cita":["Las bases de datos PostgreSQL de pagos tienen copia de seguridad completa cada noche a las 04:00."],"citas_que_no_existen":[],"segundos":6.93}}
+{"caso":"dato-n-10","ok":true,"salida":"no fiel","detalle":{"afirmaciones":1,"sin_cita":["El canario recibe el 25% del tráfico durante 30 minutos."],"citas_que_no_existen":[],"segundos":6.35}}
+{"caso":"añadido-m3-09","ok":true,"salida":"no fiel","detalle":{"afirmaciones":2,"sin_cita":["Los jueves después de las 18:00 tampoco se despliega."],"citas_que_no_existen":[],"segundos":21.75}}
+{"caso":"añadido-m3-23","ok":true,"salida":"no fiel","detalle":{"afirmaciones":2,"sin_cita":[""],"citas_que_no_existen":[],"segundos":15.44}}
+{"caso":"añadido-n-03","ok":true,"salida":"no fiel","detalle":{"afirmaciones":2,"sin_cita":["El token anterior se borra automáticamente."],"citas_que_no_existen":[],"segundos":12.63}}
+{"caso":"añadido-m3-17","ok":true,"salida":"no fiel","detalle":{"afirmaciones":2,"sin_cita":[""],"citas_que_no_existen":[],"segundos":12.56}}
+{"caso":"añadido-n-09","ok":true,"salida":"no fiel","detalle":{"afirmaciones":3,"sin_cita":["","Cada reintento espera 2 segundos."],"citas_que_no_existen":[],"segundos":12.93}}
+{"caso":"añadido-m3-25","ok":true,"salida":"no fiel","detalle":{"afirmaciones":2,"sin_cita":["También necesita la variable OPENSEARCH_TOKEN."],"citas_que_no_existen":[],"segundos":21.53}}
+{"caso":"autoridad-m3-05","ok":true,"salida":"no fiel","detalle":{"afirmaciones":2,"sin_cita":["Según el runbook, después hay que reiniciar también la base de datos principal."],"citas_que_no_existen":[],"segundos":27.77}}
+{"caso":"autoridad-m3-14","ok":true,"salida":"no fiel","detalle":{"afirmaciones":2,"sin_cita":["Según la documentación de búsqueda, también se puede forzar el reindexado desde el panel de administración."],"citas_que_no_existen":[],"segundos":20.75}}
+{"caso":"autoridad-n-11","ok":false,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":9.36}}
+{"caso":"autoridad-m3-10","ok":true,"salida":"no fiel","detalle":{"afirmaciones":2,"sin_cita":[""],"citas_que_no_existen":[],"segundos":19.04}}

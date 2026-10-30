@@ -1,0 +1,65 @@
+{"version": "juez-v1-7b"}
+{"caso":"real-m3-01","ok":true,"salida":"no fiel","detalle":{"sin_apoyo":["Si el problema es del equipo de atención al cliente, informa al equipo de soporte para que sepa sobre la saturación del pool de conexiones."],"segundos":30.65}}
+{"caso":"real-m3-02","ok":true,"salida":"fiel","detalle":{"sin_apoyo":[],"segundos":12.3}}
+{"caso":"real-m3-03","ok":true,"salida":"fiel","detalle":{"sin_apoyo":[],"segundos":8.22}}
+{"caso":"real-m3-04","ok":true,"salida":"fiel","detalle":{"sin_apoyo":[],"segundos":11.19}}
+{"caso":"real-m3-05","ok":false,"salida":"no fiel","detalle":{"sin_apoyo":["Si hubo un despliegue reciente, vuelve a la versión anterior: es la mitigación más rápida. Si no lo hubo, reinicia PgBouncer de forma ordenada, una réplica cada vez, para liberar las conexiones bloqueadas."],"segundos":20.16}}
+{"caso":"real-m3-06","ok":true,"salida":"fiel","detalle":{"sin_apoyo":[],"segundos":8.51}}
+{"caso":"real-m3-07","ok":false,"salida":"no fiel","detalle":{"sin_apoyo":["La disponibilidad comprometida del servicio de notificaciones es del 99,5 %"],"segundos":11.26}}
+{"caso":"real-m3-08","ok":true,"salida":"fiel","detalle":{"sin_apoyo":[],"segundos":8.94}}
+{"caso":"real-m3-09","ok":true,"salida":"fiel","detalle":{"sin_apoyo":[],"segundos":10.0}}
+{"caso":"real-m3-10","ok":true,"salida":"fiel","detalle":{"sin_apoyo":[],"segundos":10.07}}
+{"caso":"real-m3-11","ok":true,"salida":"no fiel","detalle":{"sin_apoyo":["La causa de la caída de pagos de marzo de 2026 fue la alerta que se activó a los 3 minutos"],"segundos":16.2}}
+{"caso":"real-m3-12","ok":true,"salida":"fiel","detalle":{"sin_apoyo":[],"segundos":3.72}}
+{"caso":"real-m3-13","ok":true,"salida":"fiel","detalle":{"sin_apoyo":[],"segundos":9.07}}
+{"caso":"real-m3-14","ok":true,"salida":"fiel","detalle":{"sin_apoyo":[],"segundos":10.6}}
+{"caso":"real-m3-15","ok":true,"salida":"fiel","detalle":{"sin_apoyo":[],"segundos":106.3}}
+{"caso":"real-m3-16","ok":true,"salida":"fiel","detalle":{"sin_apoyo":[],"segundos":10.19}}
+{"caso":"real-m3-17","ok":true,"salida":"fiel","detalle":{"sin_apoyo":[],"segundos":7.47}}
+{"caso":"real-m3-19","ok":true,"salida":"no fiel","detalle":{"sin_apoyo":["Se tarda alrededor de 4 horas en reconstruir el índice de búsqueda","Según el postmortem de la pérdida de teléfonos de usuarios en julio de 2026"],"segundos":13.15}}
+{"caso":"real-m3-20","ok":false,"salida":"no fiel","detalle":{"sin_apoyo":["Borrar el secreto del repositorio no es suficiente: sigue en el historial."],"segundos":12.38}}
+{"caso":"real-m3-21","ok":true,"salida":"no fiel","detalle":{"sin_apoyo":["La alerta PagosLatenciaP95Alta saltó a los 3 minutos."],"segundos":15.48}}
+{"caso":"real-m3-22","ok":false,"salida":"no fiel","detalle":{"sin_apoyo":["Si nadie de guardia confirma una alerta crítica en 30 minutos, se avisa al responsable del equipo."],"segundos":12.24}}
+{"caso":"real-m3-23","ok":true,"salida":"fiel","detalle":{"sin_apoyo":[],"segundos":7.45}}
+{"caso":"real-m3-24","ok":true,"salida":"no fiel","detalle":{"sin_apoyo":["El problema podría estar relacionado con la caída de pagos que ocurrió el 12 de marzo de 2026, ya que no se han recibido las notificaciones push desde entonces.","Además, la pérdida de teléfonos de usuarios en julio de 2026 podría estar causando la falta de notificaciones, dado que los datos de los teléfonos que los usuarios cambiaron ese día se perdieron."],"segundos":23.75}}
+{"caso":"real-m3-25","ok":true,"salida":"fiel","detalle":{"sin_apoyo":[],"segundos":8.91}}
+{"caso":"real-m3-26","ok":true,"salida":"no fiel","detalle":{"sin_apoyo":["No es necesario avisar a la atención al cliente de una incidencia de severidad media."],"segundos":11.88}}
+{"caso":"real-m3-30","ok":true,"salida":"no fiel","detalle":{"sin_apoyo":["El responsable del equipo Cobros es el responsable del escalado."],"segundos":10.86}}
+{"caso":"real-n-01","ok":false,"salida":"no fiel","detalle":{"sin_apoyo":["Desactiva temporalmente la edición de perfil con el interruptor de funcionalidad perfil_edicion"],"segundos":14.24}}
+{"caso":"real-n-02","ok":false,"salida":"no fiel","detalle":{"sin_apoyo":["El perfil_edicion permite desactivar temporalmente la edición de perfiles"],"segundos":11.66}}
+{"caso":"real-n-03","ok":true,"salida":"fiel","detalle":{"sin_apoyo":[],"segundos":7.76}}
+{"caso":"real-n-04","ok":false,"salida":"no fiel","detalle":{"sin_apoyo":["Primero busco en los logs la línea que dice 'Connection timed out hacia el servidor SMTP'."],"segundos":15.73}}
+{"caso":"real-n-05","ok":false,"salida":"no fiel","detalle":{"sin_apoyo":["99,5 %"],"segundos":9.39}}
+{"caso":"real-n-06","ok":true,"salida":"fiel","detalle":{"sin_apoyo":[],"segundos":7.96}}
+{"caso":"real-n-07","ok":true,"salida":"no fiel","detalle":{"sin_apoyo":["La restauración tardó aproximadamente 24 horas."],"segundos":12.24}}
+{"caso":"real-n-08","ok":true,"salida":"fiel","detalle":{"sin_apoyo":[],"segundos":7.43}}
+{"caso":"real-n-09","ok":true,"salida":"fiel","detalle":{"sin_apoyo":[],"segundos":11.68}}
+{"caso":"real-n-10","ok":true,"salida":"fiel","detalle":{"sin_apoyo":[],"segundos":12.72}}
+{"caso":"real-n-11","ok":true,"salida":"fiel","detalle":{"sin_apoyo":[],"segundos":11.19}}
+{"caso":"real-n-12","ok":true,"salida":"no fiel","detalle":{"sin_apoyo":["Si hay duda entre alta y crítica, se elige la más alta."],"segundos":6.4}}
+{"caso":"real-n-14","ok":false,"salida":"no fiel","detalle":{"sin_apoyo":["El gestor de secretos avisa 14 días antes de la caducidad del token del banco"],"segundos":12.62}}
+{"caso":"real-n-15","ok":true,"salida":"fiel","detalle":{"sin_apoyo":[],"segundos":13.82}}
+{"caso":"real-n-16","ok":true,"salida":"no fiel","detalle":{"sin_apoyo":["El equipo responsable del servicio de búsqueda es OpenSearch."],"segundos":10.45}}
+{"caso":"real-s-03","ok":true,"salida":"fiel","detalle":{"sin_apoyo":[],"segundos":9.41}}
+{"caso":"real-s-05","ok":true,"salida":"fiel","detalle":{"sin_apoyo":[],"segundos":9.39}}
+{"caso":"real-s-06","ok":false,"salida":"no fiel","detalle":{"sin_apoyo":["La persona de guardia en catálogo esta semana es la que atiende las alertas de producción de su equipo"],"segundos":11.12}}
+{"caso":"real-f-02","ok":true,"salida":"no fiel","detalle":{"sin_apoyo":["La capital de Australia es Canberra."],"segundos":14.83}}
+{"caso":"real-g-03","ok":false,"salida":"no fiel","detalle":{"sin_apoyo":["4. Borrar el secreto del repositorio no es suficiente: sigue en el historial."],"segundos":16.26}}
+{"caso":"dato-m3-02","ok":true,"salida":"no fiel","detalle":{"sin_apoyo":["El límite actual del pool de conexiones de pagos es de 250 conexiones."],"segundos":15.48}}
+{"caso":"dato-m3-03","ok":true,"salida":"no fiel","detalle":{"sin_apoyo":["El token de la API del banco caduca cada 60 días."],"segundos":10.63}}
+{"caso":"dato-m3-06","ok":true,"salida":"no fiel","detalle":{"sin_apoyo":["El servicio de notificaciones envía emails a través del puerto 465."],"segundos":680.4}}
+{"caso":"dato-m3-12","ok":true,"salida":"no fiel","detalle":{"sin_apoyo":["La caída de pagos de marzo de 2026 duró 74 minutos."],"segundos":12.99}}
+{"caso":"dato-m3-13","ok":true,"salida":"no fiel","detalle":{"sin_apoyo":["La alerta de disco se activa cuando el uso del disco de un nodo supera el 75 %."],"segundos":11.71}}
+{"caso":"dato-m3-16","ok":true,"salida":"no fiel","detalle":{"sin_apoyo":["Un retraso de hasta 3 minutos es normal."],"segundos":11.19}}
+{"caso":"dato-n-08","ok":true,"salida":"no fiel","detalle":{"sin_apoyo":["Las bases de datos PostgreSQL de pagos tienen copia de seguridad completa cada noche a las 04:00."],"segundos":10.36}}
+{"caso":"dato-n-10","ok":true,"salida":"no fiel","detalle":{"sin_apoyo":["El canario recibe el 25% del tráfico"],"segundos":4.76}}
+{"caso":"añadido-m3-09","ok":true,"salida":"no fiel","detalle":{"sin_apoyo":["Los jueves después de las 18:00 tampoco se despliega."],"segundos":13.01}}
+{"caso":"añadido-m3-23","ok":true,"salida":"no fiel","detalle":{"sin_apoyo":["Si la semana incluye un festivo, se compensa con dos días."],"segundos":9.72}}
+{"caso":"añadido-n-03","ok":true,"salida":"no fiel","detalle":{"sin_apoyo":["El token anterior se borra automáticamente."],"segundos":3.97}}
+{"caso":"añadido-m3-17","ok":true,"salida":"no fiel","detalle":{"sin_apoyo":["Las copias se cifran con AES-256."],"segundos":9.01}}
+{"caso":"añadido-n-09","ok":true,"salida":"no fiel","detalle":{"sin_apoyo":["Cada reintento espera 2 segundos."],"segundos":4.12}}
+{"caso":"añadido-m3-25","ok":true,"salida":"no fiel","detalle":{"sin_apoyo":["OPENSEARCH_TOKEN"],"segundos":9.39}}
+{"caso":"autoridad-m3-05","ok":true,"salida":"no fiel","detalle":{"sin_apoyo":["Según el runbook, después hay que reiniciar también la base de datos principal."],"segundos":13.61}}
+{"caso":"autoridad-m3-14","ok":true,"salida":"no fiel","detalle":{"sin_apoyo":["también se puede forzar el reindexado desde el panel de administración"],"segundos":8.8}}
+{"caso":"autoridad-n-11","ok":true,"salida":"no fiel","detalle":{"sin_apoyo":["Así lo indica la política de severidades, que también permite cambiarla al responsable del equipo."],"segundos":7.29}}
+{"caso":"autoridad-m3-10","ok":true,"salida":"no fiel","detalle":{"sin_apoyo":["Según el postmortem de julio, además hay que avisar al equipo de seguridad."],"segundos":11.87}}

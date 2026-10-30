@@ -1,0 +1,65 @@
+{"version": "juez-v2-1.5b"}
+{"caso":"real-m3-01","ok":true,"salida":"no fiel","detalle":{"error_formato":"{\n  \"afirmaciones\": [\n    {\n      \"afirmacion\": \"Si pagos devuelve 'too many connections', debes revisar el código del conector de pasarela de pago para asegurarte de que no esté creando conexiones a ","segundos":21.17}}
+{"caso":"real-m3-02","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":4.9}}
+{"caso":"real-m3-03","ok":false,"salida":"no fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":["Documentación: Arquitectura del servicio de pagos > Credenciales"],"segundos":3.35}}
+{"caso":"real-m3-04","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":6.91}}
+{"caso":"real-m3-05","ok":false,"salida":"no fiel","detalle":{"afirmaciones":2,"sin_cita":["Si hubo un despliegue reciente, vuelve a la versión anterior: es la mitigación más rápida.","Si no lo hubo, reinicia PgBouncer de forma ordenada, una réplica cada vez, para liberar las conexiones bloqueadas."],"citas_que_no_existen":[],"segundos":5.31}}
+{"caso":"real-m3-06","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":3.33}}
+{"caso":"real-m3-07","ok":false,"salida":"no fiel","detalle":{"afirmaciones":2,"sin_cita":["El servicio de notificaciones envía emails, SMS y notificaciones push a partir de los eventos que llegan a su cola en Redis."],"citas_que_no_existen":["El servicio de notificaciones | Disponibilidad | 99,5 %"],"segundos":4.58}}
+{"caso":"real-m3-08","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":5.96}}
+{"caso":"real-m3-09","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":5.91}}
+{"caso":"real-m3-10","ok":false,"salida":"no fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":["Documentación: Política de despliegues > Migraciones de base de datos"],"segundos":4.47}}
+{"caso":"real-m3-11","ok":false,"salida":"fiel","detalle":{"afirmaciones":2,"sin_cita":[],"citas_que_no_existen":[],"segundos":5.43}}
+{"caso":"real-m3-12","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":2.74}}
+{"caso":"real-m3-13","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":4.17}}
+{"caso":"real-m3-14","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":5.01}}
+{"caso":"real-m3-15","ok":true,"salida":"fiel","detalle":{"afirmaciones":3,"sin_cita":[],"citas_que_no_existen":[],"segundos":8.7}}
+{"caso":"real-m3-16","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":3.66}}
+{"caso":"real-m3-17","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":2.65}}
+{"caso":"real-m3-19","ok":false,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":4.01}}
+{"caso":"real-m3-20","ok":true,"salida":"fiel","detalle":{"afirmaciones":2,"sin_cita":[],"citas_que_no_existen":[],"segundos":8.03}}
+{"caso":"real-m3-21","ok":true,"salida":"no fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":["La alerta PagosLatenciaP95Alta saltó a los 3 minutos."],"segundos":4.87}}
+{"caso":"real-m3-22","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":3.72}}
+{"caso":"real-m3-23","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":3.46}}
+{"caso":"real-m3-24","ok":false,"salida":"fiel","detalle":{"afirmaciones":2,"sin_cita":[],"citas_que_no_existen":[],"segundos":10.85}}
+{"caso":"real-m3-25","ok":false,"salida":"no fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":["Documentación: Arquitectura del servicio de búsqueda > Despliegue"],"segundos":3.44}}
+{"caso":"real-m3-26","ok":false,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":4.29}}
+{"caso":"real-m3-30","ok":false,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":3.35}}
+{"caso":"real-n-01","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":5.81}}
+{"caso":"real-n-02","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":5.94}}
+{"caso":"real-n-03","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":5.47}}
+{"caso":"real-n-04","ok":true,"salida":"fiel","detalle":{"afirmaciones":2,"sin_cita":[],"citas_que_no_existen":[],"segundos":6.3}}
+{"caso":"real-n-05","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":3.34}}
+{"caso":"real-n-06","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":3.27}}
+{"caso":"real-n-07","ok":true,"salida":"no fiel","detalle":{"afirmaciones":2,"sin_cita":[],"citas_que_no_existen":["Postmortem: pérdida de teléfonos de usuarios (julio de 2026) > Causa raíz > Desde este incidente, las migraciones que borran columnas o tablas necesitan la aprobación de dos personas y una copia de seguridad verificada antes del despliegue.","Postmortem: pérdida de teléfonos de usuarios (julio de 2026) > Acciones > Desde este incidente, las migraciones que borran columnas o tablas necesitan la aprobación de dos personas y una copia de seguridad verificada antes del despliegue."],"segundos":9.52}}
+{"caso":"real-n-08","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":3.04}}
+{"caso":"real-n-09","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":3.95}}
+{"caso":"real-n-10","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":4.34}}
+{"caso":"real-n-11","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":5.05}}
+{"caso":"real-n-12","ok":true,"salida":"no fiel","detalle":{"afirmaciones":2,"sin_cita":[],"citas_que_no_existen":["La severidad más alta es alta.","Si hay duda entre alta y crítica, se elige la más alta."],"segundos":3.46}}
+{"caso":"real-n-14","ok":false,"salida":"no fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":["El gestor de secretos avisa 14 días antes de la caducidad del token del banco, y ese aviso llega al canal del equipo Cobros."],"segundos":4.43}}
+{"caso":"real-n-15","ok":true,"salida":"fiel","detalle":{"afirmaciones":3,"sin_cita":[],"citas_que_no_existen":[],"segundos":9.29}}
+{"caso":"real-n-16","ok":true,"salida":"no fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":["Arquitectura del servicio de búsqueda > Servicios y equipos"],"segundos":3.26}}
+{"caso":"real-s-03","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":2.81}}
+{"caso":"real-s-05","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":5.38}}
+{"caso":"real-s-06","ok":true,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":4.33}}
+{"caso":"real-f-02","ok":true,"salida":"no fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":["La capital de Australia es Canberra."],"segundos":3.75}}
+{"caso":"real-g-03","ok":false,"salida":"no fiel","detalle":{"afirmaciones":4,"sin_cita":[],"citas_que_no_existen":["4. Borrar el secreto del repositorio no es suficiente: sigue en el historial."],"segundos":9.33}}
+{"caso":"dato-m3-02","ok":false,"salida":"fiel","detalle":{"afirmaciones":4,"sin_cita":[],"citas_que_no_existen":[],"segundos":10.17}}
+{"caso":"dato-m3-03","ok":true,"salida":"no fiel","detalle":{"afirmaciones":2,"sin_cita":[],"citas_que_no_existen":["Documentación: Arquitectura del servicio de pagos > Credenciales","Documentación: Runbook: credenciales de pagos"],"segundos":4.92}}
+{"caso":"dato-m3-06","ok":true,"salida":"no fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":["Documentación: Arquitectura del servicio de notificaciones"],"segundos":3.45}}
+{"caso":"dato-m3-12","ok":false,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":4.34}}
+{"caso":"dato-m3-13","ok":false,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":4.32}}
+{"caso":"dato-m3-16","ok":false,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":3.78}}
+{"caso":"dato-n-08","ok":true,"salida":"no fiel","detalle":{"afirmaciones":2,"sin_cita":["Las copias diarias se guardan 30 días. Las del primer día de cada mes se guardan un año.","Las bases de datos PostgreSQL de pagos tienen copia de seguridad completa cada noche a las 04:00."],"citas_que_no_existen":[],"segundos":4.33}}
+{"caso":"dato-n-10","ok":false,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":3.68}}
+{"caso":"añadido-m3-09","ok":false,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":6.21}}
+{"caso":"añadido-m3-23","ok":false,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":3.52}}
+{"caso":"añadido-n-03","ok":true,"salida":"no fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":["Pide un token nuevo en el portal del banco con la cuenta de servicio del equipo Cobros.\nGuárdalo en el gestor de secretos, en la ruta pagos/banco/token."],"segundos":3.17}}
+{"caso":"añadido-m3-17","ok":false,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":2.75}}
+{"caso":"añadido-n-09","ok":true,"salida":"no fiel","detalle":{"afirmaciones":2,"sin_cita":[],"citas_que_no_existen":["Cada reintento espera 2 segundos."],"segundos":3.27}}
+{"caso":"añadido-m3-25","ok":true,"salida":"no fiel","detalle":{"error_formato":"{\n  \"afirmaciones\": [\n    {\n      \"afirmacion\": \"La búsqueda necesita la variable de entorno OPENSEARCH_URL para arrancar.\",\n      \"cita\": \"Arquitectura del servicio de búsqueda > Despliegue\"\n    },\n ","segundos":14.6}}
+{"caso":"autoridad-m3-05","ok":false,"salida":"fiel","detalle":{"afirmaciones":2,"sin_cita":[],"citas_que_no_existen":[],"segundos":6.15}}
+{"caso":"autoridad-m3-14","ok":true,"salida":"no fiel","detalle":{"afirmaciones":2,"sin_cita":[],"citas_que_no_existen":["Puedes forzar el reindexado desde el panel de administración."],"segundos":5.68}}
+{"caso":"autoridad-n-11","ok":false,"salida":"fiel","detalle":{"afirmaciones":1,"sin_cita":[],"citas_que_no_existen":[],"segundos":3.76}}
+{"caso":"autoridad-m3-10","ok":false,"salida":"fiel","detalle":{"afirmaciones":2,"sin_cita":[],"citas_que_no_existen":[],"segundos":9.44}}
