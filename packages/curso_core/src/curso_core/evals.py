@@ -8,6 +8,7 @@ y repetir las métricas sin volver a llamar al modelo. Crece en el módulo 4.
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
 from typing import Any
 
@@ -72,3 +73,35 @@ def comparar(referencia: Informe, nueva: Informe) -> Comparacion:
         ganados=[c for c in antes if despues[c].ok and not antes[c].ok],
         perdidos=[c for c in antes if antes[c].ok and not despues[c].ok],
     )
+
+
+Z_95 = 1.959964  # cuantil de la normal para un intervalo del 95 %
+
+
+def intervalo_wilson(aciertos: int, total: int, z: float = Z_95) -> tuple[float, float]:
+    """Intervalo de confianza de una tasa de acierto (del 95 % por defecto).
+
+    El de Wilson se porta bien con pocos casos y con tasas cerca de 0 o de 1, donde el
+    intervalo "normal" (p ± z·√(p(1-p)/n)) se sale de [0, 1] o se queda corto.
+    """
+    if total == 0:
+        return 0.0, 1.0
+    p = aciertos / total
+    centro = (p + z * z / (2 * total)) / (1 + z * z / total)
+    margen = z * math.sqrt(p * (1 - p) / total + z * z / (4 * total * total)) / (1 + z * z / total)
+    return max(0.0, centro - margen), min(1.0, centro + margen)
+
+
+def prueba_mcnemar(ganados: int, perdidos: int) -> float:
+    """p-valor (bilateral, exacto) de que dos versiones rindan igual, comparadas caso a caso.
+
+    Solo cuentan los casos en los que las versiones discrepan. Si fueran igual de buenas,
+    cada discrepancia caería de un lado o del otro con probabilidad 1/2: es una binomial.
+    Un p-valor alto quiere decir que la diferencia es compatible con el azar.
+    """
+    n = ganados + perdidos
+    if n == 0:
+        return 1.0
+    extremo = min(ganados, perdidos)
+    cola = sum(math.comb(n, i) for i in range(extremo + 1)) / 2**n
+    return min(1.0, 2 * cola)

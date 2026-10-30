@@ -1,5 +1,11 @@
 import pytest
-from curso_core.evals import Informe, ResultadoCaso, comparar
+from curso_core.evals import (
+    Informe,
+    ResultadoCaso,
+    comparar,
+    intervalo_wilson,
+    prueba_mcnemar,
+)
 
 
 def informe(version: str, oks: dict[str, bool]) -> Informe:
@@ -24,3 +30,19 @@ def test_comparar_caso_a_caso() -> None:
     assert comparacion.ganados == ["2"] and comparacion.perdidos == ["3"]
     with pytest.raises(ValueError):
         comparar(v1, informe("v3", {"1": True}))
+
+
+def test_intervalo_wilson() -> None:
+    bajo, alto = intervalo_wilson(29, 42)
+    # Calculado a mano con la fórmula de Wilson.
+    assert bajo == pytest.approx(0.540, abs=0.001) and alto == pytest.approx(0.809, abs=0.001)
+    assert intervalo_wilson(0, 10)[0] == 0.0
+    assert intervalo_wilson(10, 10)[1] == pytest.approx(1.0)
+    assert intervalo_wilson(0, 0) == (0.0, 1.0)
+
+
+def test_prueba_mcnemar() -> None:
+    assert prueba_mcnemar(2, 0) == pytest.approx(0.5)
+    assert prueba_mcnemar(10, 0) == pytest.approx(2 / 1024)
+    assert prueba_mcnemar(3, 3) == 1.0
+    assert prueba_mcnemar(0, 0) == 1.0
