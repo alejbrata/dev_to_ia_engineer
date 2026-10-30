@@ -58,3 +58,27 @@ def resumir_por(trazas: Sequence[Traza], campo: str = "modelo") -> dict[str, Res
     for traza in trazas:
         grupos.setdefault(str(getattr(traza, campo)), []).append(traza)
     return {clave: resumir(grupo) for clave, grupo in grupos.items()}
+
+
+# --- Recuperación ---------------------------------------------------------------------
+# Cada consulta se representa como la lista de sus resultados en orden, marcando cuáles
+# son relevantes: [False, True, False] = el segundo resultado era el bueno.
+
+
+def recall_at_k(consultas: Sequence[Sequence[bool]], k: int) -> float:
+    """Fracción de consultas con al menos un resultado relevante entre los k primeros."""
+    return sum(any(r[:k]) for r in consultas) / len(consultas) if consultas else 0.0
+
+
+def precision_at_k(consultas: Sequence[Sequence[bool]], k: int) -> float:
+    """Fracción media de los k primeros resultados que son relevantes."""
+    return sum(sum(r[:k]) / k for r in consultas) / len(consultas) if consultas else 0.0
+
+
+def mrr(consultas: Sequence[Sequence[bool]]) -> float:
+    """Media de 1/posición del primer relevante (0 si no hay ninguno). Premia el orden."""
+    total = 0.0
+    for resultados in consultas:
+        posicion = next((i for i, relevante in enumerate(resultados, 1) if relevante), None)
+        total += 1 / posicion if posicion else 0.0
+    return total / len(consultas) if consultas else 0.0
