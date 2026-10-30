@@ -74,6 +74,14 @@ provider = "ollama"
 model = "bge-m3"
 hf_repo = "BAAI/bge-m3"
 
+[roles.embeddings_otro]
+# Otro modelo de embeddings con las mismas dimensiones que bge-m3 (1024), para ver en la
+# lección 03 del módulo 3 qué pasa al consultar un índice con un modelo distinto.
+# Revisado: 2026-10.
+provider = "ollama"
+model = "qwen3-embedding:0.6b"
+hf_repo = "Qwen/Qwen3-Embedding-0.6B"
+
 [roles.embeddings_ingles]
 # Un modelo de embeddings entrenado sobre todo en inglés, para comparar en la lección 03
 # del módulo 3. Revisado: 2026-10.
@@ -142,5 +150,9 @@ entrada = 0.0
 salida = 0.0
 
 [precios."ollama/nomic-embed-text"]
+entrada = 0.0
+salida = 0.0
+
+[precios."ollama/qwen3-embedding:0.6b"]
 entrada = 0.0
 salida = 0.0
