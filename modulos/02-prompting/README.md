@@ -7,5 +7,6 @@ El caso del módulo: clasificar tickets de incidencias de un backend.
 - `medir_prompts.py`: mide variantes de un prompt en las mismas condiciones (lo usan las prácticas).
 - `anatomia.py`: tres variantes del mismo prompt medidas con los mismos tickets.
 - `few_shot.py`: ejemplos, "experto", "paso a paso" y ejemplos sesgados, medidos.
+- `salida_estructurada.py`: pedir JSON en el prompt frente a imponer un esquema, y el JSON cortado.
 
 Los prompts están en `prompts/tickets/`, en la raíz del repo.

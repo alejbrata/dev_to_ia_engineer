@@ -7,6 +7,7 @@ todas las prácticas del módulo.
 
 from __future__ import annotations
 
+import json
 import re
 import unicodedata
 from pathlib import Path
@@ -68,3 +69,16 @@ def aciertos(predicha: Clasificacion | None, esperada: Clasificacion) -> dict[st
     return {
         c: predicha is not None and getattr(predicha, c) == getattr(esperada, c) for c in CAMPOS
     }
+
+
+def leer_json(texto: str) -> tuple[Clasificacion | None, str]:
+    """Interpreta una respuesta que debería ser JSON. Devuelve el objeto y qué pasó:
+    `ok`, `json_invalido` (no se puede parsear) o `esquema` (JSON válido, valores no)."""
+    try:
+        datos = json.loads(texto)
+    except json.JSONDecodeError:
+        return None, "json_invalido"
+    try:
+        return Clasificacion.model_validate(datos), "ok"
+    except ValueError:
+        return None, "esquema"

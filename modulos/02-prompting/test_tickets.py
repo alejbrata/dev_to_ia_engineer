@@ -28,3 +28,12 @@ def test_aciertos_por_campo() -> None:
         "servicio": True,
     }
     assert not any(tickets.aciertos(None, esperada).values())
+
+
+def test_leer_json_distingue_los_fallos() -> None:
+    bueno = '{"categoria": "red", "severidad": "alta", "servicio": "pagos"}'
+    fuera = '{"categoria": "hardware", "severidad": "alta", "servicio": "pagos"}'
+    assert tickets.leer_json(bueno)[1] == "ok"
+    con_bloque = '```json\n{"categoria": "red"}\n```'
+    assert tickets.leer_json(con_bloque)[1] == "json_invalido"
+    assert tickets.leer_json(fuera)[1] == "esquema"
