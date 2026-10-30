@@ -31,168 +31,168 @@
     "prompt": "Explica en una sola frase qué es un modelo de lenguaje.",
     "fragmentos": [
       {
-        "t": 2.613,
+        "t": 0.117,
         "texto": "Un"
       },
       {
-        "t": 2.638,
+        "t": 0.143,
         "texto": " modelo"
       },
       {
-        "t": 2.665,
+        "t": 0.17,
         "texto": " de"
       },
       {
-        "t": 2.693,
+        "t": 0.198,
         "texto": " l"
       },
       {
-        "t": 2.719,
+        "t": 0.225,
         "texto": "engu"
       },
       {
-        "t": 2.746,
+        "t": 0.251,
         "texto": "aje"
       },
       {
-        "t": 2.773,
+        "t": 0.279,
         "texto": " es"
       },
       {
-        "t": 2.801,
+        "t": 0.307,
         "texto": " un"
       },
       {
-        "t": 2.827,
+        "t": 0.333,
         "texto": " al"
       },
       {
-        "t": 2.854,
+        "t": 0.36,
         "texto": "gorit"
       },
       {
-        "t": 2.88,
+        "t": 0.388,
         "texto": "mo"
       },
       {
-        "t": 2.906,
+        "t": 0.415,
         "texto": " o"
       },
       {
-        "t": 2.932,
+        "t": 0.443,
         "texto": " programa"
       },
       {
-        "t": 2.957,
+        "t": 0.471,
         "texto": " que"
       },
       {
-        "t": 2.984,
+        "t": 0.5,
         "texto": " permite"
       },
       {
-        "t": 3.01,
+        "t": 0.529,
         "texto": " a"
       },
       {
-        "t": 3.036,
+        "t": 0.556,
         "texto": " un"
       },
       {
-        "t": 3.062,
+        "t": 0.586,
         "texto": " sistema"
       },
       {
-        "t": 3.088,
+        "t": 0.614,
         "texto": " proces"
       },
       {
-        "t": 3.114,
+        "t": 0.645,
         "texto": "ar"
       },
       {
-        "t": 3.141,
+        "t": 0.673,
         "texto": " y"
       },
       {
-        "t": 3.179,
+        "t": 0.701,
         "texto": " generar"
       },
       {
-        "t": 3.204,
+        "t": 0.729,
         "texto": " texto"
       },
       {
-        "t": 3.233,
+        "t": 0.757,
         "texto": " en"
       },
       {
-        "t": 3.258,
+        "t": 0.786,
         "texto": " una"
       },
       {
-        "t": 3.283,
+        "t": 0.814,
         "texto": " forma"
       },
       {
-        "t": 3.309,
+        "t": 0.843,
         "texto": " natural"
       },
       {
-        "t": 3.336,
+        "t": 0.872,
         "texto": " y"
       },
       {
-        "t": 3.362,
+        "t": 0.9,
         "texto": " co"
       },
       {
-        "t": 3.39,
+        "t": 0.929,
         "texto": "her"
       },
       {
-        "t": 3.417,
+        "t": 0.957,
         "texto": "ente"
       },
       {
-        "t": 3.444,
+        "t": 0.986,
         "texto": ","
       },
       {
-        "t": 3.472,
+        "t": 1.014,
         "texto": " similar"
       },
       {
-        "t": 3.498,
+        "t": 1.041,
         "texto": " a"
       },
       {
-        "t": 3.524,
+        "t": 1.069,
         "texto": " cómo"
       },
       {
-        "t": 3.551,
+        "t": 1.099,
         "texto": " un"
       },
       {
-        "t": 3.578,
+        "t": 1.128,
         "texto": " humano"
       },
       {
-        "t": 3.605,
+        "t": 1.157,
         "texto": " hab"
       },
       {
-        "t": 3.632,
+        "t": 1.185,
         "texto": "la"
       },
       {
-        "t": 3.659,
+        "t": 1.213,
         "texto": "."
       }
     ],
-    "primer_token_s": 2.613,
-    "total_s": 3.687,
+    "primer_token_s": 0.117,
+    "total_s": 1.242,
     "tokens_entrada": 44,
     "tokens_salida": 41,
     "coste_usd": 0.0
@@ -201,932 +201,932 @@
     "prompt": "Explica en cuatro frases qué es una cola de mensajes.",
     "fragmentos": [
       {
-        "t": 2.615,
+        "t": 0.12,
         "texto": "Una"
       },
       {
-        "t": 2.641,
+        "t": 0.15,
         "texto": " cola"
       },
       {
-        "t": 2.667,
+        "t": 0.18,
         "texto": " de"
       },
       {
-        "t": 2.693,
+        "t": 0.208,
         "texto": " mensajes"
       },
       {
-        "t": 2.718,
+        "t": 0.237,
         "texto": " es"
       },
       {
-        "t": 2.743,
+        "t": 0.266,
         "texto": " un"
       },
       {
-        "t": 2.768,
+        "t": 0.294,
         "texto": " sistema"
       },
       {
-        "t": 2.794,
+        "t": 0.323,
         "texto": " de"
       },
       {
-        "t": 2.819,
+        "t": 0.351,
         "texto": " gestión"
       },
       {
-        "t": 2.845,
+        "t": 0.38,
         "texto": " de"
       },
       {
-        "t": 2.871,
+        "t": 0.409,
+        "texto": " mensajes"
+      },
+      {
+        "t": 0.438,
+        "texto": " en"
+      },
+      {
+        "t": 0.468,
+        "texto": " redes"
+      },
+      {
+        "t": 0.497,
+        "texto": " de"
+      },
+      {
+        "t": 0.525,
+        "texto": " comput"
+      },
+      {
+        "t": 0.553,
+        "texto": "adoras"
+      },
+      {
+        "t": 0.581,
+        "texto": "."
+      },
+      {
+        "t": 0.608,
+        "texto": " Aqu"
+      },
+      {
+        "t": 0.639,
+        "texto": "í"
+      },
+      {
+        "t": 0.667,
+        "texto": " tienes"
+      },
+      {
+        "t": 0.696,
+        "texto": " una"
+      },
+      {
+        "t": 0.725,
+        "texto": " explic"
+      },
+      {
+        "t": 0.754,
+        "texto": "ación"
+      },
+      {
+        "t": 0.781,
+        "texto": " en"
+      },
+      {
+        "t": 0.81,
+        "texto": " cuatro"
+      },
+      {
+        "t": 0.838,
+        "texto": " fr"
+      },
+      {
+        "t": 0.866,
+        "texto": "ases"
+      },
+      {
+        "t": 0.893,
+        "texto": ":\n\n"
+      },
+      {
+        "t": 0.921,
+        "texto": "1"
+      },
+      {
+        "t": 0.949,
+        "texto": "."
+      },
+      {
+        "t": 0.977,
+        "texto": " **"
+      },
+      {
+        "t": 1.005,
+        "texto": "Es"
+      },
+      {
+        "t": 1.033,
+        "texto": " una"
+      },
+      {
+        "t": 1.061,
+        "texto": " estruct"
+      },
+      {
+        "t": 1.09,
+        "texto": "ura"
+      },
+      {
+        "t": 1.117,
+        "texto": " de"
+      },
+      {
+        "t": 1.145,
+        "texto": " datos"
+      },
+      {
+        "t": 1.173,
+        "texto": "**:"
+      },
+      {
+        "t": 1.201,
+        "texto": " La"
+      },
+      {
+        "t": 1.23,
+        "texto": " cola"
+      },
+      {
+        "t": 1.257,
+        "texto": " de"
+      },
+      {
+        "t": 1.284,
+        "texto": " mensajes"
+      },
+      {
+        "t": 1.312,
+        "texto": " es"
+      },
+      {
+        "t": 1.34,
+        "texto": " una"
+      },
+      {
+        "t": 1.368,
+        "texto": " estruct"
+      },
+      {
+        "t": 1.396,
+        "texto": "ura"
+      },
+      {
+        "t": 1.424,
+        "texto": " de"
+      },
+      {
+        "t": 1.453,
+        "texto": " datos"
+      },
+      {
+        "t": 1.482,
+        "texto": " especial"
+      },
+      {
+        "t": 1.51,
+        "texto": "izada"
+      },
+      {
+        "t": 1.539,
+        "texto": " que"
+      },
+      {
+        "t": 1.568,
+        "texto": " se"
+      },
+      {
+        "t": 1.595,
+        "texto": " utiliza"
+      },
+      {
+        "t": 1.623,
+        "texto": " para"
+      },
+      {
+        "t": 1.652,
+        "texto": " almacen"
+      },
+      {
+        "t": 1.68,
+        "texto": "ar"
+      },
+      {
+        "t": 1.709,
+        "texto": " y"
+      },
+      {
+        "t": 1.737,
+        "texto": " organ"
+      },
+      {
+        "t": 1.764,
+        "texto": "izar"
+      },
+      {
+        "t": 1.793,
+        "texto": " mensajes"
+      },
+      {
+        "t": 1.821,
+        "texto": " en"
+      },
+      {
+        "t": 1.849,
+        "texto": " orden"
+      },
+      {
+        "t": 1.877,
+        "texto": " de"
+      },
+      {
+        "t": 1.905,
+        "texto": " lleg"
+      },
+      {
+        "t": 1.934,
+        "texto": "ada"
+      },
+      {
+        "t": 1.962,
+        "texto": ".\n\n"
+      },
+      {
+        "t": 1.99,
+        "texto": "2"
+      },
+      {
+        "t": 2.018,
+        "texto": "."
+      },
+      {
+        "t": 2.047,
+        "texto": " **"
+      },
+      {
+        "t": 2.075,
+        "texto": "Se"
+      },
+      {
+        "t": 2.102,
+        "texto": " utiliza"
+      },
+      {
+        "t": 2.13,
+        "texto": " para"
+      },
+      {
+        "t": 2.158,
+        "texto": " la"
+      },
+      {
+        "t": 2.186,
+        "texto": " gestión"
+      },
+      {
+        "t": 2.215,
+        "texto": " de"
+      },
+      {
+        "t": 2.243,
+        "texto": " mensajes"
+      },
+      {
+        "t": 2.271,
+        "texto": "**:"
+      },
+      {
+        "t": 2.299,
+        "texto": " En"
+      },
+      {
+        "t": 2.327,
+        "texto": " sistemas"
+      },
+      {
+        "t": 2.354,
+        "texto": " de"
+      },
+      {
+        "t": 2.382,
+        "texto": " comunicación"
+      },
+      {
+        "t": 2.411,
+        "texto": ","
+      },
+      {
+        "t": 2.439,
+        "texto": " como"
+      },
+      {
+        "t": 2.467,
+        "texto": " los"
+      },
+      {
+        "t": 2.495,
+        "texto": " chat"
+      },
+      {
+        "t": 2.526,
+        "texto": "bots"
+      },
+      {
+        "t": 2.554,
+        "texto": " o"
+      },
+      {
+        "t": 2.582,
+        "texto": " aplic"
+      },
+      {
+        "t": 2.61,
+        "texto": "aciones"
+      },
+      {
+        "t": 2.639,
+        "texto": " de"
+      },
+      {
+        "t": 2.668,
+        "texto": " mens"
+      },
+      {
+        "t": 2.698,
+        "texto": "aj"
+      },
+      {
+        "t": 2.726,
+        "texto": "ería"
+      },
+      {
+        "t": 2.755,
+        "texto": ","
+      },
+      {
+        "t": 2.784,
+        "texto": " la"
+      },
+      {
+        "t": 2.811,
+        "texto": " cola"
+      },
+      {
+        "t": 2.84,
+        "texto": " de"
+      },
+      {
+        "t": 2.868,
         "texto": " mensajes"
       },
       {
         "t": 2.897,
-        "texto": " en"
+        "texto": " se"
       },
       {
-        "t": 2.923,
-        "texto": " redes"
+        "t": 2.925,
+        "texto": " utiliza"
       },
       {
-        "t": 2.948,
+        "t": 2.953,
+        "texto": " para"
+      },
+      {
+        "t": 2.982,
+        "texto": " mane"
+      },
+      {
+        "t": 3.011,
+        "texto": "jar"
+      },
+      {
+        "t": 3.039,
+        "texto": " y"
+      },
+      {
+        "t": 3.068,
+        "texto": " proces"
+      },
+      {
+        "t": 3.096,
+        "texto": "ar"
+      },
+      {
+        "t": 3.124,
+        "texto": " los"
+      },
+      {
+        "t": 3.153,
+        "texto": " mensajes"
+      },
+      {
+        "t": 3.183,
         "texto": " de"
       },
       {
-        "t": 2.974,
-        "texto": " comput"
+        "t": 3.211,
+        "texto": " manera"
       },
       {
-        "t": 2.999,
-        "texto": "adoras"
+        "t": 3.24,
+        "texto": " orden"
       },
       {
-        "t": 3.025,
+        "t": 3.269,
+        "texto": "ada"
+      },
+      {
+        "t": 3.298,
+        "texto": ".\n\n"
+      },
+      {
+        "t": 3.326,
+        "texto": "3"
+      },
+      {
+        "t": 3.354,
         "texto": "."
       },
       {
-        "t": 3.05,
-        "texto": " Aqu"
-      },
-      {
-        "t": 3.076,
-        "texto": "í"
-      },
-      {
-        "t": 3.101,
-        "texto": " tienes"
-      },
-      {
-        "t": 3.127,
-        "texto": " una"
-      },
-      {
-        "t": 3.152,
-        "texto": " explic"
-      },
-      {
-        "t": 3.178,
-        "texto": "ación"
-      },
-      {
-        "t": 3.203,
-        "texto": " en"
-      },
-      {
-        "t": 3.228,
-        "texto": " cuatro"
-      },
-      {
-        "t": 3.256,
-        "texto": " fr"
-      },
-      {
-        "t": 3.281,
-        "texto": "ases"
-      },
-      {
-        "t": 3.307,
-        "texto": ":\n\n"
-      },
-      {
-        "t": 3.333,
-        "texto": "1"
-      },
-      {
-        "t": 3.359,
-        "texto": "."
-      },
-      {
-        "t": 3.385,
+        "t": 3.384,
         "texto": " **"
       },
       {
         "t": 3.411,
-        "texto": "Es"
-      },
-      {
-        "t": 3.437,
-        "texto": " una"
-      },
-      {
-        "t": 3.463,
-        "texto": " estruct"
-      },
-      {
-        "t": 3.491,
-        "texto": "ura"
-      },
-      {
-        "t": 3.517,
-        "texto": " de"
-      },
-      {
-        "t": 3.543,
-        "texto": " datos"
-      },
-      {
-        "t": 3.57,
-        "texto": "**:"
-      },
-      {
-        "t": 3.596,
-        "texto": " La"
-      },
-      {
-        "t": 3.623,
-        "texto": " cola"
-      },
-      {
-        "t": 3.649,
-        "texto": " de"
-      },
-      {
-        "t": 3.675,
-        "texto": " mensajes"
-      },
-      {
-        "t": 3.701,
-        "texto": " es"
-      },
-      {
-        "t": 3.727,
-        "texto": " una"
-      },
-      {
-        "t": 3.752,
-        "texto": " estruct"
-      },
-      {
-        "t": 3.778,
-        "texto": "ura"
-      },
-      {
-        "t": 3.805,
-        "texto": " de"
-      },
-      {
-        "t": 3.831,
-        "texto": " datos"
-      },
-      {
-        "t": 3.857,
-        "texto": " especial"
-      },
-      {
-        "t": 3.883,
-        "texto": "izada"
-      },
-      {
-        "t": 3.908,
-        "texto": " que"
-      },
-      {
-        "t": 3.934,
-        "texto": " se"
-      },
-      {
-        "t": 3.96,
-        "texto": " utiliza"
-      },
-      {
-        "t": 3.987,
-        "texto": " para"
-      },
-      {
-        "t": 4.014,
-        "texto": " almacen"
-      },
-      {
-        "t": 4.04,
-        "texto": "ar"
-      },
-      {
-        "t": 4.065,
-        "texto": " y"
-      },
-      {
-        "t": 4.093,
-        "texto": " organ"
-      },
-      {
-        "t": 4.119,
-        "texto": "izar"
-      },
-      {
-        "t": 4.145,
-        "texto": " mensajes"
-      },
-      {
-        "t": 4.173,
-        "texto": " en"
-      },
-      {
-        "t": 4.199,
-        "texto": " orden"
-      },
-      {
-        "t": 4.225,
-        "texto": " de"
-      },
-      {
-        "t": 4.25,
-        "texto": " lleg"
-      },
-      {
-        "t": 4.277,
-        "texto": "ada"
-      },
-      {
-        "t": 4.303,
-        "texto": ".\n\n"
-      },
-      {
-        "t": 4.328,
-        "texto": "2"
-      },
-      {
-        "t": 4.355,
-        "texto": "."
-      },
-      {
-        "t": 4.38,
-        "texto": " **"
-      },
-      {
-        "t": 4.406,
-        "texto": "Se"
-      },
-      {
-        "t": 4.432,
-        "texto": " utiliza"
-      },
-      {
-        "t": 4.458,
-        "texto": " para"
-      },
-      {
-        "t": 4.482,
-        "texto": " la"
-      },
-      {
-        "t": 4.507,
-        "texto": " gestión"
-      },
-      {
-        "t": 4.532,
-        "texto": " de"
-      },
-      {
-        "t": 4.558,
-        "texto": " mensajes"
-      },
-      {
-        "t": 4.583,
-        "texto": "**:"
-      },
-      {
-        "t": 4.608,
-        "texto": " En"
-      },
-      {
-        "t": 4.634,
-        "texto": " sistemas"
-      },
-      {
-        "t": 4.66,
-        "texto": " de"
-      },
-      {
-        "t": 4.686,
-        "texto": " comunicación"
-      },
-      {
-        "t": 4.712,
-        "texto": ","
-      },
-      {
-        "t": 4.737,
-        "texto": " como"
-      },
-      {
-        "t": 4.762,
-        "texto": " los"
-      },
-      {
-        "t": 4.788,
-        "texto": " chat"
-      },
-      {
-        "t": 4.816,
-        "texto": "bots"
-      },
-      {
-        "t": 4.842,
-        "texto": " o"
-      },
-      {
-        "t": 4.868,
-        "texto": " aplic"
-      },
-      {
-        "t": 4.893,
-        "texto": "aciones"
-      },
-      {
-        "t": 4.919,
-        "texto": " de"
-      },
-      {
-        "t": 4.944,
-        "texto": " mens"
-      },
-      {
-        "t": 4.97,
-        "texto": "aj"
-      },
-      {
-        "t": 4.996,
-        "texto": "ería"
-      },
-      {
-        "t": 5.022,
-        "texto": ","
-      },
-      {
-        "t": 5.048,
-        "texto": " la"
-      },
-      {
-        "t": 5.073,
-        "texto": " cola"
-      },
-      {
-        "t": 5.098,
-        "texto": " de"
-      },
-      {
-        "t": 5.124,
-        "texto": " mensajes"
-      },
-      {
-        "t": 5.149,
-        "texto": " se"
-      },
-      {
-        "t": 5.174,
-        "texto": " utiliza"
-      },
-      {
-        "t": 5.201,
-        "texto": " para"
-      },
-      {
-        "t": 5.227,
-        "texto": " mane"
-      },
-      {
-        "t": 5.254,
-        "texto": "jar"
-      },
-      {
-        "t": 5.279,
-        "texto": " y"
-      },
-      {
-        "t": 5.305,
-        "texto": " proces"
-      },
-      {
-        "t": 5.331,
-        "texto": "ar"
-      },
-      {
-        "t": 5.358,
-        "texto": " los"
-      },
-      {
-        "t": 5.384,
-        "texto": " mensajes"
-      },
-      {
-        "t": 5.411,
-        "texto": " de"
-      },
-      {
-        "t": 5.437,
-        "texto": " manera"
-      },
-      {
-        "t": 5.464,
-        "texto": " orden"
-      },
-      {
-        "t": 5.49,
-        "texto": "ada"
-      },
-      {
-        "t": 5.515,
-        "texto": ".\n\n"
-      },
-      {
-        "t": 5.541,
-        "texto": "3"
-      },
-      {
-        "t": 5.566,
-        "texto": "."
-      },
-      {
-        "t": 5.592,
-        "texto": " **"
-      },
-      {
-        "t": 5.616,
         "texto": "Al"
       },
       {
-        "t": 5.644,
+        "t": 3.439,
         "texto": "mac"
       },
       {
-        "t": 5.673,
+        "t": 3.468,
         "texto": "ena"
       },
       {
-        "t": 5.703,
+        "t": 3.496,
         "texto": " mensajes"
       },
       {
-        "t": 5.732,
+        "t": 3.524,
         "texto": " en"
       },
       {
-        "t": 5.761,
+        "t": 3.552,
         "texto": " orden"
       },
       {
-        "t": 5.788,
+        "t": 3.58,
         "texto": " de"
       },
       {
-        "t": 5.816,
+        "t": 3.609,
         "texto": " lleg"
       },
       {
-        "t": 5.843,
+        "t": 3.638,
         "texto": "ada"
       },
       {
-        "t": 5.872,
+        "t": 3.667,
         "texto": "**:"
       },
       {
-        "t": 5.899,
+        "t": 3.697,
         "texto": " Los"
       },
       {
-        "t": 5.926,
+        "t": 3.728,
         "texto": " mensajes"
       },
       {
-        "t": 5.953,
+        "t": 3.757,
         "texto": " se"
       },
       {
-        "t": 5.979,
+        "t": 3.787,
         "texto": " al"
       },
       {
-        "t": 6.008,
+        "t": 3.815,
         "texto": "mac"
       },
       {
-        "t": 6.034,
+        "t": 3.844,
         "texto": "enan"
       },
       {
-        "t": 6.061,
+        "t": 3.873,
         "texto": " en"
       },
       {
-        "t": 6.089,
+        "t": 3.901,
         "texto": " la"
       },
       {
-        "t": 6.115,
+        "t": 3.931,
         "texto": " cola"
       },
       {
-        "t": 6.142,
+        "t": 3.958,
         "texto": " de"
       },
       {
-        "t": 6.168,
+        "t": 3.989,
         "texto": " mensajes"
       },
       {
-        "t": 6.194,
+        "t": 4.017,
         "texto": " de"
       },
       {
-        "t": 6.221,
+        "t": 4.044,
         "texto": " manera"
       },
       {
-        "t": 6.248,
+        "t": 4.072,
         "texto": " que"
       },
       {
-        "t": 6.276,
+        "t": 4.101,
         "texto": " siempre"
       },
       {
-        "t": 6.303,
+        "t": 4.129,
         "texto": " se"
       },
       {
-        "t": 6.332,
+        "t": 4.158,
         "texto": " encuent"
       },
       {
-        "t": 6.359,
+        "t": 4.186,
         "texto": "ran"
       },
       {
-        "t": 6.387,
+        "t": 4.215,
         "texto": " en"
       },
       {
-        "t": 6.414,
+        "t": 4.243,
         "texto": " el"
       },
       {
-        "t": 6.441,
+        "t": 4.272,
         "texto": " orden"
       },
       {
-        "t": 6.467,
+        "t": 4.301,
         "texto": " en"
       },
       {
-        "t": 6.494,
+        "t": 4.33,
         "texto": " que"
       },
       {
-        "t": 6.521,
+        "t": 4.358,
         "texto": " fueron"
       },
       {
-        "t": 6.548,
+        "t": 4.386,
         "texto": " recib"
       },
       {
-        "t": 6.575,
+        "t": 4.414,
         "texto": "idos"
       },
       {
-        "t": 6.604,
+        "t": 4.443,
         "texto": ","
       },
       {
-        "t": 6.632,
+        "t": 4.472,
         "texto": " lo"
       },
       {
-        "t": 6.659,
+        "t": 4.5,
         "texto": " que"
       },
       {
-        "t": 6.685,
+        "t": 4.53,
         "texto": " permite"
       },
       {
-        "t": 6.712,
+        "t": 4.559,
         "texto": " a"
       },
       {
-        "t": 6.74,
+        "t": 4.587,
         "texto": " los"
       },
       {
-        "t": 6.767,
+        "t": 4.616,
         "texto": " usuarios"
       },
       {
-        "t": 6.794,
+        "t": 4.644,
         "texto": " ver"
       },
       {
-        "t": 6.821,
+        "t": 4.673,
         "texto": " los"
       },
       {
-        "t": 6.848,
+        "t": 4.703,
         "texto": " mensajes"
       },
       {
-        "t": 6.875,
+        "t": 4.733,
         "texto": " más"
       },
       {
-        "t": 6.904,
+        "t": 4.761,
         "texto": " rec"
       },
       {
-        "t": 6.932,
+        "t": 4.79,
         "texto": "ientes"
       },
       {
-        "t": 6.958,
+        "t": 4.819,
         "texto": " primero"
       },
       {
-        "t": 6.985,
+        "t": 4.847,
         "texto": ".\n\n"
       },
       {
-        "t": 7.012,
+        "t": 4.875,
         "texto": "4"
       },
       {
-        "t": 7.039,
+        "t": 4.903,
         "texto": "."
       },
       {
-        "t": 7.066,
+        "t": 4.932,
         "texto": " **"
       },
       {
-        "t": 7.093,
+        "t": 4.961,
         "texto": "Per"
       },
       {
-        "t": 7.119,
+        "t": 4.989,
         "texto": "mite"
       },
       {
-        "t": 7.147,
+        "t": 5.019,
         "texto": " la"
       },
       {
-        "t": 7.174,
+        "t": 5.048,
         "texto": " gestión"
       },
       {
-        "t": 7.202,
+        "t": 5.077,
         "texto": " ef"
       },
       {
-        "t": 7.232,
+        "t": 5.105,
         "texto": "iciente"
       },
       {
-        "t": 7.259,
+        "t": 5.134,
         "texto": " de"
       },
       {
-        "t": 7.286,
+        "t": 5.163,
         "texto": " la"
       },
       {
-        "t": 7.315,
+        "t": 5.192,
         "texto": " carga"
       },
       {
-        "t": 7.342,
+        "t": 5.22,
         "texto": "**:"
       },
       {
-        "t": 7.371,
+        "t": 5.249,
         "texto": " La"
       },
       {
-        "t": 7.398,
+        "t": 5.278,
         "texto": " cola"
       },
       {
-        "t": 7.426,
+        "t": 5.308,
         "texto": " de"
       },
       {
-        "t": 7.455,
+        "t": 5.337,
         "texto": " mensajes"
       },
       {
-        "t": 7.483,
+        "t": 5.367,
         "texto": " ayuda"
       },
       {
-        "t": 7.51,
+        "t": 5.396,
         "texto": " a"
       },
       {
-        "t": 7.537,
+        "t": 5.426,
         "texto": " gestion"
       },
       {
-        "t": 7.565,
+        "t": 5.455,
         "texto": "ar"
       },
       {
-        "t": 7.593,
+        "t": 5.484,
         "texto": " la"
       },
       {
-        "t": 7.621,
+        "t": 5.514,
         "texto": " carga"
       },
       {
-        "t": 7.648,
+        "t": 5.543,
         "texto": " de"
       },
       {
-        "t": 7.677,
+        "t": 5.573,
         "texto": " mensajes"
       },
       {
-        "t": 7.705,
+        "t": 5.602,
         "texto": " en"
       },
       {
-        "t": 7.734,
+        "t": 5.632,
         "texto": " tiempo"
       },
       {
-        "t": 7.762,
+        "t": 5.66,
         "texto": " real"
       },
       {
-        "t": 7.79,
+        "t": 5.689,
         "texto": ","
       },
       {
-        "t": 7.818,
+        "t": 5.719,
         "texto": " aseg"
       },
       {
-        "t": 7.847,
+        "t": 5.747,
         "texto": "ur"
       },
       {
-        "t": 7.875,
+        "t": 5.776,
         "texto": "ando"
       },
       {
-        "t": 7.902,
+        "t": 5.805,
         "texto": " que"
       },
       {
-        "t": 7.93,
+        "t": 5.834,
         "texto": " los"
       },
       {
-        "t": 7.958,
+        "t": 5.863,
         "texto": " usuarios"
       },
       {
-        "t": 7.986,
+        "t": 5.891,
         "texto": " pued"
       },
       {
-        "t": 8.012,
+        "t": 5.92,
         "texto": "an"
       },
       {
-        "t": 8.039,
+        "t": 5.949,
         "texto": " ver"
       },
       {
-        "t": 8.072,
+        "t": 5.978,
         "texto": " los"
       },
       {
-        "t": 8.144,
+        "t": 6.008,
         "texto": " mensajes"
       },
       {
-        "t": 8.198,
+        "t": 6.038,
         "texto": " más"
       },
       {
-        "t": 8.237,
+        "t": 6.068,
         "texto": " rec"
       },
       {
-        "t": 8.266,
+        "t": 6.096,
         "texto": "ientes"
       },
       {
-        "t": 8.293,
+        "t": 6.125,
         "texto": " y"
       },
       {
-        "t": 8.32,
+        "t": 6.154,
         "texto": " que"
       },
       {
-        "t": 8.347,
+        "t": 6.183,
         "texto": " los"
       },
       {
-        "t": 8.374,
+        "t": 6.211,
         "texto": " mensajes"
       },
       {
-        "t": 8.402,
+        "t": 6.241,
         "texto": " más"
       },
       {
-        "t": 8.431,
+        "t": 6.273,
         "texto": " ant"
       },
       {
-        "t": 8.458,
+        "t": 6.303,
         "texto": "igu"
       },
       {
-        "t": 8.485,
+        "t": 6.333,
         "texto": "os"
       },
       {
-        "t": 8.512,
+        "t": 6.362,
         "texto": " no"
       },
       {
-        "t": 8.539,
+        "t": 6.392,
         "texto": " se"
       },
       {
-        "t": 8.566,
+        "t": 6.422,
         "texto": " pier"
       },
       {
-        "t": 8.594,
+        "t": 6.452,
         "texto": "dan"
       },
       {
-        "t": 8.621,
+        "t": 6.482,
         "texto": " debido"
       },
       {
-        "t": 8.648,
+        "t": 6.513,
         "texto": " a"
       },
       {
-        "t": 8.675,
+        "t": 6.543,
         "texto": " la"
       },
       {
-        "t": 8.702,
+        "t": 6.573,
         "texto": " satur"
       },
       {
-        "t": 8.729,
+        "t": 6.603,
         "texto": "ación"
       },
       {
-        "t": 8.757,
+        "t": 6.632,
         "texto": " de"
       },
       {
-        "t": 8.785,
+        "t": 6.662,
         "texto": " la"
       },
       {
-        "t": 8.812,
+        "t": 6.692,
         "texto": " cola"
       },
       {
-        "t": 8.839,
+        "t": 6.723,
         "texto": "."
       }
     ],
-    "primer_token_s": 2.615,
-    "total_s": 8.867,
+    "primer_token_s": 0.12,
+    "total_s": 6.753,
     "tokens_entrada": 42,
     "tokens_salida": 232,
     "coste_usd": 0.0

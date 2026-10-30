@@ -161,12 +161,12 @@ uv run python modulos/01-fundamentos-de-llms/streaming.py
 ```
 
 ```text
-231 fragmentos · 232 tokens de salida
-primer fragmento: 2.47 s · respuesta completa: 8.73 s
-velocidad de generación: 37.1 tokens/s
+250 fragmentos · 251 tokens de salida
+primer fragmento: 0.37 s · respuesta completa: 7.37 s
+velocidad de generación: 35.8 tokens/s
 ```
 
-El usuario empieza a leer a los 2,5 segundos en lugar de esperar casi 9. Casi cada fragmento es un token.
+El usuario empieza a leer en menos de medio segundo, en lugar de esperar más de 7. Casi cada fragmento es un token.
 
 Por cierto: la pregunta pedía "cuatro frases" y el modelo devolvió cuatro apartados largos con formato. Pedir una longitud no garantiza obtenerla; si la necesitas, ponla también como límite (`max_tokens`).
 
@@ -206,9 +206,9 @@ Los tres errores HTTP se resolvieron en un intento: no tiene sentido reintentarl
 
 ### Primer fragmento frente a respuesta completa
 
-En una aplicación interactiva, la métrica que percibe el usuario es el **tiempo hasta el primer fragmento** (TTFT, time to first token). En la práctica: 2,47 s frente a 8,73 s de la respuesta completa. `curso_core` lo guarda como `primer_token_s` en la respuesta y en la traza de cada llamada en streaming.
+En una aplicación interactiva, la métrica que percibe el usuario es el **tiempo hasta el primer fragmento** (TTFT, time to first token). En la práctica: 0,37 s frente a 7,37 s de la respuesta completa. `curso_core` lo guarda como `primer_token_s` en la respuesta y en la traza de cada llamada en streaming.
 
-El tiempo hasta el primer fragmento depende sobre todo de cuánto tarda el modelo en procesar la entrada. El resto depende de la velocidad de generación (37 tokens por segundo aquí) y de cuántos tokens genera.
+El tiempo hasta el primer fragmento depende sobre todo de cuánto tarda el modelo en procesar la entrada. El resto depende de la velocidad de generación (36 tokens por segundo aquí) y de cuántos tokens genera. Si el modelo no está cargado, al primer fragmento se le suma además la carga (la lección 05 del módulo 0 te enseñó a verla en la respuesta de Ollama).
 
 ### El coste del historial
 

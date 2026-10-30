@@ -61,7 +61,7 @@ Por eso el curso los centraliza en `config/models.toml`, organizados por **rol**
 
 Para la primera llamada no vas a usar un proveedor de pago. Vas a ejecutar el modelo en tu máquina. Es más trabajo que pegar una clave de API, pero a cambio ves todas las piezas: de dónde sale el modelo, cuánto ocupa, cuánta memoria necesita y qué tarda en responder. Y no cuesta dinero.
 
-[Ollama](https://ollama.com) es un servidor que descarga modelos abiertos, los carga en memoria y los expone con una API HTTP en `http://localhost:11434`. Para tu código es un servicio más al que hablar por HTTP, como una base de datos que levantas en local para desarrollar.
+[Ollama](https://ollama.com) es un servidor que descarga modelos abiertos, los carga en memoria y los expone con una API HTTP en `http://127.0.0.1:11434` (tu propia máquina; el curso usa `127.0.0.1` en lugar de `localhost` por un motivo que descubrirás en el módulo 1). Para tu código es un servicio más al que hablar por HTTP, como una base de datos que levantas en local para desarrollar.
 
 ### Cómo elegir un modelo
 
@@ -164,7 +164,7 @@ En macOS y Windows, Ollama se queda arrancado en segundo plano. En Linux, si no 
 
 ```sh title="Cualquier terminal"
 ollama --version
-curl http://localhost:11434/api/version
+curl http://127.0.0.1:11434/api/version
 ```
 
 La segunda orden debe devolver un JSON con la versión. Si no responde, el servidor no está arrancado.
@@ -243,12 +243,12 @@ uv run python modulos/00-introduccion/hola_mundo.py
 ```text
 > Explica en una sola frase qué es un modelo de lenguaje.
 
-Un modelo de lenguaje es un sistema artificial que aprende a entender y generar el lenguaje humano, similar a cómo los seres humanos comunicamos y comprenderán el mundo.
+Un modelo de lenguaje es un algoritmo o programa que puede generar secuencias de palabras en un idioma, imitando la estructura y la gramática de los textos existentes, para producir escritos que parecen ser producidos por un ser humano.
 
-[qwen2.5:1.5b] tokens entrada=44 salida=41 · latencia=4.83s (carga del modelo 1.55s)
+[qwen2.5:1.5b] tokens entrada=44 salida=61 · latencia=3.42s (carga del modelo 1.55s)
 ```
 
-Tu respuesta será distinta: el modelo no devuelve siempre lo mismo. Fíjate en la frase final: "comprenderán" no concuerda. Un modelo de este tamaño comete errores así, y es bueno verlos desde el primer día.
+Tu respuesta será distinta: el modelo no devuelve siempre lo mismo. Fíjate también en que pediste "una sola frase" y la respuesta es una frase, sí, pero larga y algo redundante. Un modelo de este tamaño sigue las instrucciones a medias, y es bueno verlo desde el primer día.
 
 Puedes pasarle tu propia pregunta:
 
@@ -266,12 +266,12 @@ La última línea del script tiene las primeras métricas del curso. Ejecútalo 
 
 | | Tokens de entrada | Tokens de salida | Latencia | Carga del modelo |
 | --- | --- | --- | --- | --- |
-| Primera llamada | 44 | 41 | 4,83 s | 1,55 s |
-| Segunda llamada | 44 | 47 | 3,30 s | 0,00 s |
+| Primera llamada | 44 | 61 | 3,42 s | 1,55 s |
+| Segunda llamada | 44 | 44 | 1,26 s | 0,01 s |
 
 La primera llamada es más lenta porque Ollama tiene que cargar el modelo en memoria. Es un **arranque en frío**, como la primera petición a un servidor de aplicaciones que aún no ha calentado. Ollama mantiene el modelo cargado unos minutos; después lo descarga y la siguiente llamada vuelve a pagar la carga. Con `ollama ps` ves qué hay cargado y hasta cuándo.
 
-Ahora pregunta "¿Qué es un token?". En la misma máquina, la respuesta tuvo 425 tokens de salida y tardó 14,02 s. La latencia depende sobre todo de cuántos tokens genera el modelo, no de cuántos le mandas. Es la primera intuición de coste y rendimiento que tienes que fijar: **controla la longitud de la salida**.
+Ahora pregunta "¿Qué es un token?" varias veces. En la misma máquina, tres ejecuciones dieron respuestas de 259, 383 y 534 tokens, que tardaron 7,4, 11,4 y 16,3 s: el doble de tokens, el doble de tiempo. La latencia depende sobre todo de cuántos tokens genera el modelo, no de cuántos le mandas. Es la primera intuición de coste y rendimiento que tienes que fijar: **controla la longitud de la salida**.
 
 ### Diagnosticar el entorno
 
@@ -302,7 +302,7 @@ echo $LASTEXITCODE # Windows (PowerShell)
 **Ollama no está arrancado.** El script lo detecta y te lo dice:
 
 ```text
-No hay nadie escuchando en http://localhost:11434. ¿Está Ollama arrancado?
+No hay nadie escuchando en http://127.0.0.1:11434. ¿Está Ollama arrancado?
 ```
 
 Arranca la aplicación o ejecuta `ollama serve`. Ten en cuenta que Ollama se actualiza solo: durante la actualización el servidor se para y las órdenes fallan con `Error: upgrade in progress...`. Espera a que termine.
@@ -334,7 +334,7 @@ Traceback (most recent call last):
     r.raise_for_status()
   File ".../httpx/_models.py", line 829, in raise_for_status
     raise HTTPStatusError(message, request=request, response=self)
-httpx.HTTPStatusError: Client error '404 Not Found' for url 'http://localhost:11434/api/chat'
+httpx.HTTPStatusError: Client error '404 Not Found' for url 'http://127.0.0.1:11434/api/chat'
 For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404
 ```
 

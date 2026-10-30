@@ -162,7 +162,7 @@ Las probabilidades de `prediccion.py` son una señal de confianza del modelo tok
 Cada llamada que hace `curso_core` queda registrada en `trazas/llamadas.jsonl`, una línea JSON por llamada:
 
 ```json
-{"id":"53f6ae2169da","momento":"2026-10-29T20:59:39.990389Z","rol":"chat","proveedor":"ollama","modelo":"qwen2.5:1.5b","ok":true,"intentos":1,"latencia_s":4.005386999982875,"primer_token_s":null,"tokens_entrada":36,"tokens_salida":4,"coste_usd":0.0,"opciones":{"temperatura":0.0},"error":null,"status":null}
+{"id":"5b740f74bc05","momento":"2026-10-30T07:09:57.269596Z","rol":"chat","proveedor":"ollama","modelo":"qwen2.5:1.5b","ok":true,"intentos":1,"latencia_s":0.44855899998219684,"primer_token_s":null,"tokens_entrada":36,"tokens_salida":4,"coste_usd":0.0,"opciones":{"temperatura":0.0},"error":null,"status":null}
 ```
 
 Es el equivalente a un access log. En la lección 06 lo convertirás en métricas.

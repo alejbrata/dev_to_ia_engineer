@@ -33,7 +33,7 @@ En las APIs alojadas de los proveedores, el contexto suele venir fijado por el m
 
 Más contexto no es gratis. Mientras procesa el texto, el modelo guarda en memoria resultados intermedios por cada token de la ventana (la llamada caché KV). Cuanto más grande es la ventana, más memoria reserva, aunque no la llenes.
 
-Además, procesar un prompt largo es lento, y el tiempo crece más deprisa que el número de tokens. En las medidas de esta lección, pasar de 6 000 a 12 700 tokens de entrada (algo más del doble) multiplicó el tiempo por 2,5.
+Además, procesar un prompt largo es lento, y el tiempo crece más deprisa que el número de tokens. En las medidas de esta lección, pasar de 6 000 a 12 700 tokens de entrada (algo más del doble) multiplicó el tiempo por 2,8.
 
 ### Qué pasa cuando te pasas
 
@@ -49,7 +49,7 @@ Por último, que algo quepa no significa que se aproveche igual. Un estudio de 2
 
 ## Práctica
 
-[`contexto.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/01-fundamentos-de-llms/contexto.py) esconde un dato (un código de acceso) en un texto de unos 6 000 tokens y pregunta por él en tres casos. Tarda alrededor de un minuto y medio en un equipo sin GPU:
+[`contexto.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/01-fundamentos-de-llms/contexto.py) esconde un dato (un código de acceso) en un texto de unos 6 000 tokens y pregunta por él en tres casos. Tarda algo más de un minuto en un equipo sin GPU:
 
 ```sh title="Terminal de VS Code · raíz del repo"
 uv run python modulos/01-fundamentos-de-llms/contexto.py
@@ -59,17 +59,17 @@ uv run python modulos/01-fundamentos-de-llms/contexto.py
 [dato al principio, contexto por defecto]
   tu texto: 6016 tokens · procesados: 2050  <- RECORTADO
   respuesta: '12345678' (FALLA)
-  latencia: 14.7 s · contexto 4096 · memoria 1.17 GB
+  latencia: 12.2 s · contexto 4096 · memoria 1.17 GB
 
 [dato al final, contexto por defecto]
   tu texto: 6016 tokens · procesados: 2050  <- RECORTADO
   respuesta: '7391' (acierta)
-  latencia: 15.1 s · contexto 4096 · memoria 1.17 GB
+  latencia: 13.1 s · contexto 4096 · memoria 1.17 GB
 
 [dato al principio, contexto 8192]
   tu texto: 6016 tokens · procesados: 6045
   respuesta: '7391' (acierta)
-  latencia: 54.1 s · contexto 8192 · memoria 1.37 GB
+  latencia: 51.7 s · contexto 8192 · memoria 1.37 GB
 
 Modelo: qwen2.5:1.5b
 ```
@@ -78,7 +78,7 @@ Léelo caso a caso:
 
 1. **Dato al principio, contexto por defecto.** De 6 016 tokens, el servidor procesó 2 050. El dato estaba en la parte descartada. El modelo no dice "no lo sé": inventa un código.
 2. **Dato al final, contexto por defecto.** El recorte es el mismo, pero el dato estaba en la parte que se conservó. Acierta. Si solo probaras este caso, darías el sistema por bueno.
-3. **Dato al principio, contexto 8 192.** Todo cabe. Acierta, pero tarda casi cuatro veces más y usa más memoria.
+3. **Dato al principio, contexto 8 192.** Todo cabe. Acierta, pero tarda cuatro veces más y usa más memoria.
 
 Cambia el tamaño del texto con el número de párrafos (`contexto.py 100`, `contexto.py 300`) y observa dónde empieza el recorte.
 
@@ -155,9 +155,9 @@ Y de latencia, con temperatura 0 y respuestas de pocos tokens:
 
 | Tokens procesados | Latencia |
 | --- | --- |
-| 2 050 (recortado) | ~15 s |
-| 6 045 | 54 s |
-| 12 733 | 138 s |
+| 2 050 (recortado) | ~12 s |
+| 6 045 | 46 s |
+| 12 733 | 130 s |
 
 Con estos datos puedes razonar como lo harías con cualquier recurso: ¿cuánto contexto necesitan de verdad tus peticiones? Mide la distribución de `tokens_entrada` en tus trazas y dimensiona con margen, no al máximo.
 
