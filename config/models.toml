@@ -25,6 +25,18 @@ provider = "ollama"
 model = "qwen2.5:1.5b"
 hf_repo = "Qwen/Qwen2.5-1.5B-Instruct"
 
+[roles.chat_pequeno]
+# Modelos de la misma familia en tamaños distintos, para compararlos en la lección 05
+# del módulo 1. Revisado: 2026-10.
+provider = "ollama"
+model = "qwen2.5:0.5b"
+hf_repo = "Qwen/Qwen2.5-0.5B-Instruct"
+
+[roles.chat_grande]
+provider = "ollama"
+model = "qwen2.5:7b"
+hf_repo = "Qwen/Qwen2.5-7B-Instruct"
+
 [roles.chat_compatible]
 # El mismo modelo local, pero hablando el dialecto compatible con OpenAI que Ollama
 # expone en /v1. Lo usa la lección 04 del módulo 1 para comparar APIs.
@@ -37,11 +49,18 @@ model = "qwen2.5:1.5b"
 provider = "llamacpp"
 model = "Qwen/Qwen2.5-1.5B-Instruct-GGUF:Q4_K_M"
 
+[roles.simulador]
+# Un proveedor de mentira con límite de uso (modulos/01-fundamentos-de-llms/simulador.py),
+# para provocar errores 429 en la lección 06 del módulo 1. No es un modelo.
+provider = "simulador"
+model = "simulador"
+
 [roles.remoto]
 # Un modelo servido por un proveedor en la nube vía Hugging Face Inference Providers.
 # Necesita HF_TOKEN y créditos en la cuenta. Revisado: 2026-10.
 provider = "huggingface"
 model = "Qwen/Qwen3-4B-Instruct-2507"
+hf_repo = "Qwen/Qwen3-4B-Instruct-2507"
 
 [roles.judge]
 # Modelo que hace de juez en las evals (LLM-as-judge).
@@ -55,18 +74,24 @@ model = ""
 
 [providers.ollama]
 # Servidor local de Ollama. No necesita clave.
+# 127.0.0.1 y no localhost: en algunos sistemas (Windows, sobre todo), localhost intenta
+# primero IPv6 y cada conexión tarda segundos (lección 06 del módulo 1).
 tipo = "ollama"
-base_url = "http://localhost:11434"
+base_url = "http://127.0.0.1:11434"
 
 [providers.ollama_compatible]
 # El mismo servidor de Ollama, con su API compatible con OpenAI.
 tipo = "openai"
-base_url = "http://localhost:11434/v1"
+base_url = "http://127.0.0.1:11434/v1"
 
 [providers.llamacpp]
 # Servidor local de llama.cpp (llama-server). No necesita clave.
 tipo = "openai"
-base_url = "http://localhost:8081/v1"
+base_url = "http://127.0.0.1:8081/v1"
+
+[providers.simulador]
+tipo = "openai"
+base_url = "http://127.0.0.1:8099/v1"
 
 [providers.huggingface]
 # Hugging Face Inference Providers. Necesita HF_TOKEN y créditos en la cuenta:
@@ -87,3 +112,17 @@ salida = 0.0
 [precios."llamacpp/Qwen/Qwen2.5-1.5B-Instruct-GGUF:Q4_K_M"]
 entrada = 0.0
 salida = 0.0
+
+[precios."ollama/qwen2.5:0.5b"]
+entrada = 0.0
+salida = 0.0
+
+[precios."ollama/qwen2.5:7b"]
+entrada = 0.0
+salida = 0.0
+
+[precios."huggingface/Qwen/Qwen3-4B-Instruct-2507"]
+# Precio publicado por la API de Hugging Face (/v1/models) para el proveedor que lo
+# sirve, en USD por millón de tokens. Cambia con el tiempo. Revisado: 2026-10.
+entrada = 0.01
+salida = 0.03
