@@ -9,5 +9,6 @@ El caso del módulo: la documentación interna (inventada) de la plataforma de l
 - `chunking.py`: cuatro formas de trocear, con evidencias partidas, recall@3 y MRR.
 - `embeddings.py`: tres configuraciones de embeddings y qué pasa si cambias de modelo sin reindexar.
 - `indice_pgvector.py`: el mismo índice en PostgreSQL con pgvector. Necesita `docker compose up -d`.
+- `recuperacion.py`: búsqueda densa, léxica (BM25) e híbrida (RRF), con preguntas e identificadores.
 
 Los prompts están en `prompts/rag/`, en la raíz del repo.
