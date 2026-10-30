@@ -104,7 +104,7 @@ def main() -> int:
             "actual": resumen_json(actual, medida, casos),
         }
         Path(args.guardar).write_text(
-            json.dumps(datos, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+            json.dumps(datos, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n"
         )
 
     if sum(bien) < sum(bien_ref):
