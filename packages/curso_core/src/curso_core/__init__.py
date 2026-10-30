@@ -7,6 +7,7 @@ from curso_core.client import (
     Flujo,
     Mensaje,
     Opciones,
+    PromptRenderizado,
     Respuesta,
     TokenGenerado,
 )
@@ -18,6 +19,7 @@ __all__ = [
     "Flujo",
     "Mensaje",
     "Opciones",
+    "PromptRenderizado",
     "Respuesta",
     "TokenGenerado",
 ]

@@ -31,6 +31,8 @@ class Traza(BaseModel):
     tokens_entrada: int | None = None
     tokens_salida: int | None = None
     coste_usd: float | None = None
+    # Prompt versionado que generó los mensajes (`tarea/variante@vN`), si lo hay.
+    prompt: str | None = None
     # Parámetros de generación usados (temperatura, semilla...), para poder reproducirla.
     opciones: dict = {}
     error: str | None = None

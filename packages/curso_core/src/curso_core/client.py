@@ -100,6 +100,16 @@ class ErrorLLM(Exception):
         self.intentos = intentos
 
 
+class PromptRenderizado(BaseModel):
+    """Mensajes listos para el modelo, con el identificador del prompt que los generó.
+
+    Lo crea `curso_core.prompts.renderizar`; aquí solo se define el tipo.
+    """
+
+    id: str
+    mensajes: list[Mensaje]
+
+
 # --- Dialectos de API --------------------------------------------------------------
 
 
@@ -323,7 +333,7 @@ class ClienteLLM:
 
     def chat(
         self,
-        mensajes: str | list[Mensaje],
+        mensajes: str | list[Mensaje] | PromptRenderizado,
         *,
         rol: str = "chat",
         opciones: Opciones | None = None,
@@ -341,7 +351,7 @@ class ClienteLLM:
 
     def chat_stream(
         self,
-        mensajes: str | list[Mensaje],
+        mensajes: str | list[Mensaje] | PromptRenderizado,
         *,
         rol: str = "chat",
         opciones: Opciones | None = None,
@@ -353,9 +363,16 @@ class ClienteLLM:
     # --- Detalles ------------------------------------------------------------------
 
     def _preparar(
-        self, mensajes: str | list[Mensaje], rol: str, opciones: Opciones | None, stream: bool
+        self,
+        mensajes: str | list[Mensaje] | PromptRenderizado,
+        rol: str,
+        opciones: Opciones | None,
+        stream: bool,
     ) -> _Llamada:
-        if isinstance(mensajes, str):
+        prompt = None
+        if isinstance(mensajes, PromptRenderizado):
+            prompt, mensajes = mensajes.id, mensajes.mensajes
+        elif isinstance(mensajes, str):
             mensajes = [Mensaje(role="user", content=mensajes)]
         nombre, proveedor, modelo = self.config.resolver(rol)
         dialecto = DIALECTOS[proveedor.tipo]
@@ -365,6 +382,7 @@ class ClienteLLM:
             rol=rol,
             proveedor=nombre,
             modelo=modelo,
+            prompt=prompt,
             opciones=opciones.model_dump(exclude_none=True),
         )
         return _Llamada(nombre, proveedor, modelo, dialecto, ruta, cuerpo, traza)
