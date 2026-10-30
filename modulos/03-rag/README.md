@@ -11,5 +11,6 @@ El caso del módulo: la documentación interna (inventada) de la plataforma de l
 - `indice_pgvector.py`: el mismo índice en PostgreSQL con pgvector. Necesita `docker compose up -d`.
 - `recuperacion.py`: búsqueda densa, léxica (BM25) e híbrida (RRF), con preguntas e identificadores.
 - `reranking.py`: reordenar candidatos con un cross-encoder. Necesita el reranker en `llama-server` (rol `reranker`).
+- `generacion.py`: respuestas con citas, abstención, y fidelidad y relevancia medidas con un juez (rol `judge`).
 
 Los prompts están en `prompts/rag/`, en la raíz del repo.
