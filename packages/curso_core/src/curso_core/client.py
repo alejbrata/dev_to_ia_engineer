@@ -285,6 +285,11 @@ class Flujo:
 
 
 class ClienteLLM:
+    """Cliente de modelos. Reutiliza una conexión HTTP por proveedor entre llamadas.
+
+    Ciérralo al terminar con `cerrar()`, o úsalo en un bloque `with`.
+    """
+
     def __init__(
         self,
         config: cfg.Config | None = None,
@@ -301,6 +306,20 @@ class ClienteLLM:
         self.trazas = trazas
         self._transport = transport
         self._dormir = dormir
+        # Abrir una conexión nueva en cada llamada cuesta tiempo (DNS, TCP, TLS);
+        # se crea un cliente HTTP por proveedor y se reutiliza.
+        self._clientes: dict[str, httpx.Client] = {}
+
+    def cerrar(self) -> None:
+        for http in self._clientes.values():
+            http.close()
+        self._clientes.clear()
+
+    def __enter__(self) -> ClienteLLM:
+        return self
+
+    def __exit__(self, *_) -> None:
+        self.cerrar()
 
     def chat(
         self,
@@ -312,9 +331,9 @@ class ClienteLLM:
         llamada = self._preparar(mensajes, rol, opciones, stream=False)
         inicio = time.perf_counter()
         try:
-            with self._http(llamada.config) as http:
-                r, intentos = self._abrir(http, llamada.ruta, llamada.cuerpo)
-                bruto = llamada.dialecto.respuesta(r.json())
+            http = self._http(llamada.proveedor, llamada.config)
+            r, intentos = self._abrir(http, llamada.ruta, llamada.cuerpo)
+            bruto = llamada.dialecto.respuesta(r.json())
         except ErrorLLM as e:
             self._registrar_fallo(llamada, inicio, e)
             raise
@@ -356,44 +375,47 @@ class ClienteLLM:
         entrada = salida = 0
         motivo = primer_token = None
         try:
-            with self._http(llamada.config) as http:
-                r, intentos = self._abrir(http, llamada.ruta, llamada.cuerpo, stream=True)
-                try:
-                    for linea in r.iter_lines():
-                        if not linea.strip():
-                            continue
-                        trozo = llamada.dialecto.trozo(linea)
-                        if trozo.texto:
-                            primer_token = primer_token or time.perf_counter() - inicio
-                            partes.append(trozo.texto)
-                            yield trozo.texto
-                        entrada = trozo.tokens_entrada or entrada
-                        salida = trozo.tokens_salida or salida
-                        motivo = trozo.motivo_fin or motivo
-                except httpx.HTTPError as e:
-                    # Ya se ha enviado texto al llamante: no se puede reintentar.
-                    raise ErrorLLM(f"La conexión se cortó a mitad de respuesta: {e!r}") from e
-                finally:
-                    r.close()
+            http = self._http(llamada.proveedor, llamada.config)
+            r, intentos = self._abrir(http, llamada.ruta, llamada.cuerpo, stream=True)
+            try:
+                for linea in r.iter_lines():
+                    if not linea.strip():
+                        continue
+                    trozo = llamada.dialecto.trozo(linea)
+                    if trozo.texto:
+                        primer_token = primer_token or time.perf_counter() - inicio
+                        partes.append(trozo.texto)
+                        yield trozo.texto
+                    entrada = trozo.tokens_entrada or entrada
+                    salida = trozo.tokens_salida or salida
+                    motivo = trozo.motivo_fin or motivo
+            except httpx.HTTPError as e:
+                # Ya se ha enviado texto al llamante: no se puede reintentar.
+                raise ErrorLLM(f"La conexión se cortó a mitad de respuesta: {e!r}") from e
+            finally:
+                r.close()
         except ErrorLLM as e:
             self._registrar_fallo(llamada, inicio, e)
             raise
         bruto = Bruto("".join(partes), entrada, salida, None, motivo)
         return self._finalizar(llamada, inicio, intentos, bruto, primer_token)
 
-    def _http(self, proveedor: cfg.Proveedor) -> httpx.Client:
+    def _http(self, nombre: str, proveedor: cfg.Proveedor) -> httpx.Client:
+        if nombre in self._clientes:
+            return self._clientes[nombre]
         cabeceras = {}
         if proveedor.api_key_env:
             clave = os.environ.get(proveedor.api_key_env)
             if not clave:
                 raise ErrorLLM(f"Falta la variable de entorno {proveedor.api_key_env} en .env")
             cabeceras["Authorization"] = f"Bearer {clave}"
-        return httpx.Client(
+        self._clientes[nombre] = httpx.Client(
             base_url=proveedor.base_url,
             headers=cabeceras,
             timeout=self.timeout,
             transport=self._transport,
         )
+        return self._clientes[nombre]
 
     def _abrir(
         self, http: httpx.Client, ruta: str, cuerpo: dict, stream: bool = False

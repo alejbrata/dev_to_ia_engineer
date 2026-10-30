@@ -14,6 +14,8 @@ class Resumen(BaseModel):
     llamadas: int
     errores: int
     tasa_error: float
+    # Intentos de más: llamadas que acabaron bien, pero tras uno o varios fallos.
+    reintentos: int
     latencia_p50_s: float | None
     latencia_p95_s: float | None
     tokens_entrada: int
@@ -40,6 +42,7 @@ def resumir(trazas: Sequence[Traza]) -> Resumen:
         llamadas=len(trazas),
         errores=errores,
         tasa_error=errores / len(trazas) if trazas else 0.0,
+        reintentos=sum(t.intentos - 1 for t in trazas),
         latencia_p50_s=percentil(latencias, 50),
         latencia_p95_s=percentil(latencias, 95),
         tokens_entrada=sum(t.tokens_entrada or 0 for t in buenas),
@@ -47,3 +50,11 @@ def resumir(trazas: Sequence[Traza]) -> Resumen:
         coste_usd=sum(t.coste_usd for t in buenas if t.coste_usd is not None),
         llamadas_sin_precio=sum(1 for t in buenas if t.coste_usd is None),
     )
+
+
+def resumir_por(trazas: Sequence[Traza], campo: str = "modelo") -> dict[str, Resumen]:
+    """Un resumen por cada valor de `campo` (modelo, proveedor, rol...)."""
+    grupos: dict[str, list[Traza]] = {}
+    for traza in trazas:
+        grupos.setdefault(str(getattr(traza, campo)), []).append(traza)
+    return {clave: resumir(grupo) for clave, grupo in grupos.items()}

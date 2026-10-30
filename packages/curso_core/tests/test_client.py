@@ -232,3 +232,12 @@ def test_stream_con_error_http_no_entrega_texto(tmp_path: Path) -> None:
         list(flujo)
     assert e.value.status == 401
     assert flujo.respuesta is None
+
+
+def test_reutiliza_la_conexion_del_proveedor(tmp_path: Path) -> None:
+    c = cliente(lambda r: httpx.Response(200, json=OLLAMA_OK), tmp_path)
+    c.chat("uno")
+    c.chat("dos")
+    assert len(c._clientes) == 1
+    c.cerrar()
+    assert c._clientes == {}
