@@ -105,3 +105,54 @@ def prueba_mcnemar(ganados: int, perdidos: int) -> float:
     extremo = min(ganados, perdidos)
     cola = sum(math.comb(n, i) for i in range(extremo + 1)) / 2**n
     return min(1.0, 2 * cola)
+
+
+class Acuerdo(BaseModel):
+    """Cómo coincide un juez con las etiquetas humanas. "Positivo" es el problema que busca
+    el juez (por ejemplo, una respuesta no fiel)."""
+
+    vp: int  # el juez lo detecta y la etiqueta dice que hay problema
+    fp: int  # el juez da la alarma y no hay problema
+    fn: int  # hay problema y el juez no lo ve
+    vn: int  # no hay problema y el juez no da la alarma
+
+    @property
+    def total(self) -> int:
+        return self.vp + self.fp + self.fn + self.vn
+
+    @property
+    def tasa_acuerdo(self) -> float:
+        return (self.vp + self.vn) / self.total if self.total else 0.0
+
+    @property
+    def sensibilidad(self) -> float:
+        """De los problemas reales, cuántos detecta."""
+        return self.vp / (self.vp + self.fn) if self.vp + self.fn else 0.0
+
+    @property
+    def especificidad(self) -> float:
+        """De los casos sin problema, cuántos deja pasar sin alarma."""
+        return self.vn / (self.vn + self.fp) if self.vn + self.fp else 0.0
+
+    @property
+    def kappa(self) -> float:
+        """Kappa de Cohen: el acuerdo descontando el que se daría por azar. 0 es azar, 1 es
+        acuerdo perfecto. Un juez que siempre dice lo mismo tiene kappa 0."""
+        n = self.total
+        if not n:
+            return 0.0
+        azar = (
+            (self.vp + self.fp) * (self.vp + self.fn) + (self.fn + self.vn) * (self.fp + self.vn)
+        ) / n**2
+        return (self.tasa_acuerdo - azar) / (1 - azar) if azar < 1 else 0.0
+
+
+def acuerdo(etiquetas: list[bool], veredictos: list[bool]) -> Acuerdo:
+    """Compara veredictos con etiquetas; en las dos listas, True es "hay problema"."""
+    pares = list(zip(etiquetas, veredictos, strict=True))
+    return Acuerdo(
+        vp=sum(e and v for e, v in pares),
+        fp=sum(not e and v for e, v in pares),
+        fn=sum(e and not v for e, v in pares),
+        vn=sum(not e and not v for e, v in pares),
+    )

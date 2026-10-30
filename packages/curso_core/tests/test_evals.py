@@ -2,6 +2,7 @@ import pytest
 from curso_core.evals import (
     Informe,
     ResultadoCaso,
+    acuerdo,
     comparar,
     intervalo_wilson,
     prueba_mcnemar,
@@ -46,3 +47,15 @@ def test_prueba_mcnemar() -> None:
     assert prueba_mcnemar(10, 0) == pytest.approx(2 / 1024)
     assert prueba_mcnemar(3, 3) == 1.0
     assert prueba_mcnemar(0, 0) == 1.0
+
+
+def test_acuerdo_y_kappa() -> None:
+    a = acuerdo([True, True, False, False], [True, False, True, False])
+    assert (a.vp, a.fp, a.fn, a.vn) == (1, 1, 1, 1)
+    assert a.tasa_acuerdo == 0.5 and a.kappa == pytest.approx(0.0)
+    perfecto = acuerdo([True, False, False], [True, False, False])
+    assert perfecto.kappa == pytest.approx(1.0) and perfecto.sensibilidad == 1.0
+    # Un juez que siempre da la alarma detecta todo, pero su kappa es 0.
+    siempre = acuerdo([True, False, False, False], [True, True, True, True])
+    assert siempre.sensibilidad == 1.0 and siempre.especificidad == 0.0
+    assert siempre.kappa == pytest.approx(0.0)
