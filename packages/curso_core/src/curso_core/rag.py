@@ -317,3 +317,39 @@ class IndiceHibrido:
             ],
             k=k,
         )
+
+
+class IndiceReordenado:
+    """Pide `candidatos` resultados a otro índice y los reordena con un modelo de reranking.
+
+    El reranker lee la consulta y cada fragmento juntos (un *cross-encoder*), así que
+    puntúa mejor que comparar dos vectores calculados por separado, pero es más lento: una
+    pasada del modelo por cada candidato. Por eso se aplica solo a los primeros.
+    """
+
+    def __init__(
+        self,
+        base: IndiceVectorial | IndiceLexico | IndiceHibrido,
+        cliente: ClienteLLM,
+        rol: str = "reranker",
+        candidatos: int = 20,
+    ):
+        self.base = base
+        self.cliente = cliente
+        self.rol = rol
+        self.candidatos = candidatos
+
+    def añadir(self, fragmentos: Sequence[Fragmento]) -> None:
+        self.base.añadir(fragmentos)
+
+    def buscar(self, consulta: str, k: int = 3) -> list[Resultado]:
+        previos = self.base.buscar(consulta, self.candidatos)
+        if not previos:
+            return []
+        puntuaciones = self.cliente.reordenar(
+            consulta, [r.fragmento.para_indexar() for r in previos], rol=self.rol
+        ).puntuaciones
+        orden = sorted(range(len(previos)), key=lambda i: -puntuaciones[i])
+        return [
+            Resultado(fragmento=previos[i].fragmento, puntuacion=puntuaciones[i]) for i in orden[:k]
+        ]

@@ -138,6 +138,18 @@ class Embeddings(BaseModel):
     id_traza: str
 
 
+class Reordenacion(BaseModel):
+    """Puntuación de relevancia de cada documento para una consulta, en el orden de entrada."""
+
+    puntuaciones: list[float]
+    proveedor: str
+    modelo: str
+    tokens_entrada: int
+    latencia_s: float
+    intentos: int
+    id_traza: str
+
+
 class ErrorLLM(Exception):
     """Error de una llamada al modelo, con el código HTTP y el cuerpo de la respuesta."""
 
@@ -571,6 +583,61 @@ class ClienteLLM:
         registrar(registro, self.trazas)
         return Embeddings(
             vectores=vectores,
+            proveedor=nombre,
+            modelo=modelo,
+            tokens_entrada=tokens,
+            latencia_s=latencia,
+            intentos=intentos,
+            id_traza=registro.id,
+        )
+
+    def reordenar(
+        self, consulta: str, documentos: list[str], *, rol: str = "reranker"
+    ) -> Reordenacion:
+        """Puntúa cada documento frente a la consulta con un modelo de reranking.
+
+        Usa el formato `/rerank` que comparten llama.cpp, vLLM, Jina o Cohere: consulta y
+        documentos en la petición; índice y puntuación de cada documento en la respuesta.
+        """
+        nombre, proveedor, modelo = self.config.resolver(rol)
+        if proveedor.tipo != "openai":
+            raise ValueError(f"El proveedor '{nombre}' no ofrece /rerank")
+        ruta = "/rerank"
+        cuerpo = {"model": modelo, "query": consulta, "documents": documentos}
+        llamada = _Llamada(
+            nombre,
+            proveedor,
+            modelo,
+            DIALECTOS[proveedor.tipo],
+            ruta,
+            cuerpo,
+            dict(rol=rol, proveedor=nombre, modelo=modelo),
+        )
+        inicio = time.perf_counter()
+        try:
+            http = self._http(nombre, proveedor)
+            r, intentos = self._abrir(http, ruta, cuerpo)
+            datos = r.json()
+        except ErrorLLM as e:
+            self._registrar_fallo(llamada, inicio, e)
+            raise
+        puntuaciones = [0.0] * len(documentos)
+        for resultado in datos["results"]:
+            puntuaciones[resultado["index"]] = resultado["relevance_score"]
+        tokens = datos.get("usage", {}).get("prompt_tokens", 0)
+        latencia = time.perf_counter() - inicio
+        registro = Traza(
+            **llamada.traza,
+            ok=True,
+            intentos=intentos,
+            latencia_s=latencia,
+            tokens_entrada=tokens,
+            tokens_salida=0,
+            coste_usd=self._coste(nombre, modelo, tokens, 0),
+        )
+        registrar(registro, self.trazas)
+        return Reordenacion(
+            puntuaciones=puntuaciones,
             proveedor=nombre,
             modelo=modelo,
             tokens_entrada=tokens,

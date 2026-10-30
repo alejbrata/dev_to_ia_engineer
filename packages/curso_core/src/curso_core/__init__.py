@@ -12,6 +12,7 @@ from curso_core.client import (
     Mensaje,
     Opciones,
     PromptRenderizado,
+    Reordenacion,
     Respuesta,
     TokenGenerado,
 )
@@ -20,6 +21,7 @@ __all__ = [
     "Alternativa",
     "ClienteLLM",
     "Embeddings",
+    "Reordenacion",
     "ErrorFormato",
     "ErrorLLM",
     "Flujo",

@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 
 import httpx
+import pytest
 from curso_core import ClienteLLM, Herramienta, LlamadaHerramienta, Mensaje, Opciones
 from curso_core import config as cfg
 from pydantic import BaseModel
@@ -148,3 +149,23 @@ def test_embeber_ollama_y_openai(tmp_path: Path) -> None:
     assert e.vectores == [[1.0, 0.0], [0.0, 1.0]] and e.tokens_entrada == 4
     e = cliente(openai, tmp_path).embeber(["a", "b"], rol="remoto")
     assert e.vectores == [[1.0, 0.0], [0.0, 1.0]]  # ordenados por index
+
+
+def test_reordenar_devuelve_puntuaciones_en_orden_de_entrada(tmp_path: Path) -> None:
+    def rerank(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/v1/rerank"
+        assert json.loads(request.content)["documents"] == ["a", "b", "c"]
+        resultados = [
+            {"index": 2, "relevance_score": 3.0},
+            {"index": 0, "relevance_score": 1.0},
+            {"index": 1, "relevance_score": -2.0},
+        ]
+        return httpx.Response(200, json={"results": resultados, "usage": {"prompt_tokens": 9}})
+
+    r = cliente(rerank, tmp_path).reordenar("q", ["a", "b", "c"], rol="remoto")
+    assert r.puntuaciones == [1.0, -2.0, 3.0] and r.tokens_entrada == 9
+
+
+def test_reordenar_rechaza_ollama(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="/rerank"):
+        cliente(lambda r: httpx.Response(200), tmp_path).reordenar("q", ["a"], rol="chat")

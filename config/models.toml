@@ -82,6 +82,14 @@ provider = "ollama"
 model = "qwen3-embedding:0.6b"
 hf_repo = "Qwen/Qwen3-Embedding-0.6B"
 
+[roles.reranker]
+# Modelo de reranking (cross-encoder) servido por llama-server. Revisado: 2026-10.
+# Arráncalo con:
+# llama-server -hf gpustack/bge-reranker-v2-m3-GGUF:Q8_0 --reranking --port 8082
+provider = "llamacpp_rerank"
+model = "gpustack/bge-reranker-v2-m3-GGUF:Q8_0"
+hf_repo = "BAAI/bge-reranker-v2-m3"
+
 [roles.embeddings_ingles]
 # Un modelo de embeddings entrenado sobre todo en inglés, para comparar en la lección 03
 # del módulo 3. Revisado: 2026-10.
@@ -105,6 +113,11 @@ base_url = "http://127.0.0.1:11434/v1"
 # Servidor local de llama.cpp (llama-server). No necesita clave.
 tipo = "openai"
 base_url = "http://127.0.0.1:8081/v1"
+
+[providers.llamacpp_rerank]
+# Otro llama-server, con el modelo de reranking (endpoint /v1/rerank).
+tipo = "openai"
+base_url = "http://127.0.0.1:8082/v1"
 
 [providers.simulador]
 tipo = "openai"
@@ -154,5 +167,9 @@ entrada = 0.0
 salida = 0.0
 
 [precios."ollama/qwen3-embedding:0.6b"]
+entrada = 0.0
+salida = 0.0
+
+[precios."llamacpp_rerank/gpustack/bge-reranker-v2-m3-GGUF:Q8_0"]
 entrada = 0.0
 salida = 0.0
