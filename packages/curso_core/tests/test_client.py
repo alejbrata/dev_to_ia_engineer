@@ -1,11 +1,13 @@
 import json
 from pathlib import Path
+from typing import Literal
 
 import httpx
 import pytest
-from curso_core import ClienteLLM, ErrorLLM, Mensaje, Opciones
+from curso_core import ClienteLLM, ErrorFormato, ErrorLLM, Mensaje, Opciones
 from curso_core import config as cfg
 from curso_core.tracing import leer
+from pydantic import BaseModel
 
 CONFIG = cfg.Config.model_validate(
     {
@@ -241,3 +243,48 @@ def test_reutiliza_la_conexion_del_proveedor(tmp_path: Path) -> None:
     assert len(c._clientes) == 1
     c.cerrar()
     assert c._clientes == {}
+
+
+class Clasificacion(BaseModel):
+    categoria: Literal["red", "otro"]
+
+
+def test_extraer_manda_el_esquema_y_valida(tmp_path: Path) -> None:
+    cuerpos = []
+
+    def manejador(request: httpx.Request) -> httpx.Response:
+        cuerpos.append(json.loads(request.content))
+        return httpx.Response(
+            200, json=OLLAMA_OK | {"message": {"content": '{"categoria": "red"}'}}
+        )
+
+    objeto, r = cliente(manejador, tmp_path).extraer("hola", Clasificacion)
+    assert objeto == Clasificacion(categoria="red")
+    assert cuerpos[0]["format"]["properties"]["categoria"]["enum"] == ["red", "otro"]
+    assert r.tokens_salida == 4
+
+
+def test_extraer_openai_usa_response_format(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("CLAVE", "x")
+    cuerpos = []
+
+    def manejador(request: httpx.Request) -> httpx.Response:
+        cuerpos.append(json.loads(request.content))
+        datos = OPENAI_OK | {
+            "choices": [{"message": {"content": '{"categoria": "otro"}'}, "finish_reason": "stop"}]
+        }
+        return httpx.Response(200, json=datos)
+
+    objeto, _ = cliente(manejador, tmp_path).extraer("hola", Clasificacion, rol="remoto")
+    assert objeto.categoria == "otro"
+    assert cuerpos[0]["response_format"]["type"] == "json_schema"
+
+
+@pytest.mark.parametrize("texto", ['{"categoria": "hardware"}', '{"categoria": "re'])
+def test_extraer_lanza_error_formato(tmp_path: Path, texto: str) -> None:
+    respuesta = OLLAMA_OK | {"message": {"content": texto}}
+    with pytest.raises(ErrorFormato) as e:
+        cliente(lambda r: httpx.Response(200, json=respuesta), tmp_path).extraer(
+            "hola", Clasificacion
+        )
+    assert e.value.texto == texto

@@ -25,10 +25,10 @@ import random
 import time
 from collections.abc import Callable, Generator, Iterator
 from pathlib import Path
-from typing import Literal, NamedTuple
+from typing import Literal, NamedTuple, TypeVar
 
 import httpx
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from curso_core import config as cfg
 from curso_core.tracing import Traza, registrar
@@ -54,6 +54,9 @@ class Opciones(BaseModel):
     # Si se indica, la respuesta incluye la probabilidad de cada token generado y de
     # esta cantidad de alternativas. No todos los proveedores lo admiten.
     alternativas: int | None = None
+    # JSON Schema que la respuesta debe cumplir. El servidor restringe la generación a él
+    # (salida estructurada). Lo rellena `extraer` a partir de un modelo de Pydantic.
+    formato: dict | None = None
 
 
 class Alternativa(BaseModel):
@@ -167,6 +170,8 @@ def _peticion_ollama(
     }
     if op.alternativas is not None:
         cuerpo |= {"logprobs": True, "top_logprobs": op.alternativas}
+    if op.formato is not None:
+        cuerpo["format"] = op.formato
     return "/api/chat", cuerpo
 
 
@@ -204,6 +209,11 @@ def _peticion_openai(
     }
     if op.alternativas is not None:
         cuerpo |= {"logprobs": True, "top_logprobs": op.alternativas}
+    if op.formato is not None:
+        cuerpo["response_format"] = {
+            "type": "json_schema",
+            "json_schema": {"name": "respuesta", "schema": op.formato, "strict": True},
+        }
     if stream:
         # Sin include_usage, la API no informa de los tokens en streaming.
         cuerpo |= {"stream": True, "stream_options": {"include_usage": True}}
@@ -280,6 +290,19 @@ class _Llamada(NamedTuple):
     traza: dict
 
 
+class ErrorFormato(Exception):
+    """La respuesta no se pudo convertir al modelo pedido: no es JSON válido o no cumple el
+    esquema. Guarda el texto recibido y la respuesta completa para depurar."""
+
+    def __init__(self, mensaje: str, texto: str, respuesta: Respuesta):
+        super().__init__(mensaje)
+        self.texto = texto
+        self.respuesta = respuesta
+
+
+M = TypeVar("M", bound=BaseModel)
+
+
 class Flujo:
     """Respuesta en streaming: se itera fragmento a fragmento.
 
@@ -348,6 +371,30 @@ class ClienteLLM:
             self._registrar_fallo(llamada, inicio, e)
             raise
         return self._finalizar(llamada, inicio, intentos, bruto)
+
+    def extraer(
+        self,
+        mensajes: str | list[Mensaje] | PromptRenderizado,
+        modelo: type[M],
+        *,
+        rol: str = "chat",
+        opciones: Opciones | None = None,
+    ) -> tuple[M, Respuesta]:
+        """Pide una respuesta que cumpla el esquema de `modelo` y la valida.
+
+        Devuelve el objeto validado y la respuesta (con sus tokens, latencia...). Si el texto
+        no es JSON válido o no cumple el esquema, lanza `ErrorFormato`.
+        """
+        opciones = (opciones or Opciones()).model_copy(
+            update={"formato": modelo.model_json_schema()}
+        )
+        respuesta = self.chat(mensajes, rol=rol, opciones=opciones)
+        try:
+            return modelo.model_validate_json(respuesta.texto), respuesta
+        except ValidationError as e:
+            raise ErrorFormato(
+                f"La respuesta no cumple {modelo.__name__}: {e}", respuesta.texto, respuesta
+            ) from e
 
     def chat_stream(
         self,

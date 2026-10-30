@@ -3,6 +3,7 @@
 from curso_core.client import (
     Alternativa,
     ClienteLLM,
+    ErrorFormato,
     ErrorLLM,
     Flujo,
     Mensaje,
@@ -15,6 +16,7 @@ from curso_core.client import (
 __all__ = [
     "Alternativa",
     "ClienteLLM",
+    "ErrorFormato",
     "ErrorLLM",
     "Flujo",
     "Mensaje",
