@@ -9,5 +9,9 @@
 - `conversacion.py`: mensajes, roles y por qué hay que reenviar el historial.
 - `streaming.py`: streaming y tiempo hasta el primer fragmento.
 - `errores_api.py`: errores reales de Hugging Face Inference Providers (401, 400, 402) y un timeout.
+- `ficha_modelo.py`: ficha de un modelo en el Hub de Hugging Face (licencia, tamaño, modelo base).
+- `comparar_modelos.py`: tres tamaños de la misma familia con las mismas preguntas.
+- `coste_y_latencia.py`: p50/p95 de una carga real y proyección de coste.
+- `reintentos.py` y `simulador.py`: reintentos frente a un límite de uso (429) simulado.
 
 Ejecútalos desde la raíz del repo con `uv run python modulos/01-fundamentos-de-llms/<script>.py`.
