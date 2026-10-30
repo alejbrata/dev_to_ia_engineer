@@ -3,25 +3,154 @@ title: "Tu primera eval"
 description: "Tu primera eval: 10 casos, una aserción, un número"
 ---
 
+import TablaEval from '../../../components/TablaEval.astro';
+
+:::note[Revisado: 2026-10]
+Las salidas son reales, con el modelo con el que se construyó el curso (Qwen2.5 1.5B Instruct en Ollama), temperatura 0 y cada versión medida desde el mismo estado del servidor.
+:::
+
 ## Objetivos
 
-TODO
+Al terminar esta lección podrás:
+
+- Construir una evaluación mínima: un conjunto de casos, una aserción por caso y un número.
+- Comparar tu versión de un prompt con la que hay en git antes de confirmar el cambio.
+- Leer qué casos se arreglan y cuáles se rompen, en lugar de mirar solo el número.
+- Distinguir una mejora real de un caso frontera que cambia con cualquier retoque.
 
 ## Teoría
 
-TODO
+### "Parece que funciona" no es una métrica
+
+Durante el módulo has cambiado prompts y has mirado los resultados en una tabla. Esa tabla es, sin decirlo, una evaluación. Esta lección la convierte en una herramienta que usarás cada vez que toques un prompt, igual que ejecutas los tests antes de hacer un commit.
+
+Una evaluación mínima (una **eval**) tiene tres piezas:
+
+1. **Casos**: entradas con su resultado esperado. Aquí, los 10 tickets del grupo `eval`.
+2. **Una aserción por caso**: la comprobación que decide si el caso está bien. Aquí, que los tres campos coincidan con la clasificación esperada.
+3. **Un número**: el porcentaje de casos que pasan la aserción.
+
+Si vienes de backend, se parece a un conjunto de tests, con dos diferencias importantes. No esperas que pasen todos: mides una tasa y vigilas que no baje. Y el sistema no es determinista, así que un caso puede cambiar sin que tú hayas cambiado nada relevante.
+
+### Comparar con lo que ya tenías
+
+Un número suelto dice poco. Lo útil es compararlo con el de la versión anterior: ¿tu cambio mejora o empeora? Como los prompts viven en git (lección 05), la versión anterior está siempre a mano. `evaluar.py --contra HEAD` mide el prompt que tienes en disco y el que confirmaste por última vez, y te dice qué casos cambian.
+
+Si tu versión acierta menos, termina con código de error. Es lo que hace falta para que una eval bloquee un cambio en CI, como un test que falla. Lo montarás en el módulo de evals.
+
+### Diez casos son pocos
+
+Con diez casos, cada uno vale diez puntos. En la lección 02 viste que el orden de ejecución bastaba para mover un resultado de 4 a 6 de 10. Por eso esta eval siempre mide cada versión desde el mismo estado del servidor, y por eso, ante una diferencia de un caso, **lee el caso antes de creerte la diferencia**.
 
 ## Práctica
 
-TODO
+### 1. Mide la versión actual
+
+[`evaluar.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/02-prompting/evaluar.py) evalúa el mejor prompt del módulo, `tickets/few-shot-5`:
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/02-prompting/evaluar.py tickets/few-shot-5
+```
+
+```text
+tickets/few-shot-5@v1 (en disco): 4/10 correctos (40%)
+```
+
+Ese es tu punto de partida: 40 %. No es bueno, y es honesto: es lo que da un modelo de 1.5B en esta tarea.
+
+### 2. Propón un cambio y evalúalo
+
+Imagina que alguien del equipo propone ahorrar tokens de salida (la parte cara, según el módulo 1): en lugar de tres líneas, que el modelo responda en una sola. Abre [`prompts/tickets/few-shot-5.md`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/prompts/tickets/few-shot-5.md) y haz el cambio, subiendo la versión:
+
+```diff
+-version: 1
++version: 2
+ ...
+-Responde exactamente con estas tres líneas y nada más:
+-categoria: <valor>
+-severidad: <valor>
+-servicio: <valor>
++Para ahorrar tokens, responde en una sola línea con los tres valores separados por comas: categoria, severidad, servicio.
+```
+
+Antes de confirmarlo, evalúalo contra la versión de git:
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/02-prompting/evaluar.py tickets/few-shot-5 --contra HEAD
+```
+
+```text
+tickets/few-shot-5@v2 (en disco): 3/10 correctos (30%)
+tickets/few-shot-5@v1 (en HEAD): 4/10 correctos (40%)
+  ROTO      6 NULO esperado red/alta/notificaciones -> categoria: red / severidad: alta / servicio: red
+Regresión: tu versión acierta menos que la de referencia.
+```
+
+El script termina con código 1. Así se ven los resultados caso a caso:
+
+<TablaEval />
+
+Cuando termines, deshaz el cambio:
+
+```sh title="Terminal de VS Code · raíz del repo"
+git checkout -- prompts/tickets/few-shot-5.md
+```
 
 ## Mide y depura
 
-TODO
+### Mira los casos, no solo el número
+
+El número dice "de 4 a 3". El caso roto dice algo más interesante: la respuesta del ticket 6 **sigue en el formato de tres líneas**. Si lo compruebas en todas las respuestas, ninguna de las diez está en una sola línea, y los tokens de salida apenas cambian (17,1 frente a 17,2 de media).
+
+El cambio no consiguió lo que buscaba. Los cinco ejemplos del prompt muestran respuestas de tres líneas, y el modelo hace lo que ve en los ejemplos, no lo que dice la instrucción. Lo que sí cambió fueron algunas respuestas: en la tabla verás que la severidad de los tickets 2 y 4 es distinta en cada versión (mal en las dos). Solo un caso pasó de correcto a incorrecto, el 6, donde el modelo puso una categoría en el campo del servicio. Por eso conviene mirar la tabla entera, no solo la línea de "ROTO": un cambio puede mover muchas respuestas sin que el número lo refleje.
+
+**Mide siempre también el objetivo del cambio**, no solo la calidad general: este cambio iba de ahorrar tokens, y no los ahorró.
+
+### Un +1 no es una mejora
+
+Al preparar esta lección se probaron otros cinco cambios sobre el mismo prompt, todos con buena pinta. Este fue el resultado, medido con el mismo método:
+
+| Cambio | Correctos | Diferencia |
+| --- | --- | --- |
+| Ninguno (referencia) | 4/10 | |
+| "Ante la duda entre dos severidades, elige la más alta" | 5/10 | +1: ticket 4 |
+| "Fíjate primero en a cuántos usuarios afecta y si hay dinero o datos en juego" | 5/10 | +1: ticket 4 |
+| "Sé preciso y conciso" | 5/10 | +1: ticket 4 |
+| Describir qué hace cada servicio | 4/10 | Ninguna |
+| "Responde en minúsculas y sin tildes" | 4/10 | Ninguna |
+
+Tres cambios sin nada en común producen exactamente la misma mejora, en el mismo ticket. El ticket 4 está en la frontera: cualquier retoque del prompt le da la vuelta. Si te hubieras quedado con el primero, habrías creído que "ante la duda, la más alta" mejora la severidad. No lo sabes con estos datos.
+
+Una diferencia es creíble cuando afecta a varios casos, se repite al medir de nuevo y sobrevive a cambios que no tienen nada que ver. Con diez casos, casi nada lo cumple. En el módulo de evals construirás conjuntos más grandes y verás cómo saber si una diferencia es real.
 
 ## Errores frecuentes
 
-TODO
+**Cambiar un prompt sin evaluarlo.** "Es solo una frase" es como "es solo una línea" en código. Esta lección muestra que una frase puede romper casos sin cumplir su objetivo.
+
+**Mirar solo el número.** 4 frente a 3 no dice por qué. El caso roto y la comprobación del formato lo dicen todo.
+
+**Creerse un +1.** Con diez casos, un caso es ruido hasta que se demuestre lo contrario. Busca el caso que cambia y pregúntate si cambiaría con cualquier otra cosa.
+
+**Evaluar con los ejemplos.** Los casos de la eval nunca pueden estar entre los ejemplos del prompt (lección 02). Si no, mides memoria, no capacidad.
+
+**Esperar el 100 %.** Una eval de un sistema con LLMs no es una suite de tests que pasa entera. Lo que vigilas es la tendencia: que no baje, y que suba cuando trabajas para que suba.
+
+### Anatomía de un error: el ahorro que no ahorraba
+
+El cambio de la práctica tenía un objetivo claro (menos tokens de salida) y una eval que lo rechazó:
+
+```text
+tickets/few-shot-5@v2 (en disco): 3/10 correctos (30%)
+tickets/few-shot-5@v1 (en HEAD): 4/10 correctos (40%)
+  ROTO      6 NULO esperado red/alta/notificaciones -> categoria: red / severidad: alta / servicio: red
+Regresión: tu versión acierta menos que la de referencia.
+```
+
+**Cómo leerlo.** `NULO` significa que la respuesta no se pudo usar: `servicio: red` no es un servicio válido. Pero fíjate en el formato de esa respuesta: tres campos con `categoria:`, `severidad:` y `servicio:`. Es el formato antiguo. El modelo ignoró la instrucción nueva.
+
+**Causa.** En el prompt conviven una instrucción (una línea con comas) y cinco ejemplos que la contradicen (tres líneas). El modelo sigue los ejemplos. Y el cambio en el texto alteró lo justo para que el ticket 6, que ya estaba al límite, se rompiera.
+
+**Solución.** Si quieres cambiar el formato, cámbialo en todas partes: instrucción, ejemplos y el código que lee la respuesta (es un contrato, como viste en la lección 05). Y no confirmes el cambio hasta que la eval diga que no rompe nada y una medida del objetivo (aquí, los tokens de salida) diga que funciona.
 
 ## Bitácora
 
@@ -29,4 +158,6 @@ TODO(alex)
 
 ## Para profundizar
 
-TODO
+- Hamel Husain, [Your AI Product Needs Evals](https://hamel.dev/blog/posts/evals/). Por qué las evals son el centro del trabajo con LLMs.
+- Eugene Yan, [Task-Specific LLM Evals that Do & Don't Work](https://eugeneyan.com/writing/evals/). Qué medir según la tarea, empezando por clasificación.
+- [Documentación de pytest](https://docs.pytest.org/): si quieres convertir tu eval en tests, el módulo de evals lo hará.

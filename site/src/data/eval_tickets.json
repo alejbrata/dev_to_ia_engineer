@@ -1,0 +1,263 @@
+{
+  "casos": [
+    {
+      "id": 1,
+      "texto": "Desde las 9:40 el servicio de pagos devuelve 500 en todas las peticiones. En los logs sale 'too many connections' contra Postgres. Nadie puede pagar.",
+      "esperado": {
+        "categoria": "base_de_datos",
+        "severidad": "critica",
+        "servicio": "pagos"
+      }
+    },
+    {
+      "id": 2,
+      "texto": "Algunos usuarios dicen que el login con Google les da el error 'invalid_grant'. Con usuario y contraseña entran sin problema.",
+      "esperado": {
+        "categoria": "autenticacion",
+        "severidad": "media",
+        "servicio": "usuarios"
+      }
+    },
+    {
+      "id": 3,
+      "texto": "La búsqueda tarda 8-10 segundos desde el despliegue de ayer; antes era menos de un segundo. Funciona, pero va lenta para todo el mundo.",
+      "esperado": {
+        "categoria": "rendimiento",
+        "severidad": "alta",
+        "servicio": "busqueda"
+      }
+    },
+    {
+      "id": 4,
+      "texto": "Tras desplegar la versión 2.14 del catálogo, las fichas de producto salen sin imágenes. Volver a la 2.13 lo arregla.",
+      "esperado": {
+        "categoria": "despliegue",
+        "severidad": "alta",
+        "servicio": "catalogo"
+      }
+    },
+    {
+      "id": 5,
+      "texto": "En el email de bienvenida pone 'plataforam' en lugar de 'plataforma'.",
+      "esperado": {
+        "categoria": "otro",
+        "severidad": "baja",
+        "servicio": "notificaciones"
+      }
+    },
+    {
+      "id": 6,
+      "texto": "Notificaciones no puede conectar con el servidor SMTP: 'Connection timed out' desde el cambio de firewall de esta mañana. No sale ningún email, aunque el resto de la plataforma funciona.",
+      "esperado": {
+        "categoria": "red",
+        "severidad": "alta",
+        "servicio": "notificaciones"
+      }
+    },
+    {
+      "id": 7,
+      "texto": "En el servicio de usuarios, al editar el perfil salta 'deadlock detected' en la base de datos. Le pasa a casi todo el que lo intenta desde hace una hora.",
+      "esperado": {
+        "categoria": "base_de_datos",
+        "severidad": "alta",
+        "servicio": "usuarios"
+      }
+    },
+    {
+      "id": 8,
+      "texto": "El token de la API del banco ha caducado y pagos rechaza todos los cobros con un 401. Estamos perdiendo ventas.",
+      "esperado": {
+        "categoria": "autenticacion",
+        "severidad": "critica",
+        "servicio": "pagos"
+      }
+    },
+    {
+      "id": 9,
+      "texto": "El listado de categorías del catálogo a veces tarda 5 segundos en cargar, sobre todo por la tarde. Si recargas, suele ir bien.",
+      "esperado": {
+        "categoria": "rendimiento",
+        "severidad": "media",
+        "servicio": "catalogo"
+      }
+    },
+    {
+      "id": 10,
+      "texto": "El despliegue de la búsqueda ha fallado a medias: el pod nuevo no arranca porque falta una variable de entorno y el viejo ya está parado. La búsqueda está caída para todos.",
+      "esperado": {
+        "categoria": "despliegue",
+        "severidad": "critica",
+        "servicio": "busqueda"
+      }
+    }
+  ],
+  "referencia": {
+    "prompt": "tickets/few-shot-5@v1",
+    "correctos": 4,
+    "respuestas": [
+      {
+        "clasificacion": {
+          "categoria": "red",
+          "severidad": "alta",
+          "servicio": "pagos"
+        },
+        "correcta": false
+      },
+      {
+        "clasificacion": {
+          "categoria": "autenticacion",
+          "severidad": "alta",
+          "servicio": "usuarios"
+        },
+        "correcta": false
+      },
+      {
+        "clasificacion": {
+          "categoria": "rendimiento",
+          "severidad": "media",
+          "servicio": "busqueda"
+        },
+        "correcta": false
+      },
+      {
+        "clasificacion": {
+          "categoria": "despliegue",
+          "severidad": "media",
+          "servicio": "catalogo"
+        },
+        "correcta": false
+      },
+      {
+        "clasificacion": {
+          "categoria": "otro",
+          "severidad": "baja",
+          "servicio": "usuarios"
+        },
+        "correcta": false
+      },
+      {
+        "clasificacion": {
+          "categoria": "red",
+          "severidad": "alta",
+          "servicio": "notificaciones"
+        },
+        "correcta": true
+      },
+      {
+        "clasificacion": {
+          "categoria": "base_de_datos",
+          "severidad": "alta",
+          "servicio": "usuarios"
+        },
+        "correcta": true
+      },
+      {
+        "clasificacion": {
+          "categoria": "autenticacion",
+          "severidad": "alta",
+          "servicio": "pagos"
+        },
+        "correcta": false
+      },
+      {
+        "clasificacion": {
+          "categoria": "rendimiento",
+          "severidad": "media",
+          "servicio": "catalogo"
+        },
+        "correcta": true
+      },
+      {
+        "clasificacion": {
+          "categoria": "despliegue",
+          "severidad": "critica",
+          "servicio": "busqueda"
+        },
+        "correcta": true
+      }
+    ],
+    "ref": "HEAD"
+  },
+  "actual": {
+    "prompt": "tickets/few-shot-5@v2",
+    "correctos": 3,
+    "respuestas": [
+      {
+        "clasificacion": {
+          "categoria": "red",
+          "severidad": "alta",
+          "servicio": "pagos"
+        },
+        "correcta": false
+      },
+      {
+        "clasificacion": {
+          "categoria": "autenticacion",
+          "severidad": "baja",
+          "servicio": "usuarios"
+        },
+        "correcta": false
+      },
+      {
+        "clasificacion": {
+          "categoria": "rendimiento",
+          "severidad": "media",
+          "servicio": "busqueda"
+        },
+        "correcta": false
+      },
+      {
+        "clasificacion": {
+          "categoria": "despliegue",
+          "severidad": "baja",
+          "servicio": "catalogo"
+        },
+        "correcta": false
+      },
+      {
+        "clasificacion": {
+          "categoria": "otro",
+          "severidad": "baja",
+          "servicio": "usuarios"
+        },
+        "correcta": false
+      },
+      {
+        "clasificacion": null,
+        "correcta": false
+      },
+      {
+        "clasificacion": {
+          "categoria": "base_de_datos",
+          "severidad": "alta",
+          "servicio": "usuarios"
+        },
+        "correcta": true
+      },
+      {
+        "clasificacion": {
+          "categoria": "autenticacion",
+          "severidad": "alta",
+          "servicio": "pagos"
+        },
+        "correcta": false
+      },
+      {
+        "clasificacion": {
+          "categoria": "rendimiento",
+          "severidad": "media",
+          "servicio": "catalogo"
+        },
+        "correcta": true
+      },
+      {
+        "clasificacion": {
+          "categoria": "despliegue",
+          "severidad": "critica",
+          "servicio": "busqueda"
+        },
+        "correcta": true
+      }
+    ]
+  }
+}

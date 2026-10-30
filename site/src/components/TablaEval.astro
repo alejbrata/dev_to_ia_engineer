@@ -1,0 +1,151 @@
+---
+// Resultados reales de una eval caso a caso: la versión de referencia (en git) frente a la
+// versión modificada. Datos de `evaluar.py --guardar` (modulos/02-prompting).
+import datos from '../data/eval_tickets.json';
+
+const { casos, referencia, actual } = datos;
+type Clasificacion = { categoria: string; severidad: string; servicio: string } | null;
+const campos = (c: Clasificacion) => (c ? [c.categoria, c.severidad, c.servicio] : ['no utilizable']);
+const filas = casos.map((caso, i) => ({
+	...caso,
+	ref: referencia.respuestas[i],
+	act: actual.respuestas[i],
+	cambia: referencia.respuestas[i].correcta !== actual.respuestas[i].correcta,
+}));
+const n = casos.length;
+---
+
+<div class="laboratorio tabla-eval not-content">
+	<div class="laboratorio-cabecera">
+		<strong>Laboratorio · eval</strong>
+		<span>resultados reales, caso a caso</span>
+	</div>
+	<div class="laboratorio-cuerpo">
+		<div class="cifras">
+			<span>{referencia.prompt} (en {referencia.ref}): <b>{referencia.correctos}/{n}</b></span>
+			<span>{actual.prompt} (tu cambio): <b>{actual.correctos}/{n}</b></span>
+		</div>
+		<label class="nota solo-cambios">
+			<input type="checkbox" data-filtro /> Ver solo los casos que cambian
+		</label>
+		<p class="nota aviso-movil">Desliza la tabla hacia la izquierda para ver las respuestas →</p>
+		<div class="desplazable">
+			<table>
+				<thead>
+					<tr>
+						<th>#</th>
+						<th>Ticket</th>
+						<th>Esperado</th>
+						<th>{referencia.prompt}</th>
+						<th>{actual.prompt}</th>
+					</tr>
+				</thead>
+				<tbody>
+					{
+						filas.map((f) => (
+							<tr class:list={{ cambia: f.cambia }} data-cambia={String(f.cambia)}>
+								<td>{f.id}</td>
+								<td class="ticket" title={f.texto}>
+									<span>{f.texto}</span>
+								</td>
+								<td class="clasif">
+									{campos(f.esperado).map((v) => <code>{v}</code>)}
+								</td>
+								<td class:list={['clasif', 'res', f.ref.correcta ? 'ok' : 'mal']}>
+									<b>{f.ref.correcta ? '✓' : '✗'}</b>
+									{campos(f.ref.clasificacion).map((v) => <code>{v}</code>)}
+								</td>
+								<td class:list={['clasif', 'res', f.act.correcta ? 'ok' : 'mal']}>
+									<b>{f.act.correcta ? '✓' : '✗'}</b>
+									{campos(f.act.clasificacion).map((v) => <code>{v}</code>)}
+								</td>
+							</tr>
+						))
+					}
+				</tbody>
+			</table>
+		</div>
+	</div>
+</div>
+
+<style>
+	.desplazable {
+		overflow-x: auto;
+	}
+	.aviso-movil {
+		display: none;
+	}
+	@media (max-width: 50rem) {
+		.aviso-movil {
+			display: block;
+		}
+	}
+	table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: var(--sl-text-xs);
+	}
+	th,
+	td {
+		padding: 0.4rem 0.5rem;
+		border-bottom: 1px solid var(--sl-color-gray-5);
+		text-align: left;
+		vertical-align: top;
+	}
+	th {
+		font-family: var(--sl-font-mono);
+		font-weight: 500;
+		color: var(--sl-color-gray-3);
+	}
+	.ticket {
+		min-width: 11rem;
+		max-width: 20rem;
+		color: var(--sl-color-gray-2);
+	}
+	/* El ticket completo está en el title: aquí basta con dos líneas. */
+	.ticket span {
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+	.clasif code {
+		display: block;
+		white-space: nowrap;
+		font-size: 0.95em;
+		background: none;
+		padding: 0;
+	}
+	.clasif b {
+		float: right;
+		margin-left: 0.4rem;
+	}
+	.res.ok {
+		color: var(--sl-color-accent-high);
+	}
+	.res.mal {
+		color: var(--sl-color-gray-3);
+	}
+	tr.cambia {
+		background: hsla(38, 92%, 58%, 0.12);
+	}
+	tr.oculta {
+		display: none;
+	}
+	.solo-cambios {
+		display: flex;
+		gap: 0.5rem;
+		align-items: center;
+	}
+</style>
+
+<script>
+	document.querySelectorAll<HTMLElement>('.tabla-eval').forEach((caja) => {
+		caja.querySelector<HTMLInputElement>('[data-filtro]')!.addEventListener('change', (e) => {
+			const solo = (e.target as HTMLInputElement).checked;
+			caja.querySelectorAll<HTMLTableRowElement>('tbody tr').forEach((fila) => {
+				fila.classList.toggle('oculta', solo && fila.dataset.cambia !== 'true');
+			});
+		});
+	});
+</script>
