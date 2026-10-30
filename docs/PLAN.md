@@ -25,7 +25,7 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 - **Práctica transversal**: nace `curso_core` con un cliente LLM que registra tokens, latencia y coste por llamada
 - **Errores clave**: 401, 429 (rate limit), context length exceeded, timeouts; reintentos con backoff
 
-## Módulo 2 — Prompting y salida estructurada ⬜
+## Módulo 2 — Prompting y salida estructurada 🟨
 
 1. Anatomía de un prompt: system, instrucciones, contexto, ejemplos
 2. Few-shot y técnicas que sí funcionan (y mitos que no)
