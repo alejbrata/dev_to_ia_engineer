@@ -63,9 +63,11 @@ model = "Qwen/Qwen3-4B-Instruct-2507"
 hf_repo = "Qwen/Qwen3-4B-Instruct-2507"
 
 [roles.judge]
-# Modelo que hace de juez en las evals (LLM-as-judge).
-provider = ""
-model = ""
+# Modelo que hace de juez en las evals (LLM-as-judge): uno más grande que el que
+# genera las respuestas. Revisado: 2026-10.
+provider = "ollama"
+model = "qwen2.5:7b"
+hf_repo = "Qwen/Qwen2.5-7B-Instruct"
 
 [roles.embeddings]
 # Modelo de embeddings para RAG. Debe ser el mismo al indexar y al consultar.
