@@ -47,11 +47,12 @@ def responder(
     pregunta: str,
     prompt: str = "rag/con-citas",
     k: int = K,
+    rol: str = "chat",
 ) -> Respuesta:
     resultados = indice.buscar(pregunta, k)
     # generacion.generar solo usa el texto de la pregunta; el resto de campos no importa.
     p = corpus.Pregunta(
         id=0, pregunta=pregunta, respondible=True, respuesta="", evidencias=[], clave=""
     )
-    g = generacion.generar(cliente, prompt, generacion.contexto(resultados), p)
+    g = generacion.generar(cliente, prompt, generacion.contexto(resultados), p, rol=rol)
     return Respuesta(texto=g.texto, citas=g.citas, recuperados=[r.fragmento for r in resultados])

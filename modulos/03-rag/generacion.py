@@ -73,12 +73,16 @@ def relevante(cliente: ClienteLLM, pregunta: str, respuesta: str) -> bool:
     return cliente.extraer(mensajes, Relevancia, rol="judge", opciones=OPCIONES)[0].responde
 
 
-def generar(cliente: ClienteLLM, prompt: str, ctx: str, p: corpus.Pregunta) -> Generada:
+def generar(
+    cliente: ClienteLLM, prompt: str, ctx: str, p: corpus.Pregunta, rol: str = "chat"
+) -> Generada:
     mensajes = prompts.renderizar(prompts.cargar(prompt), contexto=ctx, pregunta=p.pregunta)
     if prompt == "rag/con-contexto":
-        return Generada(pregunta=p, texto=cliente.chat(mensajes, opciones=OPCIONES).texto.strip())
+        return Generada(
+            pregunta=p, texto=cliente.chat(mensajes, rol=rol, opciones=OPCIONES).texto.strip()
+        )
     try:
-        r, _ = cliente.extraer(mensajes, RespuestaCitada, opciones=OPCIONES)
+        r, _ = cliente.extraer(mensajes, RespuestaCitada, rol=rol, opciones=OPCIONES)
         return Generada(pregunta=p, texto=r.respuesta, citas=r.citas)
     except ErrorFormato as e:
         return Generada(pregunta=p, texto=e.texto, citas=[], formato_ok=False)
