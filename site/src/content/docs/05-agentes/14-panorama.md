@@ -23,6 +23,10 @@ TODO
 
 TODO
 
+## Comprueba lo que has entendido
+
+TODO
+
 ## Para profundizar
 
 TODO

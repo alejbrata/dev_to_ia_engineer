@@ -63,13 +63,18 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 1. Workflow frente a agente: no todo necesita autonomía
 2. Diseño de herramientas: tool use a fondo
 3. El bucle de un agente desde cero (sin framework)
-4. Grafos: del grafo propio a LangGraph
-5. Estado, memoria y contexto
-6. Multiagente: cuándo compensa y cuándo es complejidad gratuita
-7. MCP: conectar herramientas de forma estándar
-8. Evals de agentes: resultado, trayectoria, fiabilidad y coste
-9. Panorama: SDK de agentes, skills, A2A y lo que viene
-- **Decisiones** (aprobadas el 2026-10-31, ver `docs/PROPUESTA-modulo-5.md`): caso único, un agente de guardia sobre la plataforma de los módulos 2-4 (corpus, tickets, RAG), construido como workflow, como agente desde cero y como grafo; grafo propio antes que LangGraph; MCP con el SDK oficial sobre la revisión 2026-07-28; lo que caduca rápido va en la lección 9 (con nota "Revisado") y el detalle de herramientas en un anexo; el modelo local para agentes se elige midiendo en la lección 2
+4. Planificar: tareas, dependencias y replanificación
+5. Grafos de estado desde cero: nodos, aristas condicionales, checkpoints y aprobación humana
+6. LangGraph: el mismo grafo con un framework
+7. Estado, memoria y contexto
+8. Subagentes: delegar con contexto aislado
+9. Sistemas multiagente desde cero: cuándo compensa y cuándo es complejidad gratuita
+10. MCP: conectar herramientas de forma estándar
+11. Seguridad de agentes: permisos, aprobación humana e inyección
+12. Evals de agentes: resultado, trayectoria, fiabilidad y coste
+13. Agentes que aguantan: reanudar, reintentar y presupuestos
+14. Panorama: SDK de agentes, skills, A2A y lo que viene
+- **Decisiones** (aprobadas el 2026-10-31, ver `docs/PROPUESTA-modulo-5.md`; ampliado a 14 lecciones el mismo día, a petición de Alex): cierre del módulo con un sistema de guardia multiagente construido desde cero (orquestador que planifica el incidente como grafo de tareas, subagentes especializados, aprobación humana), medido frente al agente único; caso único, un agente de guardia sobre la plataforma de los módulos 2-4 (corpus, tickets, RAG), construido como workflow, como agente desde cero y como grafo; grafo propio antes que LangGraph; MCP con el SDK oficial sobre la revisión 2026-07-28; lo que caduca rápido va en la lección 9 (con nota "Revisado") y el detalle de herramientas en un anexo; el modelo local para agentes se elige midiendo en la lección 2
 - **Mide y depura**: trazas de agente paso a paso; pasos por tarea, terminación (resuelta, límite, error) y coste por tarea resuelta
 - **Errores clave**: bucles infinitos, argumentos de herramienta alucinados, explosión de coste, pérdida de estado, inyección a través del resultado de una herramienta
 

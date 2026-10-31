@@ -1,6 +1,6 @@
 ---
-title: "Multiagente"
-description: "Multiagente: cuándo compensa y cuándo es complejidad gratuita"
+title: "LangGraph"
+description: "LangGraph: el mismo grafo con un framework"
 ---
 
 ## Objetivos
@@ -20,6 +20,10 @@ TODO
 TODO
 
 ## Errores frecuentes
+
+TODO
+
+## Comprueba lo que has entendido
 
 TODO
 

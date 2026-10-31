@@ -1,6 +1,6 @@
 ---
-title: "Estado, memoria y contexto"
-description: "Estado, memoria y contexto"
+title: "Subagentes"
+description: "Subagentes: delegar con contexto aislado"
 ---
 
 ## Objetivos
@@ -20,6 +20,10 @@ TODO
 TODO
 
 ## Errores frecuentes
+
+TODO
+
+## Comprueba lo que has entendido
 
 TODO
 

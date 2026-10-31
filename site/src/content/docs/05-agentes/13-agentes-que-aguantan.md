@@ -1,6 +1,6 @@
 ---
-title: "MCP"
-description: "MCP: conectar herramientas de forma estándar"
+title: "Agentes que aguantan"
+description: "Agentes que aguantan: reanudar, reintentar y presupuestos"
 ---
 
 ## Objetivos
@@ -20,6 +20,10 @@ TODO
 TODO
 
 ## Errores frecuentes
+
+TODO
+
+## Comprueba lo que has entendido
 
 TODO
 

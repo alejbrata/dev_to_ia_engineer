@@ -1,0 +1,253 @@
+---
+title: "Diseño de herramientas"
+description: "Diseño de herramientas: cómo describirlas para que un agente las use bien, cómo medir si las usa bien y cómo elegir el modelo con datos"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
+:::note[Revisado: 2026-10]
+Las salidas son reales, con cuatro configuraciones locales en Ollama, sobre CPU: Qwen2.5 1.5B y 7B Instruct, y Qwen3 8B con y sin razonamiento. Puedes usar el modelo que quieras: cambia el rol `agente` en `config/models.toml` y vuelve a medir.
+:::
+
+## Objetivos
+
+Al terminar esta lección podrás:
+
+- Describir una herramienta (nombre, descripción, argumentos y errores) para que un modelo la use bien.
+- Medir cómo usa un agente sus herramientas: llamadas inválidas, consultas a la documentación y acciones que dice haber hecho sin hacerlas.
+- Mejorar las herramientas a partir de las trazas de sus fallos, sin tocar el prompt.
+- Elegir el modelo de un agente midiendo, no suponiendo.
+
+## Teoría
+
+### La herramienta es la interfaz del modelo
+
+En el módulo 2 (lección 04) viste el tool calling de un solo paso: el modelo pide una herramienta, tu código la ejecuta y le devuelve el resultado. Un agente hace lo mismo en bucle, decidiendo en cada paso qué herramienta usar. Eso convierte el diseño de las herramientas en la mitad del trabajo.
+
+Del lado del modelo, una herramienta es solo texto: un nombre, una descripción y el JSON Schema de sus argumentos, con sus descripciones si las tiene. No ve tu código. Si la descripción es ambigua, el modelo la usará de forma ambigua. Es lo mismo que diseñar una API para otros equipos: lo que no está en la documentación, cada uno lo interpreta a su manera. Por eso algunos la llaman la interfaz agente-ordenador, por analogía con la interfaz de usuario.
+
+Lo que conviene cuidar en cada herramienta:
+
+- **El nombre y la descripción**: qué hace, cuándo usarla y cuándo no.
+- **Los argumentos**: tipos cerrados siempre que se pueda (`Literal` con los valores válidos, no un `str` libre) y una descripción de cada uno con lo que el modelo necesita saber para rellenarlo bien.
+- **Los errores**: cuando el modelo llama mal a una herramienta, devuélvele el error como resultado, en texto que pueda entender, para que se corrija en el paso siguiente. No lances una excepción que mate al agente.
+- **Las herramientas con efectos**: las que cambian algo (abrir una incidencia, reiniciar un servicio, mandar un email) merecen más cuidado que las de lectura. Lo verás a fondo en la lección de seguridad.
+
+### Medir cómo usa las herramientas
+
+Que el agente acierte o falle el escenario es la métrica final, pero no dice qué arreglar. Las trazas de cada paso (qué herramienta pidió, con qué argumentos, qué recibió) permiten medir cosas más concretas:
+
+- **Llamadas inválidas**: argumentos que no pasan la validación o herramientas que no existen.
+- **Uso de la documentación**: si consulta el runbook antes de proponer una mitigación.
+- **Dice sin hacer**: el agente escribe en su respuesta que ha hecho algo (abrir una incidencia) sin haber llamado a la herramienta que lo hace. Es el fallo más traicionero, porque su respuesta parece correcta.
+
+Por eso el comprobador de la plataforma mira el **estado final**, no lo que el agente dice: si dice que ha abierto la incidencia, la incidencia tiene que existir. Es el criterio de benchmarks como tau-bench.
+
+### El modelo también se elige midiendo
+
+Usar herramientas bien es una habilidad que no todos los modelos tienen al mismo nivel. En el módulo 2 viste que el modelo de 1,5B ni siquiera pedía la herramienta. Para un agente, que encadena muchas llamadas, la diferencia se multiplica. Y algunos modelos recientes pueden razonar antes de responder: suele ayudar, pero cuesta tiempo. La única forma de decidir es medirlo con tus escenarios.
+
+## Práctica
+
+El caso de todo el módulo es un **agente de guardia** sobre la plataforma de los módulos 2 a 4. Recibe una alerta, investiga con cuatro herramientas (`estado_servicio`, `buscar_logs`, `buscar_documentacion` y `abrir_incidencia`) y decide si abre una incidencia, con qué severidad y con qué mitigación. Los 14 escenarios de [`datos/escenarios.jsonl`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/datos/escenarios.jsonl) están anclados al corpus del módulo 3, como pedía el módulo 4: la severidad esperada sale de los criterios de `severidades.md` y la mitigación, del runbook. Hay una falsa alarma, un pico pasajero y una instrucción inyectada en los logs. Las medidas usan solo los 9 de desarrollo; los 5 de prueba se reservan para la lección de evals.
+
+### 1. Cuatro configuraciones con las herramientas de la versión 1
+
+La versión 1 de las herramientas es lo mínimo para que funcionen: una descripción de una línea y los argumentos sin describir. [`medir_modelos.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/medir_modelos.py) ejecuta el agente con cada configuración:
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/05-agentes/medir_modelos.py
+```
+
+Tarda alrededor de una hora en la máquina del curso, casi toda por el modelo que razona. Con `--grabadas`, un segundo. La salida, sin el detalle de los fallos:
+
+```text
+1. El agente en los 9 escenarios de desarrollo
+   configuración        estado ok  runbook  llamadas inválidas  pasos  límite s/escenario
+   qwen2.5-1.5b             2 de 9    4 de 9         9         0      2       0           6
+   qwen2.5-7b               2 de 9    4 de 9        26         0      3       0          74
+   qwen3-8b                 3 de 9    7 de 9        29         0      4       0          61
+   qwen3-8b-razonando       5 de 9    5 de 9        34         0      3       0         217
+   (pasos y segundos: mediana por escenario)
+```
+
+Ningún modelo pasa de 5 de 9. Pero la parte 2 de la salida (por qué falla cada uno) dice que casi todos los fallos son de dos tipos: no abrir la incidencia y equivocar la severidad. Y la columna de inválidas está a cero: los esquemas cerrados funcionan, ningún modelo pide una herramienta que no existe ni un servicio que no está en la lista.
+
+### 2. Leer las trazas antes de cambiar nada
+
+Antes de tocar las herramientas, se leen los fallos, como en la lección 06 del módulo 4. Aparecen tres patrones:
+
+- **Busca en los logs el nombre de la alerta.** `buscar_logs(servicio="pagos", texto="PoolConexionesPagos")` devuelve "Ninguna línea contiene 'PoolConexionesPagos'": los logs dicen `too many connections`, no el nombre de la alerta.
+- **No consulta los criterios de severidad** y pone `alta` casi siempre.
+- **Dice que abre la incidencia sin abrirla**: escribe "abro una incidencia" en su respuesta y nunca llama a `abrir_incidencia`.
+
+Para leer un caso entero, [`traza.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/traza.py) ejecuta el agente en un escenario y muestra su traza paso a paso: qué pidió el modelo en cada paso, qué le devolvió el código, su respuesta final y lo que hay de verdad en la plataforma. La anatomía de esta lección es una de sus salidas:
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/05-agentes/traza.py pagos-pool-sin-despliegue --herramientas v1
+```
+
+### 3. Las mismas herramientas, mejor descritas
+
+La versión 2 cambia solo lo que el modelo lee. El prompt del agente y los modelos son los mismos, para medir solo el efecto de las herramientas:
+
+- `buscar_documentacion` dice que conviene buscar por el síntoma o el error, no por el nombre de la alerta, y que hay que consultar el runbook antes de proponer una mitigación.
+- `buscar_logs` dice que, para empezar, lo mejor es dejar el texto vacío y ver las últimas líneas.
+- El argumento `severidad` de `abrir_incidencia` lleva en su descripción los criterios de `severidades.md`.
+- `abrir_incidencia` avisa: "Es la única forma de abrirla: decir en tu respuesta que la abres no la abre".
+
+Con Pydantic, las descripciones de los argumentos son un `Field(description=...)`:
+
+```python
+class IncidenciaV2(BaseModel):
+    severidad: Severidad = Field(
+        description="Según los criterios de severidad: critica, si el servicio está caído "
+        "para todos o hay pérdida de dinero o de datos; alta, si una funcionalidad "
+        "importante falla para muchos usuarios y no hay alternativa; ..."
+    )
+```
+
+[`medir_herramientas.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/medir_herramientas.py) repite la medición con la versión 2 en los tres modelos más capaces y la compara con la versión 1:
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/05-agentes/medir_herramientas.py
+```
+
+```text
+1. Herramientas v1 frente a v2, en los 9 escenarios de desarrollo
+   modelo               versión estado ok  runbook  llamadas inválidas dice sin hacer s/escenario
+   qwen2.5-7b                v1     2 de 9    4 de 9        26         0              5          74
+   qwen2.5-7b                v2     4 de 9    9 de 9        32         0              3          87
+   qwen3-8b                  v1     3 de 9    7 de 9        29         0              3          61
+   qwen3-8b                  v2     4 de 9    8 de 9        31         0              2          69
+   qwen3-8b-razonando        v1     5 de 9    5 de 9        34         0              0         217
+   qwen3-8b-razonando        v2     5 de 9    9 de 9        34         0              2         244
+
+2. v1 → v2, caso a caso
+   qwen2.5-7b           gana ['pagos-token-banco', 'notificaciones-push', 'usuarios-deadlocks'], pierde ['catalogo-replica-normal'], p = 0.62
+   qwen3-8b             gana ['notificaciones-smtp', 'catalogo-replica-normal'], pierde ['pagos-token-banco'], p = 1.00
+   qwen3-8b-razonando   gana ['notificaciones-smtp'], pierde ['pagos-pool-sin-despliegue'], p = 1.00
+```
+
+La parte 3 de la salida lista los fallos que quedan con la versión 2. Salvo uno, son los dos de antes: no abrir la incidencia (seis veces) y la severidad `alta` donde tocaba `critica` o `media` (siete veces).
+
+## Mide y depura
+
+### Lo que arreglan las descripciones
+
+El cambio más claro no está en los aciertos, sino en el comportamiento: con la versión 2, los tres modelos consultan el runbook en 8 o 9 de los 9 escenarios (antes, entre 4 y 7). Las descripciones cambian lo que el agente hace. Los aciertos suben de 2 a 4 con el de 7B y de 3 a 4 con Qwen3, sin razonar. Con 9 escenarios, esas diferencias no son significativas (p entre 0,62 y 1,00): la dirección es buena, pero no basta para afirmar una mejora.
+
+### Lo que no arreglan
+
+Dos fallos resisten. El primero, la severidad. Aunque los criterios van en la descripción del argumento, los modelos ponen `alta` en casos que son `critica` (pagos sin poder cobrar: pérdida de dinero) o `media` (un fallo con alternativa). Tienden al valor intermedio. Describir mejor una herramienta no sustituye al criterio del modelo: habrá que atacarlo de otra forma en las lecciones siguientes (pedirle que justifique la severidad con el criterio, o que lo compruebe en un paso aparte).
+
+El segundo, "dice sin hacer", baja pero no desaparece. Con la versión 1, Qwen3 8B escribió en el escenario `busqueda-disco` "Abro una incidencia para el servicio busqueda con severidad alta" y terminó con "Se abrió una incidencia con severidad alta", sin haber llamado nunca a `abrir_incidencia`. La plataforma no tenía ninguna. Por eso el comprobador mira el estado final: si dependieras de lo que el agente dice, no lo verías. `medir_herramientas.py` lo cuenta cruzando la respuesta con las incidencias reales.
+
+### El mismo escenario no da siempre lo mismo
+
+Al volver a ejecutar `busqueda-disco` con `traza.py`, mismo modelo y mismas herramientas, el agente sí abrió la incidencia (con severidad `alta`, cuando el criterio da `media`). Y `pagos-pool-despliegue`, que en las mediciones no la abría, la abrió también. Con temperatura 0, el resultado de un agente cambia entre ejecuciones: el estado del servidor (la caché del módulo 1) altera una llamada, y en un agente cada paso condiciona los siguientes. Las tablas de esta lección son una ejecución; para decidir con seguridad hay que repetir, y medir con qué frecuencia acierta cada escenario. Es la fiabilidad (pass^k) que mide la lección de evals de agentes.
+
+### Elegir el modelo
+
+Con estos datos, el modelo del módulo es **Qwen3 8B sin razonar** (el rol `agente`). Empata con el de 7B en aciertos, dice menos veces que abre la incidencia sin abrirla (2 frente a 3) y es el más rápido de los capaces (69 s por escenario en la máquina del curso). Razonar suma dos aciertos con la versión 1 (5 frente a 3) y uno con la 2 (5 frente a 4), y cuesta 3,5 veces más tiempo. El de 1,5B queda descartado: no abre ninguna incidencia.
+
+Es una decisión con datos escasos, y se revisa cuando cambian las condiciones: otro modelo, otra máquina (con GPU, razonar cuesta mucho menos), más escenarios. Lo que no cambia es el método: medir con tus escenarios antes de elegir.
+
+## Errores frecuentes
+
+**Herramientas descritas en una línea.** Funcionan en la demo y fallan en los casos difíciles. Escribe la descripción como la documentación de un endpoint: qué hace, cuándo usarla, qué esperar.
+
+**Argumentos de texto libre donde cabe una lista.** Con `Literal` y la validación de Pydantic, ninguna de las casi 200 llamadas de la práctica fue inválida. Con un `str`, el modelo inventaría servicios.
+
+**Lanzar una excepción cuando el modelo se equivoca de argumentos.** Mata al agente. Devuelve el error como resultado de la herramienta, con el campo y el motivo, para que se corrija.
+
+**Fiarte de lo que el agente dice que ha hecho.** Comprueba el estado del sistema: la base de datos, el ticket, el fichero.
+
+**Cambiar herramientas y prompt a la vez.** Si mejora, no sabrás qué lo arregló. En la práctica, el prompt se quedó fijo para medir solo el efecto de las herramientas.
+
+### Anatomía de un error: la búsqueda vacía que se convierte en "no pasa nada"
+
+`traza.py` con el escenario `pagos-pool-sin-despliegue` y las herramientas de la versión 1:
+
+```text
+Escenario pagos-pool-sin-despliegue · qwen3:8b · herramientas v1
+Alerta: PoolConexionesPagos: el pool de PgBouncer de pagos está al 93 %.
+
+paso 1 · 10.3 s · 750 tokens de entrada, 56 de salida
+  → estado_servicio
+      servicio: pagos
+    devuelve:
+      servicio: pagos
+      estado: degradado
+      errores: 35.0 %
+      latencia p95: 2400 ms
+      último despliegue: hace 3 días (pagos 3.7.2)
+  → buscar_logs
+      servicio: pagos
+      texto: PoolConexionesPagos
+    devuelve:
+      Ninguna línea contiene 'PoolConexionesPagos'.
+
+paso 2 · 19.1 s · 887 tokens de entrada, 85 de salida
+  → respuesta final, sin pedir herramientas:
+      El servicio de pagos está en estado degradado con una tasa de
+      errores del 35 % y una latencia p95 de 2400 ms. Sin embargo, no se
+      encontraron logs relacionados con el pool de conexiones de
+      PgBouncer. Dado que no hay evidencia directa de un problema en el
+      pool de conexiones, no se abre ninguna incidencia.
+
+Terminación: respuesta
+Incidencias en la plataforma: ninguna
+Comprobación: no abrió la incidencia
+```
+
+**Cómo leerlo.** Cada paso es una llamada al modelo. En el paso 1 pide dos herramientas: el estado del servicio, que devuelve un 35 % de errores y una latencia de 2,4 s, y los logs filtrados por `PoolConexionesPagos`, que no devuelven nada. En el paso 2 ya no pide más herramientas: responde. Y su conclusión es que "no hay evidencia directa de un problema", así que no abre la incidencia. La última línea lo confirma: no hay ninguna incidencia en la plataforma, con un tercio de los cobros fallando.
+
+**Causa.** Una mala búsqueda que lleva a una mala decisión. Los logs de pagos dicen `FATAL: sorry, too many clients already` y `pool pagos 186/200 conexiones activas`, pero el agente buscó el nombre de la alerta, que nunca aparece en un log. Recibió "Ninguna línea contiene..." y lo interpretó como ausencia de problema, en lugar de como una búsqueda mal planteada. Y como nada le obligaba a consultar la documentación, decidió sin abrir el runbook. Con la versión 1, nada en la herramienta le decía cómo buscar.
+
+**Solución.** En la herramienta, que es lo que mide esta lección: la descripción de `buscar_logs` en la versión 2 dice que para empezar conviene ver las últimas líneas, con el texto vacío, y que si filtra use palabras de los logs, no el nombre de la alerta; y la de `buscar_documentacion` le pide consultar el runbook antes de decidir. Con la versión 2, los tres modelos consultan el runbook en 8 o 9 de los 9 escenarios. Y en el resultado de la propia herramienta: "Ninguna línea contiene 'X'" se puede cambiar por un mensaje que sugiera qué hacer ("prueba con el texto vacío para ver las últimas líneas"). Lo que devuelve una herramienta también es una instrucción para el siguiente paso.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'Tu agente llama a buscar_logs con el nombre de la alerta y nunca encuentra nada. ¿Qué cambias primero?',
+			opciones: [
+				{ texto: 'El modelo, por uno más grande.', porque: 'Puede ayudar, pero la causa es que nada le dice cómo usar la herramienta. Empieza por la descripción.' },
+				{ texto: 'La descripción de la herramienta y de su argumento: qué conviene buscar y que, para empezar, mejor ver las últimas líneas.', correcta: true, porque: 'La herramienta es la interfaz del modelo: solo sabe lo que dice su descripción (parte 3 de la práctica).' },
+				{ texto: 'La herramienta, para que devuelva todos los logs siempre.', porque: 'Funcionaría con logs pequeños, pero no escala. Lo barato es describir mejor cómo usarla.' },
+			],
+		},
+		{
+			pregunta: 'La respuesta final del agente dice "he abierto la incidencia INC-1". ¿Cómo sabes si es verdad?',
+			opciones: [
+				{ texto: 'Si la respuesta lo dice, está hecho.', porque: 'En busqueda-disco, el agente dijo dos veces que la había abierto y nunca llamó a la herramienta ("Lo que no arreglan").' },
+				{ texto: 'Comprobando el estado del sistema: que la incidencia exista.', correcta: true, porque: 'El comprobador mira el estado final, como tau-bench: si dice que la ha abierto, tiene que existir.' },
+				{ texto: 'Preguntándole al agente si está seguro.', porque: 'Su respuesta seguiría siendo texto. Lo que cuenta es lo que hay en la plataforma.' },
+			],
+		},
+		{
+			pregunta: 'El modelo pide estado_servicio con servicio="facturacion", que no existe. ¿Qué debe hacer tu código?',
+			opciones: [
+				{ texto: 'Lanzar una excepción y parar el agente.', porque: 'Mata al agente por un error que él podría corregir.' },
+				{ texto: 'Devolverle el error como resultado de la herramienta, con el campo y el motivo.', correcta: true, porque: 'Así puede corregirse en el paso siguiente. Es lo que hace Plataforma.ejecutar.' },
+				{ texto: 'Ejecutarla con el servicio más parecido.', porque: 'No ejecutes nada con argumentos que no has validado.' },
+			],
+		},
+		{
+			pregunta: 'Razonar antes de responder sube un acierto de 9 y multiplica el tiempo por 3,5. ¿Lo activas?',
+			opciones: [
+				{ texto: 'Sí: más aciertos siempre compensa.', porque: 'Un acierto de 9 no es significativo, y en un agente el tiempo se paga en cada paso.' },
+				{ texto: 'Depende de tu presupuesto de latencia y de si la mejora se sostiene con más escenarios.', correcta: true, porque: 'Con estos datos, el curso elige no razonar. En otra máquina, con GPU, el coste sería mucho menor (\"Elegir el modelo\").' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- Anthropic, [Building effective agents](https://www.anthropic.com/engineering/building-effective-agents) (2024). El apéndice sobre cómo diseñar las herramientas como una interfaz para el modelo.
+- Yao et al., [τ-bench: A Benchmark for Tool-Agent-User Interaction in Real-World Domains](https://arxiv.org/abs/2406.12045) (2024). Evaluar agentes por el estado final de la base de datos, no por lo que dicen.
+- [Berkeley Function Calling Leaderboard](https://gorilla.cs.berkeley.edu/leaderboard.html): una comparación pública de modelos en el uso de herramientas. Útil como punto de partida; la decisión final se toma con tus escenarios.
+- [Tool calling en Ollama](https://docs.ollama.com/capabilities/tool-calling) y [razonamiento (think)](https://docs.ollama.com/capabilities/thinking) en su documentación.

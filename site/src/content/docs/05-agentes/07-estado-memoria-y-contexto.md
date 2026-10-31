@@ -1,6 +1,6 @@
 ---
-title: "Grafos"
-description: "Grafos: del grafo propio a LangGraph"
+title: "Estado, memoria y contexto"
+description: "Estado, memoria y contexto"
 ---
 
 ## Objetivos
@@ -20,6 +20,10 @@ TODO
 TODO
 
 ## Errores frecuentes
+
+TODO
+
+## Comprueba lo que has entendido
 
 TODO
 

@@ -1,6 +1,6 @@
 ---
-title: "Diseño de herramientas"
-description: "Diseño de herramientas: tool use a fondo"
+title: "Planificar"
+description: "Planificar: tareas, dependencias y replanificación"
 ---
 
 ## Objetivos
@@ -20,6 +20,10 @@ TODO
 TODO
 
 ## Errores frecuentes
+
+TODO
+
+## Comprueba lo que has entendido
 
 TODO
 
