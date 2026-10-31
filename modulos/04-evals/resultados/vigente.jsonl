@@ -1,4 +1,4 @@
-{"version": "vigente", "meta": {"huella": "7097dd989233952d", "sistema": {"reranker": true, "k": 3, "prompt": "rag/con-citas-reglas", "rol": "chat_grande"}}}
+{"version": "vigente", "meta": {"huella": "53c578888bc820f5", "sistema": {"reranker": true, "k": 3, "prompt": "rag/con-citas-reglas", "rol": "chat_grande"}}}
 {"caso":"m3-01","ok":false,"salida":"Usa el runbook: pagos sin conexiones a la base de datos.","detalle":{"pregunta":"¿Qué hago si pagos devuelve 'too many connections'?","se_abstiene":false,"citas":[1,3],"recuperados":["runbook-pagos-conexiones#0","postmortem-pagos-2026-03#2","runbook-pagos-conexiones#1"]}}
 {"caso":"m3-02","ok":true,"salida":"200","detalle":{"pregunta":"¿Cuál es el límite del pool de conexiones de pagos?","se_abstiene":false,"citas":[1,2],"recuperados":["postmortem-pagos-2026-03#4","arquitectura-pagos#1","runbook-pagos-conexiones#2"]}}
 {"caso":"m3-03","ok":true,"salida":"Cada 90 días","detalle":{"pregunta":"¿Cada cuánto caduca el token de la API del banco?","se_abstiene":false,"citas":[1,2],"recuperados":["runbook-pagos-credenciales#0","arquitectura-pagos#3","seguridad-secretos#0"]}}
