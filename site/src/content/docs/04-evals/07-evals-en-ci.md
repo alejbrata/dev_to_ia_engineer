@@ -64,19 +64,19 @@ uv run python modulos/04-evals/evaluar.py
 [`evaluar.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/04-evals/evaluar.py) define el sistema vigente en una constante (`SISTEMA`), responde las 58 preguntas y guarda los resultados con la huella:
 
 ```text
-50 de 58 · huella 40356e4a5f9dabed · vigente.jsonl
+52 de 58 · huella 7097dd989233952d · vigente.jsonl
 ```
 
-Son las mismas 58 respuestas, una a una, que dio reglas-7b en la lección 06 (35 en desarrollo y 15 en prueba).
+Son las mismas 58 respuestas, una a una, que dio reglas-7b en la lección 06 (36 en desarrollo y 16 en prueba).
 
 [`regresion.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/04-evals/regresion.py) no llama a ningún modelo. Con los resultados al día:
 
 ```text
 1. ¿Están al día los resultados grabados?
-   huella guardada 40356e4a5f9dabed · huella actual 40356e4a5f9dabed
+   huella guardada 7097dd989233952d · huella actual 7097dd989233952d
 
 2. Respuestas grabadas, repuntuadas con los comprobadores actuales
-   50 de 58
+   52 de 58
 
 OK
 ```
@@ -102,7 +102,7 @@ Un PR cambia una frase del prompt vigente ("en dos o tres frases" pasa a "en una
 
 ```text
 1. ¿Están al día los resultados grabados?
-   huella guardada 40356e4a5f9dabed · huella actual 9c38734f04a32973
+   huella guardada 7097dd989233952d · huella actual 862b0e86be161712
    FALLA: resultados desactualizados: vuelve a ejecutar evaluar.py
 ```
 
@@ -110,25 +110,25 @@ El control no sabe si el cambio mejora o empeora el sistema. Sabe que las respue
 
 ### Una regresión que el total no cuenta entera
 
-Otro PR vuelve al prompt base con el modelo de 1,5B, para bajar la latencia. Esta vez sí repite la eval, así que la huella cuadra. El control lo compara con `main`:
+Otro PR vuelve al prompt base con el modelo de 1,5B, para bajar la latencia. Esta vez sí repite la eval, así que la huella cuadra. El control lo compara con el último commit de `main` (`--contra HEAD`):
 
 ```text
 1. ¿Están al día los resultados grabados?
-   huella guardada a25192486c03adea · huella actual a25192486c03adea
+   huella guardada e959fca61afd826d · huella actual e959fca61afd826d
 
 2. Respuestas grabadas, repuntuadas con los comprobadores actuales
    42 de 58
 
-3. Frente a main
-   50 → 42 de 58 casos comunes
-   gana ['m3-09', 'n-02'], pierde ['m3-05', 'm3-22', 'm3-30', 'n-06', 'n-13', 'n-16', 's-05', 's-06', 'f-02', 'g-03'], p = 0.04
-   FALLA: menos aciertos que en main
+3. Frente a HEAD
+   52 → 42 de 58 casos comunes
+   gana [], pierde ['m3-05', 'm3-22', 'm3-30', 'n-06', 'n-13', 'n-16', 's-05', 's-06', 'f-02', 'g-03'], p = 0.00
+   FALLA: menos aciertos que en HEAD
    FALLA: pierde casos críticos: ['g-03']
 ```
 
-Falla por las dos reglas. La lista de casos perdidos dice qué se pierde, y encaja con las categorías del análisis de errores: los procedimientos condicionales (m3-05, m3-22), las fuentes contradictorias (n-06), las preguntas que debían rechazarse (m3-30, s-06, f-02 y, en prueba, s-05) y el guardarraíl g-03. Si el equipo decide que la latencia compensa, la decisión se toma mirando esta lista, no un "42 frente a 50".
+Falla por las dos reglas. La lista de casos perdidos dice qué se pierde, y encaja con las categorías del análisis de errores: los procedimientos condicionales (m3-05, m3-22), las fuentes contradictorias (n-06), las preguntas que debían rechazarse (m3-30, s-06, f-02 y, en prueba, s-05) y el guardarraíl g-03. Si el equipo decide que la latencia compensa, la decisión se toma mirando esta lista, no un "42 frente a 52".
 
-Fíjate también en los dos casos que gana, m3-09 y n-02. Son los que la lección 06 identificó como limitaciones del comprobador: el sistema vigente responde bien, pero sin el dato clave literal. Un control automático hereda los defectos de sus comprobadores.
+Fíjate también en que no gana ningún caso. En la primera versión de esta demo aparecían como ganados m3-09 y n-02, pero no porque la base respondiera mejor: eran las dos limitaciones del comprobador que encontró la lección 06, que aprobaba la frase larga de la base y suspendía la respuesta correcta y corta del sistema vigente. Corregido el comprobador, desaparecen. Un control automático hereda los defectos de sus comprobadores, y por eso conviene leer la lista de casos, no solo el veredicto.
 
 ### Qué cuesta la huella
 
@@ -150,7 +150,7 @@ La huella incluye `config/models.toml` entero. Si alguien cambia el modelo de ot
 
 ```text
 1. ¿Están al día los resultados grabados?
-   huella guardada 40356e4a5f9dabed · huella actual 9c38734f04a32973
+   huella guardada 7097dd989233952d · huella actual 862b0e86be161712
    FALLA: resultados desactualizados: vuelve a ejecutar evaluar.py
 ```
 
