@@ -139,10 +139,6 @@ Pregunta número 28, sin respuesta en la documentación: la plataforma no tiene 
 
 **Solución.** Dos defensas, que verás más adelante. En la recuperación: fíjate en la puntuación. La mejor coincidencia para esta pregunta es 0,47. En las 26 preguntas con respuesta, la mejor coincidencia va de 0,57 a 0,85 (mediana 0,68); en las 4 sin respuesta, de 0,47 a 0,60. Los rangos se solapan, así que un umbral mínimo ayuda pero no basta: con 0,60, descartarías 2 preguntas que sí tienen respuesta y dejarías pasar una que no. En la generación: pedir citas y comprobar que la respuesta se apoya en ellas (lección 06).
 
-## Bitácora
-
-TODO(alex)
-
 ## Para profundizar
 
 - Lewis et al., [Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks](https://arxiv.org/abs/2005.11401) (2020). El artículo que dio nombre a RAG.

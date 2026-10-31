@@ -170,10 +170,6 @@ La pregunta 30 no tiene respuesta en la documentación. Con los dos prompts, el 
 
 **Solución.** Tres capas. En el prompt: pedir que se abstenga si el contexto no da el dato concreto, no solo si no menciona el tema. En el código: detectar respuestas que repiten la pregunta (por ejemplo, con similitud muy alta entre pregunta y respuesta) y tratarlas como abstenciones. Y en la evaluación: tener preguntas sin respuesta cuyo tema sí aparezca en la documentación, como esta. Las preguntas sin respuesta sobre temas que no aparecen en ningún sitio son fáciles; estas son las que fallan.
 
-## Bitácora
-
-TODO(alex)
-
 ## Para profundizar
 
 - Es et al., [Ragas: Automated Evaluation of Retrieval Augmented Generation](https://arxiv.org/abs/2309.15217) (2023). Fidelidad, relevancia de la respuesta y métricas de contexto.

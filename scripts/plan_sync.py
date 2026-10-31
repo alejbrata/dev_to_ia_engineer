@@ -30,7 +30,6 @@ SECCIONES = [
     "Práctica",
     "Mide y depura",
     "Errores frecuentes",
-    "Bitácora",
     "Para profundizar",
 ]
 
@@ -134,8 +133,7 @@ def frontmatter(pagina: Pagina) -> str:
 def cuerpo_leccion() -> str:
     bloques = []
     for seccion in SECCIONES:
-        todo = "TODO(alex)" if seccion == "Bitácora" else "TODO"
-        bloques.append(f"## {seccion}\n\n{todo}\n")
+        bloques.append(f"## {seccion}\n\nTODO\n")
     return "\n".join(bloques)
 
 

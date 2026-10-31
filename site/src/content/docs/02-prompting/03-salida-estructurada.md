@@ -136,10 +136,6 @@ Esquema impuesto, pero max_tokens=12:
 
 **Solución.** Da a la salida espacio de sobra para el JSON más largo que esperas, y comprueba siempre el motivo de fin: un `length` significa que la respuesta está incompleta, sea cual sea su formato. `curso_core` lo expone en `Respuesta.motivo_fin` y, cuando la validación falla, en `ErrorFormato.respuesta`.
 
-## Bitácora
-
-TODO(alex)
-
 ## Para profundizar
 
 - [JSON Schema](https://json-schema.org/learn/getting-started-step-by-step): la especificación y su guía de inicio.

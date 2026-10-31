@@ -166,10 +166,6 @@ servicio: usuarios
 
 **Solución.** Declara las variables y comprueba que encajan antes de llamar al modelo. `curso_core.prompts` lo hace y lanza `ErrorPrompt` con las que faltan y las que sobran. Además, el repositorio tiene un test que carga todos los prompts de `prompts/` en cada ejecución de CI: un prompt mal formado no llega a `main`.
 
-## Bitácora
-
-TODO(alex)
-
 ## Para profundizar
 
 - [`prompts/README.md`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/prompts/README.md): el formato de los prompts del curso.

@@ -149,10 +149,6 @@ servicio: autenticacion
 
 **Solución.** Lo que hizo bien el código: validar antes de ejecutar. Si la herramienta hubiera sido "reiniciar servicio", ejecutarla con un argumento inventado habría sido un problema real. Para la respuesta final, impón el esquema con salida estructurada (lección 03), que sí es obligatorio. Y si un argumento inválido se repite, no reintentes indefinidamente: marca el caso para revisión. En el módulo de agentes verás cómo limitar estos bucles.
 
-## Bitácora
-
-TODO(alex)
-
 ## Para profundizar
 
 - [Tool calling en Ollama](https://docs.ollama.com/capabilities/tool-calling): definición de herramientas y mensajes de resultado.

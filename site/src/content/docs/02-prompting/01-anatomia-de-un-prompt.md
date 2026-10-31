@@ -208,10 +208,6 @@ servicio
 
 **Solución.** Valida siempre la respuesta antes de usarla: así detectas el error en lugar de propagarlo. Para evitarlo de raíz, restringe la salida al esquema desde el servidor, de modo que el modelo no pueda escribir un valor fuera de la lista. Es la salida estructurada de la lección 03.
 
-## Bitácora
-
-TODO(alex)
-
 ## Para profundizar
 
 - [Ingeniería de prompts](https://huggingface.co/docs/transformers/tasks/prompting) en la documentación de Transformers de Hugging Face: buenas prácticas y ejemplos.

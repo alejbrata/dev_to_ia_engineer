@@ -171,10 +171,6 @@ real-m3-26 (etiqueta: no fiel, juez: fiel)
 
 **Solución.** Hay varias, y todas se validan contra las etiquetas: pedir al juez que, además de citar, diga si la cita implica la afirmación (una segunda pregunta, más concreta); usar un modelo de inferencia textual entrenado para eso (NLI, *natural language inference*); o, como mínimo, conocer este fallo y no usar el veredicto "fiel" del juez como garantía. Cuando el juez marca una respuesta como no fiel, acierta casi siempre; cuando la marca como fiel, se le pueden colar respuestas así.
 
-## Bitácora
-
-TODO(alex)
-
 ## Para profundizar
 
 - Zheng et al., [Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena](https://arxiv.org/abs/2306.05685) (2023). Los sesgos de posición, longitud y autopreferencia, medidos.

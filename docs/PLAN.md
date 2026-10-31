@@ -8,7 +8,7 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 
 ## Módulo 0 — Introducción 🟨
 
-1. **La rotación**: del folio en blanco al TFM *(guía general de la transición + historia personal de `bitacora/00-introduccion.md`)*
+1. **La rotación**: del folio en blanco al TFM *(guía general de la transición; la historia personal va en el anexo H)*
 2. Qué hace un AI Engineer (y qué no): frente a ML Engineer, Data Scientist y dev "que usa IA"
 3. Cómo usar este curso: estructura, prerrequisitos, ritmo, tu fork del repo
 4. Entorno de trabajo: Python, uv, Ollama, claves API, `.env`, primer "hola mundo" con un LLM
@@ -110,3 +110,4 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 - **E. Recursos**: papers, blogs y cursos que merecen la pena
 - **F. Herramientas de evals**: Ragas, DeepEval, promptfoo e Inspect frente a lo construido en el módulo 4
 - **G. APIs comerciales**: usar OpenAI, Claude u otro proveedor en lugar del modelo local, como opción, con su coste medido
+- **H. El proceso del autor**: la rotación de Alex de backend Java a AI Engineering, módulo a módulo. Opcional y aparte del aprendizaje

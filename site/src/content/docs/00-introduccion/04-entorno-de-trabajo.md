@@ -357,10 +357,6 @@ except httpx.HTTPStatusError as e:
 
 Es la misma lección que en cualquier integración backend: el código de estado dice qué categoría de error es; el cuerpo dice qué ha pasado.
 
-## Bitácora
-
-TODO(alex)
-
 ## Para profundizar
 
 - [Instalación de uv](https://docs.astral.sh/uv/getting-started/installation/) y [workspaces de uv](https://docs.astral.sh/uv/concepts/projects/workspaces/).

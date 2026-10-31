@@ -7,7 +7,7 @@ description: "Cómo usar este curso: estructura, prerrequisitos, ritmo, tu fork 
 
 Al terminar esta lección podrás:
 
-- Describir las siete secciones de una lección y para qué sirve cada una.
+- Describir las seis secciones de una lección y para qué sirve cada una.
 - Comprobar si cumples los prerrequisitos.
 - Tener tu propia copia (fork) del repositorio del curso, clonada y abierta en VS Code.
 - Localizar en el repo el código, la configuración y el texto de cada lección.
@@ -34,17 +34,18 @@ Los anexos recogen lo específico de herramientas concretas. El núcleo del curs
 
 ### Cómo es cada lección
 
-Todas las lecciones siguen las mismas siete secciones, en este orden:
+Todas las lecciones siguen las mismas seis secciones, en este orden:
 
 1. **Objetivos.** Lo que sabrás hacer al terminar. Son verificables: úsalos para comprobar si has aprendido algo.
 2. **Teoría.** Lo justo para entender la práctica.
 3. **Práctica.** Código ejecutable en `modulos/NN-*/`.
 4. **Mide y depura.** Qué instrumentar, qué métrica mirar y cómo iterar con datos.
 5. **Errores frecuentes.** Incluye al menos una "Anatomía de un error": un error real, cómo leerlo, su causa y la solución.
-6. **Bitácora.** La experiencia personal del autor en su paso de backend Java a AI Engineering.
-7. **Para profundizar.** Fuentes primarias: papers y documentación oficial.
+6. **Para profundizar.** Fuentes primarias: papers y documentación oficial.
 
 No te saltes "Mide y depura". Es la sección que más te acerca al trabajo real.
+
+La experiencia personal del autor en su paso de backend Java a AI Engineering no está dentro de las lecciones: va en un apartado aparte, para quien quiera leerla.
 
 ### Prerrequisitos
 
@@ -164,10 +165,6 @@ fatal: repository 'https://github.com/alejbrata/dev_to_ia_enginer.git/' not foun
 **Causa.** Una errata en el nombre. GitHub responde igual si el repositorio no existe y si es privado y no tienes acceso, así que también puede ser que estés usando una cuenta distinta de la del fork.
 
 **Solución.** No escribas URLs a mano: cópialas del botón **Code** de GitHub. Y si la URL es correcta, comprueba con qué cuenta está autenticado git.
-
-## Bitácora
-
-TODO(alex)
 
 ## Para profundizar
 

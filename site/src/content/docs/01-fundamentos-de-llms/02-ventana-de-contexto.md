@@ -197,10 +197,6 @@ El servidor procesó un tercio de lo que mandaste.
 
 **Solución.** A corto plazo, amplía el contexto (`Opciones(contexto=8192)` u `OLLAMA_CONTEXT_LENGTH`) para que quepa tu caso. A largo plazo, mide: registra los tokens procesados de cada llamada y alerta cuando sean menos que los enviados. Y no metas en el prompt más de lo necesario; en el módulo de RAG aprenderás a seleccionar solo los fragmentos relevantes.
 
-## Bitácora
-
-TODO(alex)
-
 ## Para profundizar
 
 - [llama.cpp](https://github.com/ggml-org/llama.cpp): el servidor `llama-server` y su API compatible con OpenAI.

@@ -173,10 +173,6 @@ m3-26 ¿Hay que avisar a atención al cliente de una incidencia de severidad med
 
 **Solución.** Con este modelo, no usar este prompt. Con el de 7B, la misma regla no produce este fallo en desarrollo. Como señal barata para detectarlo, una respuesta de abstención con citas no vacías es incoherente y se puede marcar con código, sin modelo, en todas las ejecuciones.
 
-## Bitácora
-
-TODO(alex)
-
 ## Para profundizar
 
 - Hamel Husain, [Your AI Product Needs Evals](https://hamel.dev/blog/posts/evals/) (2024). El análisis de errores como primer paso, antes de cualquier métrica.

@@ -1,6 +1,6 @@
 # Bitácora: cómo escribirla
 
-Cada fichero `NN-*.md` es la experiencia personal del autor en ese módulo. Es la única fuente del contenido personal del curso: nada de lo que se cuenta en la sección **Bitácora** de las lecciones puede salir de otro sitio.
+Cada fichero `NN-*.md` es la experiencia personal del autor en ese módulo. Es la única fuente del contenido personal del curso, que se publica aparte, en el anexo H de la web ("El proceso del autor"): nada de lo que se cuenta allí puede salir de otro sitio.
 
 ## Qué sirve al lector
 
@@ -17,4 +17,4 @@ Cada fichero `NN-*.md` es la experiencia personal del autor en ese módulo. Es l
 
 ## Cómo se integra
 
-Al escribir una lección se corrige el estilo y se ordena el texto de la bitácora, pero no se añaden hechos. Si una bitácora está vacía, la sección queda como `TODO(alex)`.
+El texto de estos ficheros se lleva al anexo H: se corrige el estilo y se ordena, pero no se añaden hechos. Las lecciones no llevan contenido personal. Mientras el anexo H no esté escrito, lleva `draft: true` y no se publica.

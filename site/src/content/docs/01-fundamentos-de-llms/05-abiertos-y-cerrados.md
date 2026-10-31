@@ -213,10 +213,6 @@ Cambias el rol `chat_grande` en `config/models.toml` para probar el modelo de 3B
 
 **Solución.** `ollama pull qwen2.5:3b` y vuelve a ejecutar. Para saber qué tienes descargado, `ollama list`. Y antes de usar ese modelo en serio, recuerda lo que viste en su ficha: su licencia no es Apache 2.0.
 
-## Bitácora
-
-TODO(alex)
-
 ## Para profundizar
 
 - [Documentación del Hub de Hugging Face](https://huggingface.co/docs/hub/index), en especial las [fichas de modelo](https://huggingface.co/docs/hub/model-cards) y las [licencias](https://huggingface.co/docs/hub/repositories-licenses).

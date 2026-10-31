@@ -148,10 +148,6 @@ ModuleNotFoundError: No module named 'curso_core'
 
 **Solución.** Selecciona el intérprete de `.venv` (paso 1 de la práctica) o ejecuta con la tarea **Curso: ejecutar el script abierto**, que usa `uv run`. Para comprobar qué intérprete se está usando en cada momento, la línea de la barra de estado es tu primera pista.
 
-## Bitácora
-
-TODO(alex)
-
 ## Para profundizar
 
 - [Python en VS Code](https://code.visualstudio.com/docs/python/python-tutorial): intérpretes, ejecución y depuración.

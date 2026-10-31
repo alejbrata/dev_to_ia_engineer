@@ -198,10 +198,6 @@ x-08 ¿Cuál es el máximo de conexiones de PostgreSQL?
 
 **Solución.** Anclar cada dato esperado a un segmento literal que responda a esa pregunta, y comprobarlo con un test (`problemas_de_anclaje`). Y cuando la eval marque un fallo, lee la respuesta antes de tocar el sistema: a veces el error está en el dataset. Si en una revisión encuentras que el valor esperado está mal, corrige el dataset y deja constancia en el historial de git, igual que con un test mal escrito.
 
-## Bitácora
-
-TODO(alex)
-
 ## Para profundizar
 
 - Shankar et al., [Who Validates the Validators?](https://arxiv.org/abs/2404.12272) (2024). Por qué los criterios de evaluación cambian al mirar los datos, y cómo incorporarlo.

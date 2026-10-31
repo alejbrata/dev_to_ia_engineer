@@ -196,10 +196,6 @@ Todas las latencias medidas hasta entonces incluían esos 2,3 s, que no tenían 
 
 **Solución.** Las URLs locales de `config/models.toml` usan `127.0.0.1` en lugar de `localhost`, y `curso_core` reutiliza una conexión por proveedor entre llamadas. Las cifras de las lecciones anteriores se volvieron a medir después del arreglo. La lección general: cuando una latencia no cuadra con lo que esperas, compara lo que mide el cliente con lo que mide el servidor. Si no coinciden, el problema está entre los dos.
 
-## Bitácora
-
-TODO(alex)
-
 ## Para profundizar
 
 - [Precios de Hugging Face Inference Providers](https://huggingface.co/docs/inference-providers/pricing).

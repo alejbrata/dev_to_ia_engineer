@@ -23,10 +23,6 @@ TODO
 
 TODO
 
-## Bitácora
-
-TODO(alex)
-
 ## Para profundizar
 
 TODO

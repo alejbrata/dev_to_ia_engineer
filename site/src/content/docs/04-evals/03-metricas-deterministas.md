@@ -160,10 +160,6 @@ n-07: bien → MAL  ['4 horas', 'dos personas']  'La restauración tardó aproxi
 
 **Solución.** Exigir límites en las comprobaciones de texto: que el dato no vaya pegado a otras cifras o letras. Escribir un test con los casos difíciles ("24 horas", "99,95 %") para que el comprobador no vuelva a romperse. Y, como las respuestas están guardadas, repuntuar todos los resultados anteriores con el comprobador corregido, sin volver a llamar al modelo.
 
-## Bitácora
-
-TODO(alex)
-
 ## Para profundizar
 
 - Miller, [Adding Error Bars to Evals: A Statistical Approach to Language Model Evaluations](https://arxiv.org/abs/2411.00640) (2024). Intervalos de confianza y comparaciones por pares aplicados a evals de modelos de lenguaje.

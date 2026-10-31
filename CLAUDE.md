@@ -34,15 +34,16 @@ Todas las lecciones siguen estas secciones, en este orden:
 3. **Práctica**: código ejecutable en `modulos/NN-*/`.
 4. **Mide y depura**: qué instrumentar, qué métrica mirar, cómo iterar.
 5. **Errores frecuentes**: incluye al menos una "Anatomía de un error" (error o traza real → cómo leerlo → causa → solución).
-6. **Bitácora**: la experiencia personal de Alex (ver la regla crítica abajo).
-7. **Para profundizar**: fuentes primarias (papers, documentación oficial).
+6. **Para profundizar**: fuentes primarias (papers, documentación oficial).
 
-## REGLA CRÍTICA: la bitácora personal
+Las lecciones no llevan contenido personal. La experiencia de Alex va en un apartado aparte y opcional, el anexo H ("El proceso del autor"), para que quien lo quiera lo lea y no se mezcle con el aprendizaje (decisión de Alex, 2026-10-31).
+
+## REGLA CRÍTICA: el contenido personal
 
 - **NUNCA inventes experiencias, anécdotas, opiniones ni datos biográficos de Alex.**
-- El contenido personal sale **solo** de los ficheros `bitacora/NN-*.md`, que escribe Alex.
-- Puedes corregir el estilo, ordenar e integrar ese texto en la lección. **No añadas hechos.**
-- Si la bitácora de un módulo está vacía, deja la sección con un `TODO(alex)` y no la rellenes.
+- El contenido personal sale **solo** de los ficheros `bitacora/NN-*.md`, que escribe Alex, y se publica solo en el anexo H.
+- Puedes corregir el estilo, ordenar e integrar ese texto. **No añadas hechos.**
+- Mientras una parte esté vacía, queda como `TODO(alex)`. El anexo H lleva `draft: true` (no se publica) hasta que Alex lo escriba.
 
 ## Estilo de escritura
 

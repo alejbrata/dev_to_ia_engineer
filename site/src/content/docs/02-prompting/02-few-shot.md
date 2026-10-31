@@ -145,10 +145,6 @@ Cuatro de diez. Mismo prompt, mismos tickets, temperatura 0.
 
 **Solución.** Compara variantes **en las mismas condiciones**: este script descarga el modelo antes de cada una. Y desconfía de cualquier mejora de uno o dos casos: repite la medición, cambia el orden, añade casos. Si la mejora no sobrevive a eso, no era una mejora.
 
-## Bitácora
-
-TODO(alex)
-
 ## Para profundizar
 
 - Brown et al., [Language Models are Few-Shot Learners](https://arxiv.org/abs/2005.14165) (2020). El artículo de GPT-3 que popularizó el aprendizaje con ejemplos en el prompt.

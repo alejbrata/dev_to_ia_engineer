@@ -139,10 +139,6 @@ El modelo ha añadido una frase de cortesía antes del JSON. No es un bug del mo
 
 La lección general sirve para todo el curso: cada vez que uses la salida de un modelo, pregúntate qué pasa si no viene como esperas.
 
-## Bitácora
-
-TODO(alex)
-
 ## Para profundizar
 
 - swyx, [The Rise of the AI Engineer](https://www.latent.space/p/ai-engineer) (2023). El artículo que popularizó el término.

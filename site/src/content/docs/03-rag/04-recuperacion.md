@@ -170,10 +170,6 @@ perfil_edicion
 
 **Solución.** Si tus usuarios buscan identificadores, añade búsqueda léxica: como búsqueda híbrida, o como una ruta aparte cuando la consulta parece un identificador. Y añade esas consultas a tu evaluación, porque las preguntas en lenguaje natural no lo detectan: con ellas, la híbrida parecía peor.
 
-## Bitácora
-
-TODO(alex)
-
 ## Para profundizar
 
 - Robertson y Zaragoza, [The Probabilistic Relevance Framework: BM25 and Beyond](https://www.staff.city.ac.uk/~sbrp622/papers/foundations_bm25_review.pdf) (2009). La referencia de BM25.

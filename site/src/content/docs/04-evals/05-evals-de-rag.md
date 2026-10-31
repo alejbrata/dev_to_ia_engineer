@@ -153,10 +153,6 @@ n-05 ¿Qué disponibilidad tenemos comprometida para el servicio de búsqueda?
 
 **Solución.** Para la generación, hay varias opciones, y cada una se mide con el mismo dataset: quedarse en k3, usar un modelo más capaz o, ya en la ingesta, convertir cada fila de la tabla en una frase completa ("La disponibilidad comprometida de búsqueda es del 99,5 % mensual") para que el modelo no tenga que cruzar filas y columnas. Para la evaluación, no sustituyas el comprobador por el juez: cada uno detecta fallos que el otro no ve.
 
-## Bitácora
-
-TODO(alex)
-
 ## Para profundizar
 
 - Es et al., [RAGAS: Automated Evaluation of Retrieval Augmented Generation](https://arxiv.org/abs/2309.15217) (2023). Las métricas de contexto, fidelidad y relevancia, separadas por etapa.

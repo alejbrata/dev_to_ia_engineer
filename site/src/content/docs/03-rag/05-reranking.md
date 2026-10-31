@@ -135,10 +135,6 @@ La parte 4 parece una buena noticia: con un umbral de -2,0 no se pierde ninguna 
 
 **Solución.** No uses la puntuación de recuperación, ni siquiera la del reranker, para decidir que hay respuesta. Úsala como señal en las trazas. La decisión se toma en la generación: el modelo tiene que poder citar el fragmento que contiene el dato y abstenerse si no lo encuentra. Y lo que dice el modelo hay que comprobarlo midiendo la fidelidad de la respuesta al contexto. Es la lección 06.
 
-## Bitácora
-
-TODO(alex)
-
 ## Para profundizar
 
 - Nogueira y Cho, [Passage Re-ranking with BERT](https://arxiv.org/abs/1901.04085) (2019). El origen del reranking con cross-encoders.

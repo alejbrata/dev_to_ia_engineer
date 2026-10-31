@@ -160,10 +160,6 @@ La huella incluye `config/models.toml` entero. Si alguien cambia el modelo de ot
 
 **Solución.** Mira qué fichero de la lista toca el PR (`git diff --stat main` contra `evaluar.ficheros()`). Si el cambio afecta al sistema vigente, ejecuta `evaluar.py` y sube el nuevo `vigente.jsonl`: el control lo comparará con la base. Si no le afecta, repítela igualmente: saldrán las mismas respuestas y la nueva huella. Si esto pasa a menudo, es la señal para afinar qué cubre la huella.
 
-## Bitácora
-
-TODO(alex)
-
 ## Para profundizar
 
 - [Workflow syntax for GitHub Actions](https://docs.github.com/en/actions/writing-workflows/workflow-syntax-for-github-actions), y la guía de [seguridad de GitHub Actions](https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions) sobre la interpolación de expresiones en scripts.

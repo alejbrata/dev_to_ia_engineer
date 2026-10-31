@@ -3,7 +3,7 @@ title: "La rotación"
 description: "La rotación: del folio en blanco al TFM"
 ---
 
-Esta lección tiene dos capas. La primera es una guía para cualquiera que pase de backend a AI Engineering: qué traes, qué te falta y cómo organizarlo. La segunda es la historia de cómo hizo ese cambio el autor del curso, que encontrarás en la sección [Bitácora](#bitácora).
+Esta lección tiene dos capas. La primera es una guía para cualquiera que pase de backend a AI Engineering: qué traes, qué te falta y cómo organizarlo. La segunda, la historia de cómo hizo ese cambio el autor del curso, va en un apartado aparte y opcional, para quien quiera leerla.
 
 ## Objetivos
 
@@ -149,10 +149,6 @@ backend.segurida
 **Causa.** Son dos fallos, pero producen tres errores. El 4 está fuera del rango 0-3 (`less_than_equal`). La errata genera dos: falta el campo `seguridad` (`missing`) y sobra uno que no existe, `segurida` (`extra_forbidden`).
 
 **Solución.** Corrige el valor y el nombre de la clave. El patrón general: cuando veas un `missing` y un `extra_forbidden` con nombres parecidos, casi siempre es una errata. Vas a leer muchos errores de Pydantic en este curso, porque es lo que valida las respuestas de los modelos.
-
-## Bitácora
-
-TODO(alex)
 
 ## Para profundizar
 
