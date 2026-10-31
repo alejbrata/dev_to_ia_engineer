@@ -87,7 +87,7 @@ def buscar(self, alerta: str, *, k: int = 2, excluir: str | None = None) -> list
 
 El agente con memoria usa el prompt `agentes/guardia-memoria`, que es el de siempre con las notas añadidas tras la alerta, y una advertencia: úsalas como referencia, pero comprueba con las herramientas si este caso es igual.
 
-[`memoria_y_contexto.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/memoria_y_contexto.py) ejecuta tres configuraciones del agente: sin cambios en los 14 escenarios (desarrollo y prueba), con recorte en los 9 de desarrollo, y con memoria en los 14. Son 37 ejecuciones del agente: tarda unos 75 minutos en la máquina del curso; con `--grabadas`, un segundo.
+[`memoria_y_contexto.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/memoria_y_contexto.py) ejecuta tres configuraciones del agente: sin cambios en los 14 escenarios (desarrollo y prueba), con recorte en los 9 de desarrollo, y con memoria en los 14. Hasta ahora, los 5 de prueba se reservaban; aquí se usan porque con 9 casos la memoria tendría muy pocas notas que recuperar, y no hay riesgo de fuga: cada escenario se resuelve sin su propia nota y no se ajusta nada a partir de los resultados. Son 37 ejecuciones del agente: tarda unos 75 minutos en la máquina del curso; con `--grabadas`, un segundo.
 
 ```sh title="Terminal de VS Code · raíz del repo"
 uv run python modulos/05-agentes/memoria_y_contexto.py

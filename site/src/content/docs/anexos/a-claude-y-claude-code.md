@@ -3,9 +3,15 @@ title: "A. Claude y Claude Code"
 description: "Claude y Claude Code: consejos prácticos desde el uso real (sin copiar documentación oficial)"
 ---
 
+:::note[En preparación]
+Las secciones de consejos desde el uso real y de Claude Code aún no están escritas. Mientras tanto, aquí tienes cómo usar la API de Claude desde el curso.
+:::
+
+<!-- Sección personal, la escribe Alex:
 ## Consejos desde el uso real
 
 TODO(alex)
+-->
 
 ## La API de Claude
 
@@ -79,6 +85,8 @@ Modelos y precios en USD por millón de tokens de entrada y de salida, a octubre
 
 El rol `chat_claude` usa Claude Opus 5.5. Para probar uno más barato, cambia `model` en ese rol de `config/models.toml` y añade su precio en la sección `[precios]`, para que las trazas calculen el coste. Y mide con tu eval, como en el anexo G, antes de decidir.
 
+<!-- Sección personal, la escribe Alex:
 ## Claude Code
 
 TODO(alex)
+-->
