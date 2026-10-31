@@ -12,6 +12,12 @@ El caso de todo el módulo es un agente de guardia sobre la plataforma de los m�
 - `workflow_frente_agente.py`: la misma tarea como workflow y como agente (lección 01).
 - `bucle.py`: el bucle por dentro: tokens por paso, límite de pasos y razonamiento en cada paso (lección 03).
 - `planificador.py` y `planificar.py`: el agente que escribe el plan como grafo de tareas, lo valida, lo ejecuta en orden topológico y replanifica; comparado con el workflow y el agente (lección 04). `test_planificador.py` prueba la validación y el orden.
+- `grafo.py`: un motor de grafos de estado desde cero: estado tipado, aristas fijas y condicionales, límite de pasos, checkpoints en JSONL e interrupciones (lección 05). `test_grafo.py` lo prueba sin modelo.
+- `grafo_guardia.py` y `grafos.py`: el agente de guardia como grafo, con aprobación humana antes de abrir la incidencia y reanudación tras una caída (lección 05). Con `--humano`, apruebas tú.
+- `grafo_langgraph.py` y `con_langgraph.py`: los mismos nodos con LangGraph, comparado con el motor propio (lección 06).
+- `memoria.py` y `memoria_y_contexto.py`: recortar el contexto del bucle y dar al agente memoria de escenarios ya cerrados (lección 07).
+- `subagentes.py` y `delegar.py`: un orquestador que delega en subagentes con contexto aislado, frente al agente único (lección 08). `test_contexto.py` prueba el recorte y los permisos de los subagentes.
+- `checkpoints/`: los checkpoints de los grafos. No se versiona.
 - `resultados/`: resultados grabados caso a caso (`curso_core.evals.Informe`). Con `--grabadas`, las prácticas los reutilizan sin llamar al modelo.
 
 Los prompts están en `prompts/agentes/`.

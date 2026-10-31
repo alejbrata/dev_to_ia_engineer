@@ -25,3 +25,6 @@ Thumbs.db
 
 # Trazas locales de curso_core
 trazas/
+
+# Checkpoints locales de los grafos del módulo 5
+checkpoints/

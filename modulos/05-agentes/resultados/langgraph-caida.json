@@ -1,0 +1,14 @@
+{
+  "error": "el proceso muere a mitad de decidir",
+  "siguiente": [
+    "decidir"
+  ],
+  "llamadas_hechas": 1,
+  "pasos_reanudacion": [
+    "decidir",
+    "aprobar",
+    "abrir"
+  ],
+  "llamadas_modelo": 2,
+  "ok": false
+}

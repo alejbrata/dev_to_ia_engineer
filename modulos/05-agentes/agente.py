@@ -9,6 +9,8 @@ infinitos. Cada paso queda registrado (herramientas, tokens, tiempo) para poder 
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from typing import Literal
 
 from curso_core import ClienteLLM, Herramienta, Mensaje, Opciones, PromptRenderizado, prompts
@@ -64,8 +66,16 @@ def ejecutar(
     max_pasos: int = MAX_PASOS,
     opciones: Opciones = OPCIONES,
     herramientas: list[Herramienta] = HERRAMIENTAS,
+    variables: dict[str, str] | None = None,
+    contexto: Callable[[list[Mensaje]], list[Mensaje]] | None = None,
+    paralelo: bool = False,
 ) -> Ejecucion:
-    renderizado = prompts.renderizar(prompts.cargar(prompt), alerta=plataforma.escenario.alerta)
+    """Ejecuta el bucle. `variables` rellena el prompt (por defecto, la alerta del escenario).
+    `contexto`, si se pasa, decide qué parte de la conversación ve el modelo en cada paso
+    (lección 07); la conversación completa se conserva igual. Con `paralelo`, las herramientas
+    que el modelo pide en un mismo paso se ejecutan a la vez (lección 08)."""
+    variables = variables or {"alerta": plataforma.escenario.alerta}
+    renderizado = prompts.renderizar(prompts.cargar(prompt), **variables)
     mensajes = list(renderizado.mensajes)
     opciones = opciones.model_copy(update={"herramientas": herramientas})
     pasos: list[Paso] = []
@@ -73,7 +83,11 @@ def ejecutar(
         inicio = time.perf_counter()
         # PromptRenderizado conserva el id del prompt en las trazas de cada llamada.
         r = cliente.chat(
-            PromptRenderizado(id=renderizado.id, mensajes=mensajes), rol=rol, opciones=opciones
+            PromptRenderizado(
+                id=renderizado.id, mensajes=contexto(mensajes) if contexto else mensajes
+            ),
+            rol=rol,
+            opciones=opciones,
         )
         paso = Paso(
             n=n,
@@ -87,8 +101,12 @@ def ejecutar(
             pasos.append(paso)
             return Ejecucion(pasos=pasos, respuesta=paso.texto, terminacion="respuesta")
         mensajes.append(r.como_mensaje())
-        for llamada in r.llamadas:
-            resultado, valida = plataforma.ejecutar(llamada)
+        if paralelo and len(r.llamadas) > 1:
+            with ThreadPoolExecutor() as pool:
+                ejecutadas = list(pool.map(plataforma.ejecutar, r.llamadas))
+        else:
+            ejecutadas = [plataforma.ejecutar(llamada) for llamada in r.llamadas]
+        for llamada, (resultado, valida) in zip(r.llamadas, ejecutadas, strict=True):
             paso.usos.append(
                 Uso(
                     nombre=llamada.nombre,

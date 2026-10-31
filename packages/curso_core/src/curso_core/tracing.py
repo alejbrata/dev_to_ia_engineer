@@ -8,6 +8,7 @@ suficiente hasta que en el módulo 6 lo sustituyamos por OpenTelemetry.
 from __future__ import annotations
 
 import os
+import threading
 from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
@@ -15,6 +16,8 @@ from uuid import uuid4
 from pydantic import BaseModel, Field
 
 FICHERO_POR_DEFECTO = Path("trazas") / "llamadas.jsonl"
+# Varias llamadas en paralelo (subagentes, módulo 5) no deben mezclar sus líneas.
+_ESCRITURA = threading.Lock()
 
 
 class Traza(BaseModel):

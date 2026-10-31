@@ -1,0 +1,15 @@
+{
+  "error": "el proceso muere a mitad de decidir",
+  "checkpoint": {
+    "siguiente": "decidir",
+    "llamadas_modelo": 1,
+    "tokens": 116,
+    "servicio": "usuarios"
+  },
+  "pasos_reanudacion": [
+    "decidir",
+    "abrir"
+  ],
+  "llamadas_modelo": 2,
+  "ok": false
+}

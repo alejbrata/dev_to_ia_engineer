@@ -2,6 +2,8 @@
 #    uv export --format requirements-txt --no-hashes -o requirements.txt
 -e ./packages/curso_core
     # via curso-ai-engineering
+aiosqlite==0.22.1
+    # via langgraph-checkpoint-sqlite
 annotated-types==0.8.0
     # via pydantic
 anthropic==2.3.0
@@ -11,17 +13,24 @@ anyio==4.15.1
     #   anthropic
     #   httpx
     #   httpx2
+    #   langsmith
     #   openai
 certifi==2026.10.23
     # via
     #   httpcore
     #   httpx
+    #   langchain-core
+    #   requests
+charset-normalizer==3.5.2
+    # via requests
 click==8.5.0
     # via huggingface-hub
 colorama==0.4.6 ; sys_platform == 'win32'
     # via
     #   pytest
     #   tqdm
+distro==1.9.0
+    # via langsmith
 docstring-parser==0.18.0
     # via anthropic
 filelock==4.2.4
@@ -42,10 +51,13 @@ httpx==0.28.1
     # via
     #   curso-ai-engineering
     #   curso-core
+    #   langchain-core
+    #   langgraph-sdk
 httpx2==2.16.0
     # via
     #   anthropic
     #   huggingface-hub
+    #   langsmith
     #   openai
 httpx2-jsfetch==1.0 ; sys_platform == 'emscripten'
     # via httpx2
@@ -58,21 +70,59 @@ idna==3.20
     #   anyio
     #   httpx
     #   httpx2
+    #   requests
 iniconfig==2.3.1
     # via pytest
 jiter==0.18.0
     # via
     #   anthropic
     #   openai
+jsonpatch==1.38
+    # via langchain-core
+jsonpointer==3.6
+    # via jsonpatch
+langchain-core==1.7.3
+    # via
+    #   langgraph
+    #   langgraph-checkpoint
+    #   langgraph-prebuilt
+    #   langgraph-sdk
+langchain-protocol==0.0.20
+    # via
+    #   langchain-core
+    #   langgraph-sdk
+langgraph==1.2.19
+    # via curso-ai-engineering
+langgraph-checkpoint==4.3.1
+    # via
+    #   langgraph
+    #   langgraph-checkpoint-sqlite
+    #   langgraph-prebuilt
+langgraph-checkpoint-sqlite==3.1.3
+    # via curso-ai-engineering
+langgraph-prebuilt==1.1.1
+    # via langgraph
+langgraph-sdk==0.4.11
+    # via langgraph
+langsmith==0.14.16
+    # via langchain-core
 numpy==2.5.4
     # via curso-core
 openai==3.41.0
     # via curso-ai-engineering
 opentelemetry-api==1.45.2
     # via anthropic
+orjson==3.13.0
+    # via
+    #   langgraph-sdk
+    #   langsmith
+ormsgpack==1.13.0
+    # via langgraph-checkpoint
 packaging==26.3
     # via
     #   huggingface-hub
+    #   langchain-core
+    #   langsmith
     #   pytest
 pgvector==0.5.1
     # via curso-core
@@ -87,6 +137,9 @@ pydantic==2.14.1
     #   anthropic
     #   curso-ai-engineering
     #   curso-core
+    #   langchain-core
+    #   langgraph
+    #   langsmith
     #   openai
 pydantic-core==2.50.1
     # via pydantic
@@ -98,12 +151,25 @@ python-dotenv==1.2.4
     #   curso-ai-engineering
     #   curso-core
 pyyaml==6.0.3
-    # via huggingface-hub
+    # via
+    #   huggingface-hub
+    #   langchain-core
+requests==2.34.2
+    # via
+    #   langsmith
+    #   requests-toolbelt
+requests-toolbelt==1.0.0
+    # via langsmith
 ruff==0.17.3
 sniffio==1.3.1
     # via
     #   anthropic
+    #   langsmith
     #   openai
+sqlite-vec==0.1.9
+    # via langgraph-checkpoint-sqlite
+tenacity==9.2.1
+    # via langchain-core
 tokenizers==0.23.3
     # via curso-ai-engineering
 tqdm==4.70.1
@@ -118,6 +184,9 @@ typing-extensions==4.16.0
     #   anyio
     #   httpx2
     #   huggingface-hub
+    #   langchain-core
+    #   langchain-protocol
+    #   langsmith
     #   openai
     #   opentelemetry-api
     #   psycopg
@@ -128,3 +197,19 @@ typing-inspection==0.4.4
     # via pydantic
 tzdata==2026.6 ; sys_platform == 'win32'
     # via psycopg
+urllib3==2.8.0
+    # via requests
+uuid-utils==0.19.0
+    # via
+    #   langchain-core
+    #   langsmith
+websockets==17.4
+    # via
+    #   langgraph-sdk
+    #   langsmith
+xxhash==4.0.2
+    # via
+    #   langgraph
+    #   langsmith
+zstandard==0.25.0
+    # via langsmith
