@@ -16,9 +16,9 @@ FICHERO = Path("config") / "models.toml"
 class Proveedor(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    # Dialecto de la API: el nativo de Ollama o el compatible con OpenAI,
-    # que hablan OpenAI, Hugging Face, vLLM, llama.cpp y muchos otros.
-    tipo: Literal["ollama", "openai"]
+    # Dialecto de la API: el nativo de Ollama, el compatible con OpenAI (que hablan
+    # OpenAI, Hugging Face, vLLM, llama.cpp y muchos otros) o el de Claude, con su SDK.
+    tipo: Literal["ollama", "openai", "anthropic"]
     base_url: str
     api_key_env: str | None = None
     # Nombre del límite de tokens de salida en la API compatible con OpenAI. OpenAI ha

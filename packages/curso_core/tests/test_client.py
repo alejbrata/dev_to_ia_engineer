@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Literal
 
 import httpx
@@ -324,3 +325,109 @@ def test_esquema_estricto_cierra_todos_los_objetos() -> None:
     assert estricto["required"] == ["respuesta", "citas"]
     assert estricto["$defs"]["Cita"]["additionalProperties"] is False
     assert "additionalProperties" not in ConCitas.model_json_schema()  # no toca el original
+
+
+# --- Claude (SDK oficial), con un SDK falso: sin red ni clave -----------------------------
+
+CONFIG_CLAUDE = cfg.Config.model_validate(
+    {
+        "roles": {
+            "claude": {"provider": "anthropic", "model": "claude-opus-5-5"},
+            "claude_otro": {"provider": "anthropic", "model": "modelo-sin-reserva"},
+        },
+        "providers": {
+            "anthropic": {
+                "tipo": "anthropic",
+                "base_url": "https://api.anthropic.com",
+                "api_key_env": "CLAVE_CLAUDE",
+            }
+        },
+        "precios": {"anthropic/claude-opus-5-5": {"entrada": 4.0, "salida": 20.0}},
+    }
+)
+
+
+def mensaje_claude(texto: str) -> SimpleNamespace:
+    return SimpleNamespace(
+        content=[SimpleNamespace(type="thinking"), SimpleNamespace(type="text", text=texto)],
+        stop_reason="end_turn",
+        usage=SimpleNamespace(input_tokens=1_000_000, output_tokens=100_000),
+    )
+
+
+class FlujoFalso:
+    def __init__(self, partes: list[str]):
+        self.text_stream = iter(partes)
+        self._final = mensaje_claude("".join(partes))
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        return False
+
+    def get_final_message(self):
+        return self._final
+
+
+class APIFalsa:
+    def __init__(self):
+        self.peticiones: list[dict] = []
+
+    def create(self, **kwargs):
+        self.peticiones.append(kwargs)
+        return mensaje_claude('{"respuesta": "Hola", "citas": [1]}')
+
+    def stream(self, **kwargs):
+        self.peticiones.append(kwargs)
+        return FlujoFalso(["Ho", "la"])
+
+
+def cliente_claude(tmp_path: Path) -> tuple[ClienteLLM, APIFalsa]:
+    c = ClienteLLM(CONFIG_CLAUDE, trazas=tmp_path / "trazas.jsonl")
+    api = APIFalsa()
+    c._sdk_claude["anthropic"] = SimpleNamespace(messages=api, beta=SimpleNamespace(messages=api))
+    return c, api
+
+
+def test_peticion_claude_sin_muestreo_y_con_sistema_aparte(tmp_path: Path) -> None:
+    c, api = cliente_claude(tmp_path)
+    mensajes = [Mensaje(role="system", content="Sé breve."), Mensaje(role="user", content="Hola")]
+    c.chat(mensajes, rol="claude", opciones=Opciones(temperatura=0, max_tokens=50))
+    peticion = api.peticiones[0]
+    assert peticion["system"] == "Sé breve."
+    assert peticion["messages"] == [{"role": "user", "content": "Hola"}]
+    assert peticion["max_tokens"] == 50 and "temperature" not in peticion
+    # Opus 5.5 admite la reserva del servidor ante un rechazo; otros modelos, no.
+    assert peticion["fallbacks"] == "default"
+    c.chat("Hola", rol="claude_otro")
+    assert "fallbacks" not in api.peticiones[1] and api.peticiones[1]["max_tokens"] == 16000
+
+
+def test_claude_extrae_con_esquema_estricto_y_registra_coste(tmp_path: Path) -> None:
+    class ConCitas(BaseModel):
+        respuesta: str
+        citas: list[int]
+
+    c, api = cliente_claude(tmp_path)
+    objeto, r = c.extraer("Hola", ConCitas, rol="claude")
+    assert objeto.citas == [1] and r.motivo_fin == "stop"
+    esquema = api.peticiones[0]["output_config"]["format"]["schema"]
+    assert esquema["additionalProperties"] is False
+    assert r.coste_usd == pytest.approx(4.0 + 2.0)  # 1M de entrada a 4 $ y 100k de salida a 20 $
+    assert leer(tmp_path / "trazas.jsonl")[0].proveedor == "anthropic"
+
+
+def test_claude_en_streaming(tmp_path: Path) -> None:
+    c, _ = cliente_claude(tmp_path)
+    flujo = c.chat_stream("Hola", rol="claude")
+    assert list(flujo) == ["Ho", "la"]
+    assert flujo.respuesta.texto == "Hola" and flujo.respuesta.primer_token_s is not None
+
+
+def test_claude_sin_clave(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.delenv("CLAVE_CLAUDE", raising=False)
+    c = ClienteLLM(CONFIG_CLAUDE, trazas=tmp_path / "trazas.jsonl")
+    with pytest.raises(ErrorLLM, match="Falta la variable de entorno CLAVE_CLAUDE"):
+        c.chat("Hola", rol="claude")
+    assert leer(tmp_path / "trazas.jsonl")[0].ok is False

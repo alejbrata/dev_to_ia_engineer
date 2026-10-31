@@ -74,6 +74,13 @@ model = "gpt-6-luna"
 provider = "openai"
 model = "gpt-6.1-sol"
 
+[roles.chat_claude]
+# Opcional (anexos A y G): Claude con el SDK oficial de Anthropic. Necesita
+# ANTHROPIC_API_KEY en .env y saldo en la cuenta. Alternativas más baratas:
+# "claude-sonnet-5-5" o "claude-haiku-5-5" (añade su precio abajo). Revisado: 2026-10.
+provider = "anthropic"
+model = "claude-opus-5-5"
+
 [roles.judge]
 # Modelo que hace de juez en las evals (LLM-as-judge): uno más grande que el que
 # genera las respuestas. Revisado: 2026-10.
@@ -156,6 +163,13 @@ parametro_max_tokens = "max_completion_tokens"
 omitir = ["temperature"]
 esquema_estricto = true
 
+[providers.anthropic]
+# Opcional (anexo A). No usa el formato de OpenAI: curso_core lo llama con el SDK oficial,
+# sin temperatura (la API actual rechaza los parámetros de muestreo). Revisado: 2026-10.
+tipo = "anthropic"
+base_url = "https://api.anthropic.com"
+api_key_env = "ANTHROPIC_API_KEY"
+
 [precios."ollama/qwen2.5:1.5b"]
 # En local no se paga por token: el coste es tu hardware y tu electricidad.
 entrada = 0.0
@@ -193,6 +207,11 @@ salida = 0.50
 [precios."openai/gpt-6.1-sol"]
 entrada = 2.00
 salida = 10.00
+
+[precios."anthropic/claude-opus-5-5"]
+# Precio publicado por Anthropic, USD por millón de tokens. Revisado: 2026-10.
+entrada = 4.00
+salida = 20.00
 
 [precios."ollama/bge-m3"]
 entrada = 0.0

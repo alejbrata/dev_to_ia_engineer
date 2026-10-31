@@ -86,7 +86,7 @@ Cómo leerla:
 
 ## Claude
 
-Anthropic no usa el formato de OpenAI: tiene su propia API y su SDK oficial. Cómo llamarla está en el [anexo A](../a-claude-y-claude-code/). Integrarla como proveedor de `curso_core` exige un dialecto nuevo en el cliente, igual que existe uno para Ollama. Está pendiente.
+Anthropic no usa el formato de OpenAI: tiene su propia API. `curso_core` la habla con su SDK oficial (proveedor de tipo `anthropic`), así que se usa igual, con el rol `chat_claude`: `con_api.py --rol chat_claude`. Los detalles, y lo que el cliente hace distinto con Claude, están en el [anexo A](../a-claude-y-claude-code/). Esa integración aún no se ha probado contra la API real.
 
 ## Otros proveedores
 
