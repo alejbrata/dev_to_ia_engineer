@@ -1,0 +1,39 @@
+name: Despliegue en VPS
+
+# Publica la web en un servidor propio además de en GitHub Pages (deploy/README.md).
+# Se lanza a mano. Para que se ejecute en cada push a main, añade el disparador `push`
+# como en deploy.yml. Necesita en Settings → Secrets and variables → Actions:
+#   secretos:  VPS_HOST, VPS_USUARIO, VPS_CLAVE_SSH, VPS_KNOWN_HOSTS
+#   variable:  SITIO_URL (por ejemplo https://curso.midominio.es)
+on:
+  workflow_dispatch:
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - name: Construir para el dominio propio
+        working-directory: site
+        env:
+          SITIO_URL: ${{ vars.SITIO_URL }}
+          SITIO_BASE: /
+        run: |
+          npm ci
+          npm run build
+      - name: Subir al VPS
+        env:
+          CLAVE: ${{ secrets.VPS_CLAVE_SSH }}
+          KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+          DESTINO: ${{ secrets.VPS_USUARIO }}@${{ secrets.VPS_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$CLAVE" > ~/.ssh/id_despliegue
+          chmod 600 ~/.ssh/id_despliegue
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          rsync -az --delete -e "ssh -i ~/.ssh/id_despliegue" site/dist/ "$DESTINO:/var/www/curso/"
