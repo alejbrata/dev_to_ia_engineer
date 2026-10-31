@@ -18,10 +18,12 @@ from pathlib import Path
 from statistics import median
 
 import agente
+import corpus
 import memoria
 import plataforma
 from curso_core import ClienteLLM
 from curso_core.evals import Informe, ResultadoCaso, comparar, prueba_mcnemar
+from medir_herramientas import DICE_QUE_ABRE
 
 RESULTADOS = Path(__file__).resolve().parent / "resultados"
 ROL = "agente"
@@ -58,6 +60,12 @@ def ejecutar_todos(cliente, indice, escenarios, version, configurar) -> Informe:
 
 def severidad_mal(r: ResultadoCaso) -> bool:
     return "severidad" in r.detalle["motivo"]
+
+
+def dice_sin_hacer(r: ResultadoCaso) -> bool:
+    """Dice en su respuesta que abre la incidencia, pero no llamó a abrir_incidencia."""
+    no_abrio = r.detalle["motivo"] == "no abrió la incidencia"
+    return no_abrio and bool(DICE_QUE_ABRE.search(corpus.normalizar(r.salida)))
 
 
 def fila(nombre: str, inf: Informe, n: int) -> str:
@@ -142,7 +150,11 @@ def main() -> int:
     p = prueba_mcnemar(len(c.ganados), len(c.perdidos))
     print(f"   con memoria gana {c.ganados}, pierde {c.perdidos}, p = {p:.2f}")
     for nombre, inf in [("sin memoria", completo), ("con memoria", informes["memoria"])]:
-        print(f"   severidad equivocada {nombre}: {sum(severidad_mal(r) for r in inf.resultados)}")
+        rs = inf.resultados
+        print(
+            f"   {nombre}: severidad equivocada {sum(severidad_mal(r) for r in rs)}, "
+            f"dice que abre la incidencia sin abrirla {sum(dice_sin_hacer(r) for r in rs)}"
+        )
 
     print("\n4. Qué recuerda la memoria, y los fallos que quedan")
     for r in informes["memoria"].resultados:

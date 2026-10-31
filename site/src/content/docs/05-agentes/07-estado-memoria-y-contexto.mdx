@@ -1,0 +1,253 @@
+---
+title: "Estado, memoria y contexto"
+description: "Estado, memoria y contexto: qué ve el modelo en cada paso, cómo recortarlo sin perder aciertos y cómo dar al agente memoria de casos anteriores sin hacer trampas al medir"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
+:::note[Revisado: 2026-10]
+Las salidas son reales, con Qwen3 8B sin razonamiento (rol `agente`) en Ollama, sobre CPU, y bge-m3 para los embeddings de la memoria.
+:::
+
+## Objetivos
+
+Al terminar esta lección podrás:
+
+- Distinguir tres cosas que se suelen llamar "memoria": el estado de una ejecución, el contexto que ve el modelo y la memoria que sobrevive entre ejecuciones.
+- Medir cómo crece el contexto en el bucle de un agente y recortarlo, comprobando que no se pierden aciertos.
+- Dar al agente memoria de casos anteriores con una búsqueda por similitud, y medirla sin dejarle recordar la solución del caso que resuelve.
+- Reconocer los riesgos de la memoria a largo plazo: recuerdos equivocados, obsoletos o envenenados.
+
+## Teoría
+
+### Tres cosas distintas
+
+Se dice "memoria" para tres cosas que se construyen y se miden de forma distinta:
+
+- **El estado** de una ejecución: lo que el sistema lleva de un paso al siguiente. En el grafo de la lección 05 es un objeto explícito (`EstadoGuardia`) que se guarda en cada checkpoint. Vive lo que dura la ejecución.
+- **El contexto**: lo que el modelo ve en una llamada. En el bucle de la lección 03 es la conversación entera: el prompt, la alerta y cada resultado de herramienta. Es la única "memoria" que el modelo tiene de verdad; lo que no está en el contexto, para el modelo no existe.
+- **La memoria a largo plazo**: lo que sobrevive entre ejecuciones. Hechos aprendidos, casos anteriores, preferencias. Vive fuera del modelo, en una base de datos, y solo sirve si se recupera y se mete en el contexto en el momento adecuado.
+
+Si vienes de backend: el estado es el ámbito de una petición; el contexto, lo que cabe en el buffer que procesas ahora; la memoria a largo plazo, la base de datos que consultas para rellenarlo.
+
+### El contexto crece en cada paso
+
+En el bucle, cada llamada al modelo reenvía la conversación entera, más lo último que ha pasado. Si cada resultado de herramienta añade unos cientos de tokens, la entrada de cada paso es mayor que la del anterior, y el total de tokens de una ejecución crece más deprisa que el número de pasos: el paso 5 paga los resultados de los pasos 1 a 4 otra vez. Ya lo viste en la lección 03 (de 1036 a 1550 tokens de entrada en tres pasos).
+
+Tres problemas salen de ahí: **coste** (pagas los mismos tokens una y otra vez), **latencia** (más entrada, más tiempo antes del primer token, sobre todo en CPU) y **calidad**: la ventana tiene un límite y, mucho antes de llegar a él, la información relevante se diluye entre lo que ya no importa (lección 1.02).
+
+Las formas habituales de contenerlo:
+
+- **Recortar los resultados antiguos.** Dejar enteros los últimos resultados de herramienta y abreviar los anteriores. Es barato y no necesita al modelo. Es lo que mide esta lección.
+- **Resumir.** Pedir al modelo que condense la conversación cuando pasa de cierto tamaño. Cuesta una llamada más, y el resumen puede perder justo el detalle que hacía falta.
+- **Notas en el estado.** Que el agente escriba lo importante en un campo del estado (un *scratchpad*) y que el contexto lleve las notas en lugar del historial completo.
+- **Aislar en subagentes.** Que la exploración ocurra en otro contexto y solo vuelva la conclusión. Es la lección 08.
+
+### Memoria a largo plazo
+
+Un agente sin memoria a largo plazo empieza cada alerta desde cero. La persona de guardia no: recuerda que la última vez que el pool de pagos se llenó era crítico porque los cobros fallaban. Esa experiencia es lo que el agente no tiene.
+
+La forma más directa de dársela es un RAG sobre casos anteriores (módulo 3): guardar una nota por cada caso cerrado, buscar por similitud las notas de las alertas más parecidas a la actual y ponerlas en el contexto. Se suele distinguir entre memoria **episódica** (casos concretos: "esta alerta, esta decisión, por esto"), **semántica** (hechos: "pagos depende del banco") y **procedimental** (cómo hacer las cosas: reglas e instrucciones aprendidas). Aquí se construye la episódica, porque es la que tienes gratis: cada incidencia cerrada, y cada corrección de la persona en la aprobación de la lección 05, es un recuerdo.
+
+Tiene riesgos que conviene tener presentes desde el principio:
+
+- **Recuerdos que no aplican.** La alerta más parecida no siempre es el mismo problema. Un recuerdo de un caso distinto empuja al agente hacia la decisión equivocada con mucha seguridad.
+- **Recuerdos obsoletos.** El runbook cambió, la severidad de un servicio también. Las notas viejas siguen diciendo lo de antes.
+- **Recuerdos envenenados.** Si alguien puede escribir en la memoria (o el agente guarda sin filtrar lo que lee en logs), puede plantar instrucciones que el agente obedecerá en ejecuciones futuras. Lo verás en la lección de seguridad.
+
+### Medir la memoria sin hacer trampas
+
+Si la memoria contiene la nota del mismo escenario que se está evaluando, el agente no recuerda: copia la solución. Es la fuga de datos del módulo 4 con otro nombre. La forma honesta de medirla es dejar fuera, cada vez, la nota del propio escenario (en inglés, *leave-one-out*): cada escenario se resuelve con la memoria de **los demás**. Así se mide lo que de verdad ocurrirá en producción, donde la alerta de hoy no está en la memoria, pero puede que una parecida sí.
+
+## Práctica
+
+[`memoria.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/memoria.py) tiene las dos piezas. El recorte es una función que decide qué parte de la conversación ve el modelo en cada paso. El bucle de `agente.py` acepta ahora un parámetro `contexto` con esa función; la conversación completa se conserva, solo cambia lo que se envía:
+
+```python
+def recortar(conservar: int = 2, abreviar_a: int = 200):
+    def aplicar(mensajes: list[Mensaje]) -> list[Mensaje]:
+        resultados = [i for i, m in enumerate(mensajes) if m.role == "tool"]
+        antiguos = set(resultados[:-conservar]) if conservar else set(resultados)
+        return [
+            m.model_copy(update={"content": abreviar(m.content, abreviar_a)})
+            if i in antiguos
+            else m
+            for i, m in enumerate(mensajes)
+        ]
+    return aplicar
+```
+
+La memoria es un índice vectorial (el del módulo 3) con una nota por escenario: la que escribe la persona de guardia al cerrarlo, con la severidad que correspondía, por qué y la mitigación. Aquí esas notas son el campo `nota` de lo esperado en cada escenario; en un sistema real saldrían de las incidencias cerradas y de las correcciones en la aprobación. `buscar` devuelve las dos notas más parecidas a la alerta y deja fuera la del propio escenario:
+
+```python
+def buscar(self, alerta: str, *, k: int = 2, excluir: str | None = None) -> list[Fragmento]:
+    resultados = self.indice.buscar(alerta, k + 1)
+    return [r.fragmento for r in resultados if r.fragmento.doc != excluir][:k]
+```
+
+El agente con memoria usa el prompt `agentes/guardia-memoria`, que es el de siempre con las notas añadidas tras la alerta, y una advertencia: úsalas como referencia, pero comprueba con las herramientas si este caso es igual.
+
+[`memoria_y_contexto.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/memoria_y_contexto.py) ejecuta tres configuraciones del agente: sin cambios en los 14 escenarios (desarrollo y prueba), con recorte en los 9 de desarrollo, y con memoria en los 14. Son 37 ejecuciones del agente: tarda unos 75 minutos en la máquina del curso; con `--grabadas`, un segundo.
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/05-agentes/memoria_y_contexto.py
+```
+
+```text
+1. El contexto crece: tokens de entrada en cada paso (pagos-pool-sin-despliegue)
+   1036 → 1173
+   en los 14 escenarios: primer paso 1036, último paso 1569 (medianas)
+
+2. Recortar los resultados antiguos, en los 9 escenarios de desarrollo
+                 estado ok  pasos   tokens  entrada máx. s/escenario
+   completo        4 de 9      27    37375          1620          73
+   recortado       5 de 9      28    39303          1710          65
+   recortado gana ['busqueda-disco'], pierde [], p = 1.00
+
+3. Memoria de notas, en los 14 escenarios (sin la nota del propio escenario)
+                 estado ok  pasos   tokens  entrada máx. s/escenario
+   sin memoria     6 de 14     45    62830          1740          71
+   con memoria     7 de 14     45    70739          1935          74
+   con memoria gana ['pagos-pool-sin-despliegue', 'pagos-token-banco'], pierde ['notificaciones-smtp'], p = 1.00
+   sin memoria: severidad equivocada 4, dice que abre la incidencia sin abrirla 2
+   con memoria: severidad equivocada 2, dice que abre la incidencia sin abrirla 5
+
+4. Qué recuerda la memoria, y los fallos que quedan
+   fallo pagos-pool-despliegue          notas: pagos-pool-sin-despliegue, pagos-pasarela-proveedor
+   ok    pagos-pool-sin-despliegue      notas: pagos-pool-despliegue, pagos-pasarela-proveedor
+   ok    pagos-token-banco              notas: pagos-pasarela-proveedor, pagos-pool-despliegue
+   ok    pagos-pasarela-proveedor       notas: pagos-token-banco, pagos-pool-sin-despliegue
+   fallo notificaciones-smtp            notas: notificaciones-push, notificaciones-push-inyeccion
+   ok    notificaciones-push            notas: notificaciones-push-inyeccion, notificaciones-smtp
+   fallo busqueda-disco                 notas: pagos-pool-sin-despliegue, pagos-pool-despliegue
+   fallo busqueda-despliegue            notas: catalogo-imagenes, pagos-token-banco
+   ok    catalogo-replica-normal        notas: catalogo-imagenes, busqueda-despliegue
+   fallo catalogo-imagenes              notas: catalogo-replica-normal, notificaciones-push-inyeccion
+   fallo usuarios-deadlocks             notas: usuarios-google, busqueda-despliegue
+   fallo usuarios-google                notas: usuarios-deadlocks, pagos-token-banco
+   ok    notificaciones-push-inyeccion  notas: notificaciones-push, notificaciones-smtp
+   ok    pagos-latencia-pasajera        notas: pagos-token-banco, pagos-pasarela-proveedor
+   pagos-pool-despliegue: no abrió la incidencia
+   notificaciones-smtp: no abrió la incidencia
+   busqueda-disco: severidad alta (esperada media); la mitigación no menciona 'índices antiguos'
+   busqueda-despliegue: no abrió la incidencia
+   catalogo-imagenes: no abrió la incidencia
+   usuarios-deadlocks: no abrió la incidencia
+   usuarios-google: severidad alta (esperada media)
+```
+
+## Mide y depura
+
+### Lo que ocupa el contexto
+
+Mira la parte 1. El primer paso ya entra con 1036 tokens, y el último, de mediana, con 1569. Dos tercios del contexto máximo son la parte fija: el prompt del sistema y la descripción de las cuatro herramientas, que se envían en cada paso. Los resultados de herramienta, que es lo que crece, son el tercio restante.
+
+Eso cambia qué merece la pena optimizar. En un agente de tres o cuatro pasos como este, recortar el historial ataca la parte pequeña. Lo que más pesa es lo fijo, y eso se abarata de otra forma: con un prompt y unas descripciones más cortas, o con la caché de prompts de los proveedores, que cobra menos por la parte de la entrada que se repite igual en cada llamada.
+
+### Recortar: nada que ganar aquí
+
+El recorte no ahorró tokens: 39303 frente a 37375, y la entrada máxima subió de 1620 a 1710. No es que funcione al revés. Con dos resultados enteros y el resto abreviado a 200 caracteres, en estas ejecuciones solo se abrevian uno o dos resultados por escenario, y los de `estado_servicio` ni eso, porque ya son más cortos que 200 caracteres. Solo se recortan los fragmentos de documentación. Lo que ahorra el recorte es menos de lo que varía el camino del agente entre una ejecución y otra: con recorte, `pagos-pool-despliegue` hizo cuatro pasos en lugar de tres.
+
+¿Y el acierto de más? `busqueda-disco` sale bien con recorte y mal sin él, pero con un caso y p = 1,00 es ruido, no un efecto del recorte (lección 02).
+
+La conclusión es que el recorte no sirve para este agente, no que no sirva nunca. Compensa cuando hay muchos pasos o resultados grandes: un agente que lee ficheros enteros, o que hace veinte búsquedas. Mídelo en tu caso antes de añadirlo, porque tiene un coste: el modelo deja de ver lo que se recortó, y si lo necesitaba tendrá que volver a pedirlo.
+
+### La memoria cambia el tipo de error
+
+La memoria mejora un caso en total (7 de 14 frente a 6), pero lo interesante está debajo:
+
+- **Las severidades equivocadas bajan de 4 a 2.** `pagos-token-banco` acierta la severidad crítica con las notas de otros dos escenarios de pagos delante. Es lo que se buscaba: el sesgo hacia "alta" que arrastra el módulo desde la lección 01 cede con ejemplos de casos parecidos.
+- **Los casos en los que dice que abre la incidencia sin abrirla suben de 2 a 5.** Es la anatomía de esta lección.
+
+El total apenas cambia porque se cambia un error por otro. Si solo miraras los aciertos, concluirías que la memoria no hace nada; si solo miraras las severidades, que lo arregla todo. Las dos cosas son falsas. Por eso conviene mirar siempre los fallos por tipo y no solo el total (módulo 4).
+
+### Recuerdos que no aplican
+
+La parte 4 dice qué notas recuperó la memoria en cada escenario. La mayoría son razonables: escenarios del mismo servicio. Pero `busqueda-disco` ("el disco del nodo opensearch-2 está al 96 %") recupera dos notas de pagos ("el pool de PgBouncer de pagos está al 97 %"). Las alertas se parecen en la forma (algo está al 9X %), no en el problema, y el embedding se fija en la forma. Con esas notas delante, el agente propuso reiniciar el nodo, algo que su runbook no dice; la nota de pagos sí habla de reiniciar PgBouncer. Con un solo caso no se puede afirmar que una cosa cause la otra, pero es exactamente el riesgo que se describía en la teoría.
+
+La mejora natural es filtrar por servicio antes de buscar por similitud, con los metadatos del módulo 3: las notas de pagos solo para alertas de pagos. No está medida aquí.
+
+## Errores frecuentes
+
+**Meter en la memoria el caso que estás evaluando.** El agente copia la solución y la cifra no dice nada. Deja fuera el propio caso, o separa los casos de memoria de los de evaluación.
+
+**Medir solo el total.** La memoria de esta lección deja el total casi igual y cambia el tipo de error. Mira los fallos por tipo.
+
+**Recortar sin medir.** Cuesta poco añadirlo y es fácil creer que ahorra. Aquí no ahorró nada, porque lo que pesa es la parte fija del prompt.
+
+**Recuperar por parecido de texto sin más filtros.** Dos alertas con la misma forma pueden ser problemas distintos. Filtra por servicio, por tipo de incidencia o por fecha antes de buscar.
+
+**Memoria sin caducidad ni origen.** Una nota de hace un año puede contradecir el runbook de hoy. Guarda con cada recuerdo de dónde sale y cuándo, y deja que caduque o se revise.
+
+### Anatomía de un error: decide bien y no actúa
+
+Escenario `busqueda-despliegue`: la búsqueda de la tienda falla para todos tras un despliegue. Sin memoria, el agente abrió una incidencia, pero con una mitigación que no menciona volver a la versión anterior. Con memoria, recupera dos notas, la de `catalogo-imagenes` ("empezó con un despliegue: volver a la versión anterior") y la de `pagos-token-banco`. Investiga en tres pasos y termina así:
+
+```text
+... La mitigación es revisar y completar la configuración del despliegue según el runbook.
+
+**Resumen:**
+El servicio de búsqueda está caído debido a que falta la variable de entorno **OPENSEARCH_URL**, lo que impide que el pod inicie. Se abre una incidencia crítica para abordar la configuración del despliegue.
+```
+
+La comprobación del estado final:
+
+```text
+busqueda-despliegue: no abrió la incidencia
+```
+
+**Cómo leerlo.** La respuesta dice "se abre una incidencia crítica". La severidad es la correcta (caída para todos: crítica). La mitigación, no: la nota de `catalogo-imagenes` decía volver a la versión anterior y el agente no la aprovechó. Pero lo grave es otra cosa: en la plataforma no hay ninguna incidencia, porque el agente no llamó a `abrir_incidencia`. Lo que cuenta es lo que el agente hace, no lo que dice que hace (lección 01). Con memoria pasó en 5 de los 14 escenarios; sin ella, en 2. Y en alguno el texto describe una incidencia mejor que la que se abrió sin memoria: en `catalogo-imagenes` propone volver a la versión anterior, la mitigación que faltaba sin memoria.
+
+**Causa.** Es el fallo que la lección 02 llamó "dice sin hacer": el modelo da la tarea por terminada al escribir la decisión. Por qué ocurre más con memoria no está demostrado. Una hipótesis razonable es que las notas, escritas como resúmenes de casos cerrados, empujan al modelo a responder con otro resumen en lugar de con una llamada a herramienta. Para confirmarlo habría que probar notas con otro formato y medir de nuevo.
+
+**Solución.** Hay dos, y las dos encajan con lo que ya has visto en el módulo:
+
+- **Que la acción no dependa del modelo.** En el grafo de la lección 05, el modelo decide y el código abre la incidencia: ese fallo no puede ocurrir. Si la acción es obligatoria cuando hay decisión, sácala del bucle.
+- **Comprobarlo antes de dar la ejecución por buena.** Si la respuesta dice que abre una incidencia y no hay ninguna, devuelve al agente un mensaje ("no has llamado a abrir_incidencia") y deja que lo corrija, como cuando una herramienta devuelve un error. La comprobación es la expresión regular que ya usa `memoria_y_contexto.py` para contarlos. Lo verás en las evals de agentes (lección 12).
+
+Y la lección de fondo: un cambio que mejora una cosa (la severidad) puede empeorar otra (la acción). Solo lo ves si mides las dos.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'Tu agente hace tres pasos y entra con 1000 tokens de prompt y herramientas, más unos 300 por cada resultado. ¿Qué ahorra más tokens?',
+			opciones: [
+				{ texto: 'Recortar los resultados antiguos.', porque: 'Con tres pasos hay poco historial que recortar; en la práctica no ahorró nada ("Recortar: nada que ganar aquí").' },
+				{ texto: 'Acortar el prompt y las descripciones de las herramientas, o usar la caché de prompts del proveedor.', correcta: true, porque: 'Lo fijo se envía en cada paso y es la mayor parte del contexto ("Lo que ocupa el contexto").' },
+				{ texto: 'Pasar a un modelo con una ventana de contexto mayor.', porque: 'Una ventana mayor no reduce los tokens que envías; solo sube el límite.' },
+			],
+		},
+		{
+			pregunta: 'Para medir si la memoria de casos anteriores ayuda, ¿qué casos puede recuperar el agente mientras resuelve el escenario X?',
+			opciones: [
+				{ texto: 'Todos, incluido X.', porque: 'Con X en la memoria, copia la solución: es una fuga de datos ("Medir la memoria sin hacer trampas").' },
+				{ texto: 'Todos menos X.', correcta: true, porque: 'Es lo que pasa en producción: la alerta de hoy no está en la memoria, pero puede haber una parecida.' },
+				{ texto: 'Ninguno: la memoria no se puede medir de forma honesta.', porque: 'Se puede, dejando fuera el propio caso (leave-one-out).' },
+			],
+		},
+		{
+			pregunta: 'Añades memoria y los aciertos pasan de 6 a 7 de 14. ¿Qué conclusión sacas?',
+			opciones: [
+				{ texto: 'Que la memoria mejora el agente.', porque: 'Un caso de diferencia con p = 1,00 no lo demuestra, y por debajo puede haber cambiado el tipo de error.' },
+				{ texto: 'Ninguna todavía: miro los fallos por tipo antes de decidir.', correcta: true, porque: 'Aquí bajaron las severidades equivocadas (4 → 2) y subió "dice sin hacer" (2 → 5) ("La memoria cambia el tipo de error").' },
+			],
+		},
+		{
+			pregunta: 'La respuesta final del agente dice "se abre una incidencia crítica", pero la comprobación dice "no abrió la incidencia". ¿Qué haces?',
+			opciones: [
+				{ texto: 'Dar por buena la ejecución: la decisión era correcta.', porque: 'Lo que cuenta es el estado final de la plataforma, no lo que dice el agente.' },
+				{ texto: 'Sacar la acción del bucle para que la haga el código, o detectar el caso y devolvérselo al agente para que lo corrija.', correcta: true, porque: '(Anatomía de un error)' },
+				{ texto: 'Quitar la memoria, que es la culpable.', porque: 'La memoria mejoró la severidad. Quitarla devuelve el otro error; mejor arreglar la acción.' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- Packer et al., [MemGPT: Towards LLMs as Operating Systems](https://arxiv.org/abs/2310.08560) (2023). Memoria jerárquica para agentes: qué está en el contexto y qué fuera, y cómo moverlo.
+- Liu et al., [Lost in the Middle: How Language Models Use Long Contexts](https://arxiv.org/abs/2307.03172) (2023). Por qué más contexto no es mejor contexto.
+- Anthropic, [Effective context engineering for AI agents](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents) (2025). Recorte, notas y subagentes como técnicas para gestionar el contexto.
+- LangGraph, [Memory](https://docs.langchain.com/oss/python/langgraph/memory): memoria de corto y largo plazo en un framework.
