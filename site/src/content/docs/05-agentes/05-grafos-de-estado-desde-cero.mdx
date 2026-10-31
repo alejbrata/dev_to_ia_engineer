@@ -1,0 +1,275 @@
+---
+title: "Grafos de estado desde cero"
+description: "Grafos de estado desde cero: un motor propio con estado tipado, aristas condicionales, checkpoints para reanudar tras una caída y aprobación humana antes de actuar"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
+:::note[Revisado: 2026-10]
+Las salidas son reales, con Qwen3 8B sin razonamiento (rol `agente`) en Ollama, sobre CPU.
+:::
+
+## Objetivos
+
+Al terminar esta lección podrás:
+
+- Modelar un agente como un grafo de estado: un estado tipado, nodos que lo actualizan y aristas fijas o condicionales.
+- Guardar un checkpoint tras cada nodo y reanudar una ejecución que se cayó sin repetir lo que ya estaba hecho.
+- Parar el grafo antes de una acción con efectos para que una persona la apruebe o la corrija, y reanudarlo después.
+- Distinguir lo que aporta un grafo (control, recuperación, auditoría) de lo que no aporta (mejores decisiones).
+
+## Teoría
+
+### Del bucle al grafo
+
+En las lecciones anteriores has visto dos formas de controlar el flujo. En el workflow, el flujo son las líneas de código: primero esto, luego aquello. En el agente, el flujo lo decide el modelo en cada paso, y en el código solo hay un bucle. Las dos tienen el mismo problema cuando el sistema crece: el flujo no se puede ver ni guardar. Si el proceso se cae a mitad, no hay un punto desde el que seguir. Si quieres que una persona apruebe algo antes de hacerlo, tienes que partir el código a mano.
+
+Un **grafo de estado** hace explícito el flujo. Tiene tres piezas:
+
+- **El estado**: un objeto con todo lo que el sistema sabe en cada momento. Aquí, un modelo de Pydantic: la alerta, el servicio, lo recogido, la decisión, si está aprobada.
+- **Los nodos**: funciones que reciben el estado y devuelven **los campos que cambian**. No tocan nada más. Un nodo puede llamar al modelo, ejecutar una herramienta o no hacer más que calcular.
+- **Las aristas**: qué nodo va después de cada uno. Una arista **fija** siempre va al mismo; una **condicional** es una función que mira el estado y devuelve el nombre del siguiente.
+
+Si vienes de backend Java, ya lo conoces con otros nombres: la máquina de estados de un pedido (`PENDIENTE → PAGADO → ENVIADO`), un proceso BPMN en Camunda o jBPM, Spring State Machine o una Step Function de AWS. La diferencia es que aquí algunos nodos llaman a un modelo, y su salida decide por qué arista se sigue.
+
+### Aristas condicionales y ciclos
+
+Una arista condicional puede volver atrás. Así se expresa "si la decisión no se pudo leer, vuelve a intentarlo": un ciclo de `decidir` a `decidir`. Los ciclos son lo que diferencia un grafo de estado de una cadena fija de pasos, y también su riesgo: un ciclo cuya condición nunca cambia no termina. Por eso el motor tiene un límite de pasos, igual que el bucle de la lección 03, y el ciclo de reintento, un contador en el estado.
+
+### Checkpoints
+
+Un **checkpoint** es el estado guardado tras un nodo, junto con el nombre del siguiente nodo. Con eso basta para reanudar: se carga el último checkpoint y se sigue por donde iba. Lo hecho antes no se repite, y eso incluye las llamadas al modelo, que son lo caro.
+
+La analogía más cercana es el repositorio de jobs de Spring Batch, que permite relanzar un job desde el paso que falló. Y tiene la misma letra pequeña: **lo que pasó dentro del nodo que se cayó se repite**. Si ese nodo tenía un efecto externo (abrir una incidencia, cobrar), al reanudar puede ejecutarse dos veces. Los nodos con efectos tienen que ser idempotentes, o comprobar antes si el efecto ya se produjo, igual que una API de pagos con clave de idempotencia.
+
+### Parar para que decida una persona
+
+Con checkpoints, parar el grafo es fácil: se guarda el estado y se devuelve el control sin ejecutar el siguiente nodo. Una persona revisa el estado, lo aprueba, lo rechaza o lo corrige, y el grafo se reanuda con esos cambios aplicados. Puede pasar un minuto o una noche entera: el estado está en disco, no en memoria.
+
+Se para **antes** del nodo con efectos, nunca después. En el agente de guardia, antes de `abrir`: la persona ve la propuesta (servicio, severidad, mitigación) cuando aún no se ha abierto nada.
+
+### Lo que un grafo no aporta
+
+El grafo no hace que el modelo decida mejor. Si los nodos son los mismos que los del workflow, los aciertos son los mismos. Lo que cambia es todo lo de alrededor: puedes ver el flujo, reanudarlo, auditarlo nodo a nodo y meter a una persona donde haga falta. Lo vas a comprobar en la práctica.
+
+## Práctica
+
+### El motor
+
+[`grafo.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/grafo.py) es un motor de grafos de estado en unas 130 líneas de código. Se usa así:
+
+```python
+g = Grafo(EstadoGuardia, inicio="clasificar")
+g.nodo("clasificar", nodos.clasificar)
+g.nodo("recoger", nodos.recoger)
+g.nodo("decidir", nodos.decidir)
+g.nodo("abrir", nodos.abrir)
+g.arista("clasificar", "recoger")
+g.arista("recoger", "decidir")
+g.arista_condicional("decidir", tras_decidir, {"decidir", "abrir", FIN})
+g.arista("abrir", FIN)
+```
+
+El corazón de `ejecutar` es un bucle corto:
+
+```python
+while siguiente != FIN:
+    if siguiente in interrumpir_antes and not reanudando:
+        checkpoints.guardar(hilo, siguiente, estado)
+        return Resultado(estado=estado, pasos=pasos, pendiente=siguiente)
+    ...
+    estado = self._actualizar(siguiente, estado, self.nodos[siguiente](estado))
+    siguiente = self._siguiente(siguiente, estado)
+    checkpoints.guardar(hilo, siguiente, estado)
+```
+
+Tres detalles que importan:
+
+- **Se valida todo lo que puede romperse sin avisar.** Antes de ejecutar, que cada nodo tenga salida y que cada destino exista. En cada paso, que el nodo devuelva campos que el estado tiene, con el tipo correcto (`_actualizar` pasa la actualización por el modelo de Pydantic). Y que una condición devuelva uno de los destinos que declaró.
+- **Los checkpoints son un fichero JSONL por hilo**, una línea por nodo, con el estado y el siguiente nodo. El hilo identifica una ejecución: aquí, el escenario. Se pueden leer con cualquier editor.
+- **Reanudar es ejecutar con `estado=None`.** El motor carga el último checkpoint del hilo, aplica los `cambios` (lo que decidió la persona) y sigue.
+
+### El agente de guardia como grafo
+
+[`grafo_guardia.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/grafo_guardia.py) define el estado y los nodos. Son los pasos del workflow de la lección 01, con tres añadidos:
+
+```text
+clasificar → recoger → decidir ─┬─ (error, quedan intentos) → decidir
+                                ├─ (abrir) → [aprobación humana] → abrir → FIN
+                                └─ (no abrir, o sin intentos) → FIN
+```
+
+`clasificar` y `decidir` llaman al modelo con los mismos prompts que el workflow; `recoger` ejecuta las herramientas sin modelo. `decidir` no lanza excepciones si la respuesta no se puede leer: lo anota en el estado (`error`, `intentos`) y la condición `tras_decidir` decide si repetir. Los nodos no saben nada del motor, y eso permite que la lección 06 los ejecute con LangGraph sin cambiarlos.
+
+[`grafos.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/grafos.py) ejecuta el grafo en los 9 escenarios de desarrollo aprobando todas las propuestas, provoca una caída a mitad de un escenario para reanudarlo, y compara con el workflow. Tarda unos diez minutos en la máquina del curso; con `--grabadas`, un segundo. Con `--humano`, la aprobación la haces tú en la terminal: puedes aprobar, rechazar o escribir otra severidad.
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/05-agentes/grafos.py
+```
+
+```text
+1. El grafo
+   clasificar → recoger                  (fija)
+   recoger    → decidir                  (fija)
+   decidir    → FIN | abrir | decidir    (condicional)
+   abrir      → FIN                      (fija)
+   parada para aprobación antes de: abrir
+
+2. pagos-pool-despliegue, paso a paso
+   clasificar  11.0 s
+   recoger      0.4 s
+   decidir     51.7 s
+   ⏸ parado antes de 'abrir'; checkpoints guardados: 4
+   propuesta: abrir=True, severidad=alta
+   mitigación: Si hubo un despliegue reciente, vuelve a la versión anterior: es la mitigación más rápida.
+   la persona decide: {'aprobada': True}
+   ▶ abrir      0.0 s
+   resultado: Incidencia INC-1 abierta para pagos. → severidad alta (esperada critica)
+
+3. Caída a mitad de usuarios-deadlocks
+   error: el proceso muere a mitad de decidir
+   último checkpoint: siguiente='decidir', servicio=usuarios, llamadas ya hechas=1, tokens=116
+   al reanudar se ejecutan: decidir → abrir
+   llamadas al modelo en total: 2; estado ok: False
+
+4. Los 9 escenarios de desarrollo, aprobando todo
+             estado ok  llamadas al modelo   tokens s/escenario
+   workflow      4 de 9                  18     9944          22
+   grafo         4 de 9                  18     9951          48
+   (los segundos del workflow son de otra ejecución: compara llamadas y tokens)
+   frente al workflow: gana [], pierde [], p = 1.00
+   paradas para aprobación: 8; repeticiones de decidir: 0
+   pagos-pool-despliegue: severidad alta (esperada critica) (la persona lo ve)
+   pagos-pool-sin-despliegue: severidad alta (esperada critica) (la persona lo ve)
+   busqueda-disco: severidad alta (esperada media) (la persona lo ve)
+   catalogo-replica-normal: abrió una incidencia que no hacía falta (la persona lo ve)
+   usuarios-deadlocks: severidad alta (esperada media) (la persona lo ve)
+```
+
+## Mide y depura
+
+### Los mismos aciertos, por construcción
+
+El grafo acierta lo mismo que el workflow, con las mismas llamadas y prácticamente los mismos tokens. Era lo esperado: los nodos hacen lo mismo. El ciclo de reintento no se usó nunca (0 repeticiones de `decidir`): sin razonamiento, el modelo siempre devolvió un JSON válido. Está ahí para cuando no lo haga, y no cuesta nada mientras tanto.
+
+Lo que el grafo sí cambia está en las partes 2 y 3: el escenario se paró antes de abrir la incidencia, con la propuesta a la vista, y la caída a mitad de `decidir` se reanudó sin repetir `clasificar` ni `recoger`.
+
+### La aprobación es una métrica
+
+Mira la última parte de la salida: todos los fallos pasan por la aprobación. Las cuatro severidades equivocadas y la incidencia que no hacía falta se habrían visto antes de abrir nada. Con una persona revisando, el sistema no acierta más solo, pero el error no llega a producción.
+
+Eso convierte la aprobación en algo que medir:
+
+- **Paradas por escenario**: cuánto trabajo le das a la persona. Aquí, 8 de 9 escenarios se paran (todos los que proponen abrir). Si casi todo se para, la persona acabará aprobando sin mirar.
+- **Tasa de corrección**: de lo que llega a la persona, cuánto cambia. Aquí corregiría la severidad en 4 de las 8 propuestas y rechazaría 1. Si corrige tanto, el problema está en `decidir`, y es lo que hay que mejorar. Las correcciones son además datos etiquetados gratis: la lección 07 las usa como memoria.
+- **Fallos que no llegan a la persona**: los que el grafo resuelve sin parar (no abrir incidencia). Son los peligrosos, porque nadie los revisa. Aquí, ninguno.
+
+### El checkpoint es una traza
+
+Cada línea del fichero de checkpoints es el estado completo tras un nodo. Para depurar un escenario no necesitas reproducirlo: abre `modulos/05-agentes/checkpoints/<escenario>.jsonl` y mira qué tenía el estado antes y después de cada nodo. Lo que recogió `recoger`, la decisión de `decidir` y si la persona la aprobó, todo está ahí. Es la misma idea que la traza paso a paso del agente (lección 02), pero gratis: el motor ya la guarda para poder reanudar.
+
+### Compara tokens, no segundos
+
+En la parte 4, el grafo tarda 48 segundos de mediana por escenario y el workflow 22, con las mismas llamadas y los mismos tokens. Parece que el motor dobla el tiempo. No es así, y averiguarlo es un buen ejercicio de depuración.
+
+Primera sospecha, el motor: sus pasos sin modelo (`recoger`, `abrir`) tardan menos de medio segundo. No es él. Segunda prueba: ejecutar el workflow ahora, en las mismas condiciones que el grafo (con el modelo recién descargado de memoria, como hace `grafos.py` al empezar). Tres escenarios:
+
+```text
+escenario              workflow ahora   workflow grabado   grafo
+notificaciones-smtp           54.6 s             22.0 s     47.5 s
+busqueda-disco                52.1 s             25.5 s     51.8 s
+usuarios-deadlocks            42.4 s             17.4 s     41.8 s
+```
+
+El workflow de ahora tarda lo mismo que el grafo. Lo que cambió es la máquina entre la ejecución en la que se grabó el workflow y esta. El log de Ollama lo confirma: evaluar el prompt de `decidir` (unos 800 tokens) cuesta ahora entre 25 y 34 segundos, antes de generar nada. No está claro por qué el portátil iba más lento (estaba enchufado y sin otras tareas pesadas a la vista), pero eso ya no cambia la conclusión: no es el código.
+
+Y una trampa más, que apareció por el camino. Antes de esa prueba, el workflow se ejecutó dos veces seguidas en los mismos escenarios, y la segunda tardó 18 segundos en `decidir`. Era la caché de prompts de Ollama: el log decía `cached n_tokens = 800`, el prompt entero ya estaba evaluado de la vez anterior. Por eso los scripts del curso descargan el modelo antes de medir (módulo 2).
+
+Las reglas que salen de aquí:
+
+- Entre ejecuciones distintas, compara **llamadas y tokens**, que no dependen de la máquina.
+- Los segundos solo son comparables **dentro de la misma ejecución**, o repitiendo en las mismas condiciones, con la caché vacía.
+- Si un cambio te da el doble de tiempo con los mismos tokens, sospecha antes del entorno que del código, y compruébalo midiendo, no suponiendo.
+
+## Errores frecuentes
+
+**Parar después del efecto.** Si la interrupción va después de `abrir`, la persona aprueba algo que ya está hecho. Para antes del nodo con efectos.
+
+**Nodos con efectos que no son idempotentes.** Si el proceso cae dentro de `abrir`, después de abrir la incidencia y antes de guardar el checkpoint, al reanudar se abre otra. Comprueba si el efecto ya existe, o usa una clave de idempotencia (aquí, el id del hilo).
+
+**Ciclos sin salida.** Una condición que no depende de nada que cambie en el ciclo no termina nunca. Cuenta los intentos en el estado, y deja el límite de pasos del motor como red de seguridad.
+
+**Renombrar un nodo con ejecuciones a medias.** El checkpoint guarda el nombre del siguiente nodo. Si lo renombras, las ejecuciones paradas apuntan a un nodo que ya no existe.
+
+### Anatomía de un error: el estado que ya no encaja
+
+Un grafo está parado esperando aprobación desde anoche: el escenario `pagos-pool-despliegue`, con la propuesta lista y el checkpoint en disco (`siguiente: abrir`). Por la mañana se despliega una versión nueva del agente: cada incidencia se asigna ahora a un equipo, y el estado tiene un campo más.
+
+```python
+class EstadoGuardia(EstadoGuardia):  # la versión nueva
+    equipo: str
+```
+
+La persona aprueba y el grafo se reanuda:
+
+```text
+  File "...\modulos\05-agentes\grafo.py", line 127, in ejecutar
+    estado = self.tipo_estado.model_validate(ultimo["estado"])
+  File "...\.venv\Lib\site-packages\pydantic\main.py", line 790, in model_validate
+    return cls.__pydantic_validator__.validate_python(
+pydantic_core._pydantic_core.ValidationError: 1 validation error for EstadoGuardia
+equipo
+  Field required [type=missing, input_value={'alerta': 'PoolConexione...elo': 2, 'tokens': 1206}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.14/v/missing
+```
+
+**Cómo leerlo.** De abajo arriba. Falta el campo `equipo` (`Field required`, `type=missing`) en un diccionario que empieza por `alerta` y acaba en `tokens`: es el estado guardado. La línea de `grafo.py` dice dónde: al cargar el último checkpoint, antes de ejecutar ningún nodo. El grafo no ha llegado a abrir nada.
+
+**Causa.** El checkpoint se escribió con la versión anterior del estado, que no tenía `equipo`. Un checkpoint es un dato persistido, y cambiar su esquema es una migración, como añadir una columna `NOT NULL` a una tabla con filas. Con ejecuciones de minutos casi no se nota; con aprobaciones humanas, que pueden esperar horas, siempre hay alguna a medias cuando despliegas.
+
+**Solución.** Lo mismo que con la columna: un valor por defecto (`equipo: str = "sin asignar"`), y la ejecución parada se reanuda sin problema (lo hemos comprobado: ejecuta `abrir` y abre la incidencia). Si el cambio no admite un valor por defecto, migra los checkpoints antes de desplegar, o espera a que terminen las ejecuciones antiguas. Y guarda en el checkpoint la versión del estado, para saber con qué se escribió cada uno.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'Pasas el workflow de la lección 01 a un grafo con los mismos nodos. ¿Qué esperas que pase con los aciertos?',
+			opciones: [
+				{ texto: 'Que suban, porque el grafo controla mejor el flujo.', porque: 'El grafo no cambia lo que decide el modelo en cada nodo. En la práctica, 4 de 9 en los dos.' },
+				{ texto: 'Que sean los mismos: cambia el control, la recuperación y la auditoría, no las decisiones.', correcta: true, porque: '("Lo que un grafo no aporta" y "Los mismos aciertos, por construcción")' },
+				{ texto: 'Que bajen, porque el motor añade pasos.', porque: 'El motor no añade llamadas al modelo: 18 en los dos.' },
+			],
+		},
+		{
+			pregunta: 'El proceso se cae mientras el nodo decidir espera al modelo. ¿Qué se repite al reanudar desde el checkpoint?',
+			opciones: [
+				{ texto: 'Todo, desde clasificar.', porque: 'Eso es lo que evita el checkpoint: lo hecho antes de decidir está guardado.' },
+				{ texto: 'Solo decidir y lo que venga después.', correcta: true, porque: 'El último checkpoint dice que el siguiente nodo es decidir (parte 3 de la práctica).' },
+				{ texto: 'Nada: decidir sigue por donde iba.', porque: 'Un checkpoint se guarda entre nodos, no dentro. Lo que pasó dentro del nodo que cayó se repite ("Checkpoints").' },
+			],
+		},
+		{
+			pregunta: 'Quieres que una persona apruebe cada incidencia. ¿Dónde pones la parada?',
+			opciones: [
+				{ texto: 'Antes del nodo abrir.', correcta: true, porque: 'La persona ve la propuesta cuando aún no se ha abierto nada ("Parar para que decida una persona").' },
+				{ texto: 'Después del nodo abrir, para que vea la incidencia real.', porque: 'Entonces aprueba algo que ya está hecho ("Parar después del efecto").' },
+				{ texto: 'Antes de clasificar, para que apruebe la alerta.', porque: 'En ese punto no hay nada que aprobar: la propuesta aún no existe.' },
+			],
+		},
+		{
+			pregunta: 'Despliegas una versión del agente que añade un campo obligatorio al estado. Hay grafos parados esperando aprobación desde anoche. ¿Qué pasa al reanudarlos?',
+			opciones: [
+				{ texto: 'Nada: el campo nuevo se rellena solo.', porque: 'Si es obligatorio y sin valor por defecto, el checkpoint antiguo no lo tiene y la validación falla (anatomía).' },
+				{ texto: 'Fallan al cargar el checkpoint; los campos nuevos necesitan un valor por defecto o una migración.', correcta: true, porque: '(Anatomía de un error)' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- David Harel, [Statecharts: a visual formalism for complex systems](https://doi.org/10.1016/0167-6423(87)90035-9) (1987). El origen de las máquinas de estados jerárquicas que usan los motores de workflow.
+- LangGraph, [Persistence](https://docs.langchain.com/oss/python/langgraph/persistence) e [Interrupts](https://docs.langchain.com/oss/python/langgraph/interrupts). Los mismos conceptos en un framework; lo verás en la lección 06.
+- Temporal, [What is a Temporal Workflow?](https://docs.temporal.io/workflows). La ejecución duradera llevada al extremo: reanudar cualquier proceso tras cualquier caída.
+- Stripe, [Idempotent requests](https://docs.stripe.com/api/idempotent_requests). Cómo hacer que un efecto repetido no se aplique dos veces.

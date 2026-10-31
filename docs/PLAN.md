@@ -78,6 +78,7 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 - **Decisiones** (aprobadas el 2026-10-31, ver `docs/PROPUESTA-modulo-5.md`; ampliado a 14 lecciones el mismo día, a petición de Alex): cierre del módulo con un sistema de guardia multiagente construido desde cero (orquestador que planifica el incidente como grafo de tareas, subagentes especializados, aprobación humana), medido frente al agente único; caso único, un agente de guardia sobre la plataforma de los módulos 2-4 (corpus, tickets, RAG), construido como workflow, como agente desde cero y como grafo; grafo propio antes que LangGraph; MCP con el SDK oficial sobre la revisión 2026-07-28; lo que caduca rápido va en la lección 9 (con nota "Revisado") y el detalle de herramientas en un anexo; el modelo local para agentes se elige midiendo en la lección 2
 - **Mide y depura**: trazas de agente paso a paso; pasos por tarea, terminación (resuelta, límite, error) y coste por tarea resuelta
 - **Errores clave**: bucles infinitos, argumentos de herramienta alucinados, explosión de coste, pérdida de estado, inyección a través del resultado de una herramienta
+- **Estado** (2026-10-31): lecciones 1 a 8 escritas, con salidas reales; 9 a 14 pendientes. LangGraph entra como dependencia del curso en la lección 6
 
 ## Módulo 6 — Producción ⬜
 

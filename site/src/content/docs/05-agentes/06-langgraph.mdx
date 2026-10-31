@@ -1,0 +1,249 @@
+---
+title: "LangGraph"
+description: "LangGraph: el mismo grafo de estado de la lección anterior con un framework, qué aporta, qué cuesta y en qué se diferencia del motor propio"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
+:::note[Revisado: 2026-10]
+Con LangGraph 1.2.19 y langgraph-checkpoint-sqlite 3.1.3. LangGraph cambia a menudo: si usas otra versión, contrasta con su documentación. Las salidas son reales, con Qwen3 8B sin razonamiento (rol `agente`) en Ollama, sobre CPU.
+:::
+
+## Objetivos
+
+Al terminar esta lección podrás:
+
+- Traducir un grafo de estado propio a LangGraph: `StateGraph`, nodos, aristas condicionales, checkpointer e `interrupt()`.
+- Comprobar con datos que el framework no cambia las decisiones del agente, y medir lo que añade en tiempo y en dependencias.
+- Reconocer las diferencias de comportamiento que importan: cómo se reanuda una interrupción, qué pasa con los campos que el estado no tiene y qué se reconstruye al leer un checkpoint.
+- Decidir con criterio entre un motor propio y un framework para tu caso.
+
+## Teoría
+
+### Qué es LangGraph
+
+LangGraph es una librería de código abierto, del equipo de LangChain, para construir agentes como grafos de estado. Tiene las mismas piezas que el motor de la lección 05, con otros nombres:
+
+| Motor propio (`grafo.py`) | LangGraph |
+| --- | --- |
+| `Grafo(EstadoGuardia, inicio=...)` | `StateGraph(EstadoGuardia)` y `add_edge(START, ...)` |
+| `g.nodo(nombre, funcion)` | `g.add_node(nombre, funcion)` |
+| `g.arista(a, b)` | `g.add_edge(a, b)` |
+| `g.arista_condicional(a, condicion, destinos)` | `g.add_conditional_edges(a, condicion, mapa)` |
+| `FIN` | `END` |
+| `Checkpoints(carpeta)`, un JSONL por hilo | un *checkpointer*: `InMemorySaver`, `SqliteSaver`, `PostgresSaver` |
+| `hilo="..."` | `{"configurable": {"thread_id": "..."}}` |
+| `interrumpir_antes={"abrir"}` y `cambios` al reanudar | `interrupt(valor)` dentro de un nodo y `Command(resume=...)` |
+| `MAX_PASOS` | `recursion_limit` en la configuración |
+
+Si has hecho la lección 05, ya sabes lo que hace cada pieza. Eso es lo que se gana construyendo el motor antes que usar el framework: el framework deja de ser una caja negra.
+
+### Lo que LangGraph hace distinto
+
+No todo es cambiar nombres. Hay diferencias de diseño que cambian cómo se comporta el sistema:
+
+- **La interrupción va dentro de un nodo.** Se llama a `interrupt(valor)`: el grafo se para, guarda el checkpoint y devuelve `valor` a quien lo ejecuta. Al reanudar con `Command(resume=respuesta)`, `interrupt()` devuelve `respuesta`. Pero el nodo **se ejecuta otra vez desde el principio**: todo lo que haya antes de `interrupt()` se repite. Por eso la aprobación es un nodo propio (`aprobar`), sin nada caro ni con efectos antes de la llamada. LangGraph también permite paradas fijas al compilar (`interrupt_before`), como el motor propio, pero su documentación recomienda `interrupt()` para la aprobación humana.
+- **Reductores.** Cada campo del estado puede tener una función que decide cómo se combinan las actualizaciones: sustituir (lo de por defecto, como el motor propio) o, por ejemplo, añadir a una lista. Sirve para que varios nodos que se ejecutan en paralelo escriban en el mismo campo sin pisarse.
+- **Pasos en paralelo.** Si de un nodo salen varias aristas, los nodos de destino se ejecutan en el mismo paso, a la vez. El motor propio ejecuta un nodo cada vez.
+- **Persistencia intercambiable.** El mismo grafo guarda en memoria, en SQLite o en Postgres cambiando una línea. Si un nodo falla en un paso con varios nodos en paralelo, LangGraph guarda lo que hicieron los que sí terminaron (*pending writes*) y no los repite al reanudar.
+- **Lo que viene alrededor**: varios modos de streaming (por nodo, por token), historial de checkpoints para volver a un estado anterior, políticas de reintento por nodo y un ecosistema de herramientas de observabilidad y despliegue, algunas comerciales.
+
+### Lo que cuesta
+
+Un framework se paga en dependencias, en versiones y en abstracciones. Instalar `langgraph` y su checkpointer de SQLite añadió **24 paquetes** al entorno del curso (`langchain-core`, `langsmith`, `ormsgpack`, `zstandard`...). Cada uno es código de terceros que actualizar y vigilar. Y la API cambia: algo que hoy funciona con un aviso puede bloquearse en la siguiente versión. Lo vas a ver en la anatomía.
+
+## Práctica
+
+[`grafo_langgraph.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/grafo_langgraph.py) monta el grafo de guardia con LangGraph. Los nodos y la condición son los de `grafo_guardia.py`, sin cambiar una línea. Solo se añade el nodo de aprobación:
+
+```python
+def aprobar(e: EstadoGuardia) -> dict:
+    respuesta = interrupt({"servicio": e.servicio, "decision": e.decision.model_dump()})
+    cambios = {"aprobada": respuesta["aprobada"]}
+    if "decision" in respuesta:  # la persona ha corregido la propuesta
+        cambios["decision"] = Decision.model_validate(respuesta["decision"])
+    return cambios
+
+
+def construir(nodos: NodosGuardia, checkpointer):
+    g = StateGraph(EstadoGuardia)
+    g.add_node("clasificar", nodos.clasificar)
+    g.add_node("recoger", nodos.recoger)
+    g.add_node("decidir", nodos.decidir)
+    g.add_node("aprobar", aprobar)
+    g.add_node("abrir", nodos.abrir)
+    g.add_edge(START, "clasificar")
+    g.add_edge("clasificar", "recoger")
+    g.add_edge("recoger", "decidir")
+    g.add_conditional_edges(
+        "decidir", tras_decidir, {"decidir": "decidir", "abrir": "aprobar", FIN: END}
+    )
+    g.add_edge("aprobar", "abrir")
+    g.add_edge("abrir", END)
+    return g.compile(checkpointer=checkpointer)
+```
+
+La condición `tras_decidir` devuelve los nombres del motor propio (`"abrir"`, `FIN`); el mapa de `add_conditional_edges` los traduce a los de este grafo. Para ejecutarlo, [`con_langgraph.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/con_langgraph.py) usa `stream` con `stream_mode="updates"`, que devuelve lo que cambia cada nodo según termina. Así mide el tiempo por nodo y detecta la interrupción (llega como `__interrupt__`):
+
+```python
+for actualizacion in grafo.stream(entrada, config, stream_mode="updates"):
+    for nodo, valor in actualizacion.items():
+        if nodo == "__interrupt__":
+            return pasos, valor[0].value       # lo que interrupt() enseña a la persona
+        ...
+# más tarde, cuando la persona decide:
+grafo.stream(Command(resume={"aprobada": True}), config, stream_mode="updates")
+```
+
+Ejecuta lo mismo que `grafos.py` de la lección 05: los 9 escenarios aprobando todo, la caída a mitad de `decidir` y la comparación. Añade una parte 5, que mide lo que cuesta cada motor por paso con un nodo que no hace nada. Tarda unos diez minutos; con `--grabadas`, segundos (la parte 5 se ejecuta siempre, no usa modelo).
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/05-agentes/con_langgraph.py
+```
+
+```text
+1. El grafo, según LangGraph
+   __start__  → clasificar
+   aprobar    → abrir
+   clasificar → recoger
+   decidir    → __end__ (condicional)
+   decidir    → aprobar (condicional)
+   decidir    → decidir (condicional)
+   recoger    → decidir
+   abrir      → __end__
+
+2. pagos-pool-despliegue, paso a paso
+   clasificar  10.4 s
+   recoger      0.4 s
+   decidir     48.7 s
+   ⏸ interrupt() en 'aprobar'; siguiente según el checkpoint: ['aprobar']
+   propuesta: abrir=True, severidad=alta
+   la persona responde: Command(resume={'aprobada': True})
+   ▶ aprobar    0.0 s
+   ▶ abrir      0.0 s
+   resultado: Incidencia INC-1 abierta para pagos. → severidad alta (esperada critica)
+   get_state(...).values es un dict, no un EstadoGuardia
+
+3. Caída a mitad de usuarios-deadlocks
+   error: el proceso muere a mitad de decidir
+   get_state(...).next = ['decidir']; llamadas ya hechas = 1
+   al reanudar se ejecutan: decidir → aprobar → abrir
+   llamadas al modelo en total: 2; estado ok: False
+
+4. Los 9 escenarios de desarrollo, aprobando todo
+                estado ok  llamadas al modelo   tokens s/escenario
+   motor propio     4 de 9                  18     9951          48
+   LangGraph        4 de 9                  18     9951          48
+   LangGraph gana [], pierde [], p = 1.00
+   pagos-pool-despliegue: severidad alta (esperada critica)
+   pagos-pool-sin-despliegue: severidad alta (esperada critica)
+   busqueda-disco: severidad alta (esperada media)
+   catalogo-replica-normal: abrió una incidencia que no hacía falta
+   usuarios-deadlocks: severidad alta (esperada media)
+
+5. Coste del motor por paso (200 pasos de un nodo que solo suma 1)
+   motor propio (JSONL)    0.65 ms/paso
+   LangGraph (SQLite)      2.74 ms/paso
+   (varía de una ejecución a otra; lo que importa es el orden de magnitud)
+```
+
+## Mide y depura
+
+### Lo mismo, hasta el último token
+
+LangGraph y el motor propio aciertan los mismos 4 escenarios, fallan los mismos 5 por los mismos motivos y gastan exactamente los mismos 9951 tokens en 18 llamadas. Es la comprobación más importante de la lección: **cambiar de motor no cambia lo que decide el agente**. Si al migrar a un framework cambian tus resultados, no es el framework, es que algo de tu lógica cambió por el camino, y tus evals deberían cazarlo.
+
+La caída también se comporta igual: `get_state(config).next` dice `['decidir']`, y al reanudar con `stream(None, config)` se ejecuta `decidir` sin repetir `clasificar` ni `recoger`.
+
+### Milisegundos frente a segundos
+
+La parte 5 mide el motor solo: unos 0,7 ms por paso el propio (con su JSONL) y unos 3 ms LangGraph (con SQLite). Cuatro veces más, y da igual: un paso que llama al modelo tarda decenas de segundos en esta máquina. El motor es menos de una diezmilésima del tiempo. Estos números cambian de una ejecución a otra (repitiendo con el modelo ocupado en otra cosa salieron 1,2 y 4,7 ms), así que fíjate en el orden de magnitud, no en la cifra. No elijas motor por su velocidad: elige por lo que te da y lo que te cuesta mantenerlo.
+
+### El estado que vuelve como diccionario
+
+La última línea de la parte 2: `get_state(...).values es un dict, no un EstadoGuardia`. Dentro del grafo, cada nodo recibe el estado como modelo de Pydantic; fuera, lo que devuelven `invoke` y `get_state` es un diccionario. Si escribes `resultado.decision`, falla con `AttributeError`. `con_langgraph.py` lo vuelve a convertir con `EstadoGuardia.model_validate(valores)`.
+
+### Qué valida cada motor
+
+Una prueba sin modelo, con nodos falsos que devuelven datos incorrectos, saca dos diferencias:
+
+- **Un valor del tipo equivocado** (un nodo devuelve `servicio="pago"`, que no es uno de los cinco servicios): **los dos motores fallan** con `ValidationError` antes del siguiente nodo, porque los dos reconstruyen el estado con Pydantic.
+- **Un campo que el estado no tiene** (un nodo devuelve `campo_inventado`): el motor propio falla (`'recoger' devolvió campos que el estado no tiene`); **LangGraph lo descarta sin avisar** y el grafo termina como si nada. Una errata en el nombre de un campo es un dato que se pierde en silencio.
+
+## Errores frecuentes
+
+**Trabajo caro antes de `interrupt()`.** El nodo se repite entero al reanudar. Si llamas al modelo y luego a `interrupt()` en el mismo nodo, la llamada se repite. Pon la interrupción en un nodo propio, o al principio del nodo.
+
+**Erratas en las claves que devuelve un nodo.** LangGraph ignora las claves que no están en el estado. Si un campo no se actualiza y no sabes por qué, revisa el nombre exacto. Un test que ejecute el grafo con nodos falsos lo caza.
+
+**Tratar el resultado como el modelo de Pydantic.** `invoke` y `get_state(...).values` devuelven un diccionario. Conviértelo si quieres tipos.
+
+**Olvidar el `thread_id`.** Con checkpointer, cada ejecución necesita su hilo. Si reutilizas el mismo para dos alertas, la segunda continúa el estado de la primera.
+
+**Usar `InMemorySaver` en producción.** Desaparece con el proceso: la aprobación que esperaba desde anoche se pierde con el primer reinicio.
+
+### Anatomía de un error: el aviso que será un error
+
+La primera ejecución de `con_langgraph.py` empezó con esta línea, antes de cualquier salida del script:
+
+```text
+Deserializing unregistered type workflow.Decision from checkpoint. This will be blocked in a future version. Set LANGGRAPH_STRICT_MSGPACK=true to block now, or add to allowed_msgpack_modules to allow explicitly: [('workflow', 'Decision')]
+```
+
+**Cómo leerlo.** Al leer un checkpoint (*deserializing*), LangGraph se encontró un objeto de un tipo que nadie ha registrado: `Decision`, del módulo `workflow`, la decisión que guarda el nodo `decidir` en el estado. Hoy lo reconstruye y avisa una vez. El aviso dice que en una versión futura lo bloqueará, y da las dos salidas: activar ya el modo estricto, o registrar el tipo en `allowed_msgpack_modules`.
+
+**Causa.** El checkpointer guarda el estado en binario (msgpack), con el tipo de cada objeto, y al leerlo reconstruye ese tipo. Reconstruir cualquier tipo que diga un fichero es peligroso: el propio código de LangGraph advierte de que quien pueda escribir en la base de datos de checkpoints podría llegar a ejecutar código al deserializar. Es el mismo problema que la deserialización de objetos en Java, que ha dado más de un susto en servidores de aplicaciones. Por eso LangGraph está pasando a una lista de tipos permitidos.
+
+**Solución.** Declarar los tipos propios que se guardan en el estado al crear el checkpointer:
+
+```python
+serde = JsonPlusSerializer(allowed_msgpack_modules=[("workflow", "Decision")])
+SqliteSaver(sqlite3.connect(ruta, check_same_thread=False), serde=serde)
+```
+
+Con eso el aviso desaparece y el resultado es idéntico (lo comprobamos con nodos falsos: la decisión vuelve como `Decision`, con la misma severidad). Es lo que hace ya `con_langgraph.py`. Y la lección de fondo es la de la anatomía anterior: un checkpoint es un dato persistido, y su formato es un contrato, tanto con tu código como con la versión del framework. Fija la versión en el lockfile, lee los avisos, que suelen anunciar el siguiente error, y prueba a reanudar ejecuciones antiguas antes de actualizar.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'Migras tu grafo propio a LangGraph con los mismos nodos y los aciertos bajan de 4 a 3. ¿Qué sospechas primero?',
+			opciones: [
+				{ texto: 'Que LangGraph decide peor.', porque: 'El framework no decide: ejecuta tus nodos. Con los mismos nodos dio los mismos aciertos y los mismos tokens ("Lo mismo, hasta el último token").' },
+				{ texto: 'Que algo de la lógica cambió en la migración, o que es variación del modelo; lo compruebo con las evals y repitiendo.', correcta: true, porque: 'Una diferencia de un caso puede ser ruido (lección 5.02); si se repite, busca qué cambió en tus nodos o condiciones.' },
+			],
+		},
+		{
+			pregunta: 'Un nodo llama al modelo para redactar la propuesta y después llama a interrupt() para que la apruebe una persona. ¿Qué pasa al reanudar?',
+			opciones: [
+				{ texto: 'Se repite la llamada al modelo, porque el nodo se ejecuta desde el principio.', correcta: true, porque: 'interrupt() reanuda el nodo entero. Pon la aprobación en un nodo propio ("Lo que LangGraph hace distinto").' },
+				{ texto: 'El nodo sigue justo después de interrupt().', porque: 'Así funcionaría una corrutina, pero LangGraph vuelve a ejecutar el nodo entero.' },
+				{ texto: 'Se pierde la propuesta.', porque: 'La propuesta está en el checkpoint; lo que pasa es que se vuelve a generar.' },
+			],
+		},
+		{
+			pregunta: 'Un nodo devuelve {"severidd": "alta"} (con una errata). ¿Qué hace cada motor?',
+			opciones: [
+				{ texto: 'Los dos fallan con un error de validación.', porque: 'El motor propio sí falla; LangGraph descarta la clave sin avisar ("Qué valida cada motor").' },
+				{ texto: 'El motor propio falla; LangGraph la ignora y sigue.', correcta: true, porque: 'Con LangGraph, un test con nodos falsos es la forma de cazar estas erratas.' },
+				{ texto: 'Los dos la ignoran.', porque: 'El motor propio comprueba que cada campo devuelto existe en el estado.' },
+			],
+		},
+		{
+			pregunta: 'Te sale el aviso "Deserializing unregistered type ... This will be blocked in a future version". ¿Qué haces?',
+			opciones: [
+				{ texto: 'Nada, es solo un aviso y el resultado es correcto.', porque: 'Hoy sí; con la siguiente versión puede dejar de reanudar tus ejecuciones (anatomía).' },
+				{ texto: 'Registrar tus tipos en allowed_msgpack_modules del serializador.', correcta: true, porque: 'Desaparece el aviso, el resultado no cambia y no dependes de que el modo permisivo siga existiendo.' },
+				{ texto: 'Guardar el estado como texto con pickle para evitar msgpack.', porque: 'pickle tiene el mismo problema de seguridad, y peor.' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- LangGraph, [Graph API](https://docs.langchain.com/oss/python/langgraph/graph-api): estado, reductores, nodos y aristas.
+- LangGraph, [Interrupts](https://docs.langchain.com/oss/python/langgraph/interrupts) y [Persistence](https://docs.langchain.com/oss/python/langgraph/persistence): `interrupt()`, `Command(resume=...)`, checkpointers e hilos.
+- Malewicz et al., [Pregel: a system for large-scale graph processing](https://doi.org/10.1145/1807167.1807184) (2010). El modelo de pasos sincronizados en el que se inspira el motor de ejecución de LangGraph.
+- OWASP, [Deserialization Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html). Por qué deserializar tipos arbitrarios es peligroso, con ejemplos en Java y Python.
