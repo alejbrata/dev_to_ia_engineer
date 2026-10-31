@@ -61,13 +61,23 @@ Necesitas:
 
 No necesitas experiencia previa en machine learning ni matemáticas avanzadas.
 
-Para algunas prácticas necesitarás una clave de API de un proveedor de modelos, que puede tener coste. Cuando una práctica tenga alternativa gratuita (por ejemplo, un modelo local), se indicará.
+No necesitas ninguna clave de API de pago: todas las prácticas funcionan con modelos locales y gratuitos (Ollama). Si quieres comparar con un proveedor comercial, los anexos A y G explican cómo hacerlo con tu propia clave; es opcional.
+
+Y un aviso sobre la máquina: hasta el módulo 3 basta un portátil con 8 GB de RAM y sin GPU. Desde la lección 1.07 y en los módulos 4 y 5 se usan modelos más grandes; ahí conviene tener 16 GB, y algunas prácticas tardan de diez minutos a más de una hora en CPU.
 
 ### Ritmo y orden
 
 Los módulos 1 a 6 se apoyan unos en otros: hazlos en orden. El módulo 7 usa las evals del módulo 4 para comparar modelos, así que no lo empieces antes. El proyecto final reúne todo lo anterior.
 
 Dentro de una lección, termina la práctica antes de pasar a la siguiente. Leer sin ejecutar da sensación de avance, pero no deja habilidades.
+
+### Convenciones que verás en todo el curso
+
+- **El caso práctico.** Casi todas las prácticas trabajan sobre la misma empresa ficticia: una tienda online con cinco servicios (pagos, usuarios, catálogo, notificaciones y búsqueda). En el módulo 2 clasificas sus tickets de soporte; en el 3 construyes un RAG sobre su documentación interna (runbooks, criterios de severidad, arquitectura); en el 4 lo evalúas; en el 5, un agente de guardia responde a sus alertas. Los datos están inventados y viven en `modulos/NN-*/datos/`.
+- **Roles de modelo.** El código nunca nombra un modelo: pide un *rol* (`chat`, `chat_grande`, `embeddings`, `agente`...), y `config/models.toml` dice qué modelo hay detrás de cada uno. Lo verás en la lección siguiente.
+- **Salidas reales y nota "Revisado".** Las salidas que aparecen en las lecciones son reales, copiadas de una ejecución en la máquina del curso (un portátil sin GPU). Las tuyas no serán idénticas: los modelos no son deterministas y los tiempos dependen de tu máquina. La nota "Revisado: AAAA-MM" al principio de una lección dice cuándo se ejecutó y con qué modelo.
+- **`--grabadas`.** Desde el módulo 4, las prácticas largas guardan sus resultados en `modulos/NN-*/resultados/`. Con `--grabadas`, el script los reutiliza sin llamar al modelo y en un segundo reproduce la salida de la lección. Úsalo para leer el resultado sin esperar; ejecútalo sin la opción para obtener el tuyo.
+- **Trazas.** Cada llamada al modelo se apunta en `trazas/llamadas.jsonl` (tokens, latencia, coste, errores). Es la base de todos los apartados "Mide y depura" (módulo 1).
 
 ### Dónde está cada cosa
 
@@ -78,7 +88,7 @@ Dentro de una lección, termina la práctica antes de pasar a la siguiente. Leer
 | `packages/curso_core/` | La librería compartida: cliente LLM, tracing y métricas. Crece módulo a módulo |
 | `config/models.toml` | Los nombres de los modelos que usa el curso |
 | `.env.example` | Las variables de entorno que necesitas (claves, observabilidad) |
-| `bitacora/` | El texto personal del autor, módulo a módulo |
+| `bitacora/` | El texto personal del autor, que se publica aparte, en el anexo H |
 | `docs/PLAN.md` | El temario y el estado de cada módulo |
 | `.vscode/` | La configuración de VS Code: extensiones, tareas y depuración |
 

@@ -43,7 +43,15 @@ Depende del modelo y del servidor. Hay modelos que siempre razonan, modelos que 
 
 ## Práctica
 
-[`razonamiento.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/01-fundamentos-de-llms/razonamiento.py) hace seis preguntas con respuesta comprobable, con y sin razonar. Cuatro son cálculos de operación de sistemas que necesitan varios pasos (la ley de Little, la capacidad de un pool, una hora de fin, la capacidad tras caer una réplica). Dos son directas. Después repite una con un límite de salida corto, y enseña lo que razona el modelo. Tarda unos 12 minutos en la máquina del curso, casi todos razonando:
+[`razonamiento.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/01-fundamentos-de-llms/razonamiento.py) hace seis preguntas con respuesta comprobable, con y sin razonar. Cuatro son cálculos de operación de sistemas que necesitan varios pasos (la ley de Little, la capacidad de un pool, una hora de fin, la capacidad tras caer una réplica). Dos son directas. Después repite una con un límite de salida corto, y enseña lo que razona el modelo.
+
+Usa el modelo del rol `razonador`, más grande que el de las lecciones anteriores: unos 5 GB de descarga y unos 6 GB de memoria mientras se ejecuta. Descárgalo una vez (es el mismo que usa el módulo 5):
+
+```sh title="Terminal de VS Code · raíz del repo"
+ollama pull qwen3:8b
+```
+
+La práctica tarda unos 12 minutos en la máquina del curso, casi todos razonando:
 
 ```sh title="Terminal de VS Code · raíz del repo"
 uv run python modulos/01-fundamentos-de-llms/razonamiento.py

@@ -17,7 +17,7 @@ Para leerlo, entra en la web: **https://alejbrata.github.io/dev_to_ia_engineer/*
 | uv | Python 3.12+ y las dependencias (instala Python si no lo tienes) | [docs.astral.sh/uv](https://docs.astral.sh/uv/getting-started/installation/) |
 | Ollama | Ejecutar los modelos en local, gratis | [ollama.com/download](https://ollama.com/download) |
 
-Un portátil con 8 GB de RAM y sin GPU basta para el modelo del curso. No hace falta ninguna clave de API de pago.
+Un portátil con 8 GB de RAM y sin GPU basta para el modelo del curso hasta el módulo 3. Desde la lección 1.07 y en los módulos 4 y 5 se usan modelos de 7 y 8B, que ocupan unos 6 GB de memoria: ahí conviene tener 16 GB. No hace falta ninguna clave de API de pago.
 
 ### 2. Tu copia del repositorio
 
@@ -56,6 +56,8 @@ En las lecciones, sustituye `uv run python` por `python` con el entorno activado
 ### Opcional, para algunas lecciones
 
 - `ollama pull qwen2.5:0.5b` y `ollama pull qwen2.5:7b`: comparar tamaños de modelo (lección 05 del módulo 1, ~5 GB). El de 7B es también el juez de las lecciones 06 del módulo 3 y 04-05 del módulo 4, y el modelo del sistema que se elige en las lecciones 06-07 del módulo 4.
+- `ollama pull qwen3:8b`: el modelo que razona (lección 07 del módulo 1) y el de los agentes (todo el módulo 5), ~5 GB.
+- `ollama pull bge-m3`: el modelo de embeddings del RAG (desde la lección 01 del módulo 3, y en los módulos 4 y 5), ~1 GB.
 - [llama.cpp](https://github.com/ggml-org/llama.cpp): comparar cómo tratan dos servidores un prompt demasiado largo (lección 02 del módulo 1) y servir el reranker (lección 05 del módulo 3 y lecciones 05-07 del módulo 4, ~0,6 GB).
 - `ollama pull nomic-embed-text` y `ollama pull qwen3-embedding:0.6b`: comparar modelos de embeddings (lección 03 del módulo 3, ~1 GB).
 - Docker con Compose y `docker compose up -d`: el índice vectorial en PostgreSQL con pgvector (lección 03 del módulo 3).

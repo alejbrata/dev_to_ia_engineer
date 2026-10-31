@@ -61,7 +61,14 @@ La misma tarea, de dos formas:
 - [`workflow.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/workflow.py): **encadenar**. Una llamada al modelo dice a qué servicio afecta la alerta; el código recoge, siempre igual, el estado del servicio, sus logs y la documentación; una segunda llamada decide la incidencia con salida estructurada; el código la abre. Dos llamadas por alerta, siempre.
 - [`agente.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/agente.py): el agente decide qué herramienta usar en cada paso y cuándo terminar. Lo construirás paso a paso en la lección 03.
 
-Los dos usan el mismo modelo y las mismas herramientas. [`workflow_frente_agente.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/workflow_frente_agente.py) los ejecuta en los 9 escenarios de desarrollo (los 5 de prueba se reservan para la lección de evals). Tarda unos 15 minutos en la máquina del curso; con `--grabadas`, un segundo:
+Los dos usan el mismo modelo y las mismas herramientas. El modelo es el del rol `agente`, el mismo de la lección 1.07 (unos 5 GB de descarga y unos 6 GB de memoria). `buscar_documentacion` usa además el modelo de embeddings y el corpus del módulo 3. Si no los tienes:
+
+```sh title="Terminal de VS Code · raíz del repo"
+ollama pull qwen3:8b
+ollama pull bge-m3
+```
+
+[`workflow_frente_agente.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/workflow_frente_agente.py) los ejecuta en los 9 escenarios de desarrollo (los 5 de prueba se reservan para la lección de evals). Tarda unos 15 minutos en la máquina del curso; con `--grabadas`, un segundo:
 
 ```sh title="Terminal de VS Code · raíz del repo"
 uv run python modulos/05-agentes/workflow_frente_agente.py
