@@ -1,28 +1,194 @@
 ---
 title: "Workflow frente a agente"
-description: "Workflow frente a agente: no todo necesita autonomía"
+description: "Workflow frente a agente: no todo necesita autonomía. La misma tarea con pasos fijos y con un agente que decide, medida en aciertos, llamadas, tokens y tiempo"
 ---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
+:::note[Revisado: 2026-10]
+Las salidas son reales, con Qwen3 8B sin razonamiento (rol `agente`) en Ollama, sobre CPU. Por qué este modelo, y no otro, se explica en la lección 02. Puedes usar el que quieras: cambia el rol en `config/models.toml` y vuelve a medir.
+:::
 
 ## Objetivos
 
-TODO
+Al terminar esta lección podrás:
+
+- Distinguir un workflow (el código decide los pasos) de un agente (el modelo decide los pasos).
+- Reconocer los patrones de workflow más comunes y cuándo basta con uno de ellos.
+- Medir la misma tarea con las dos arquitecturas: aciertos, llamadas al modelo, tokens y tiempo.
+- Decidir con datos si una tarea necesita autonomía.
 
 ## Teoría
 
-TODO
+### Quién decide el siguiente paso
+
+Este módulo trata de sistemas que usan un modelo para algo más que responder una pregunta. Hay dos formas de montarlos, y la diferencia está en quién decide qué pasa después:
+
+- **Workflow**: los pasos los fija tu código. El modelo hace una o varias tareas concretas en puntos conocidos (clasificar, extraer, decidir), y el código decide qué viene a continuación.
+- **Agente**: el modelo decide los pasos. Recibe un objetivo y unas herramientas, y en un bucle elige qué herramienta usar, mira el resultado y decide si sigue o termina.
+
+Si vienes de backend, un workflow es un orquestador con un flujo conocido: un pipeline, una saga, un job con pasos. Un agente se parece más a darle a alguien acceso a una consola y un objetivo: puede resolver casos que no habías previsto, y también puede hacer cosas que no esperabas.
+
+### Los patrones de workflow
+
+Antes de llegar a un agente, la mayoría de los problemas se resuelven con uno de estos patrones o una combinación de ellos:
+
+- **Encadenar**: la salida de un paso es la entrada del siguiente (extraer y luego decidir).
+- **Enrutar**: un paso clasifica la entrada y la manda a un camino especializado.
+- **Paralelizar**: varios pasos independientes a la vez, y se combinan los resultados.
+- **Orquestador y trabajadores**: un paso reparte el trabajo en subtareas que resuelven otros. Lo verás a fondo en las lecciones de subagentes y multiagente.
+- **Evaluar y corregir**: un paso genera y otro comprueba; si no pasa, se repite.
+
+Todos tienen algo en común: puedes dibujar el flujo antes de ejecutarlo. Eso los hace predecibles, fáciles de probar y baratos de operar.
+
+### Cuándo compensa la autonomía
+
+Un agente compensa cuando no puedes saber de antemano qué pasos harán falta: cuántas herramientas, en qué orden, cuántas veces. A cambio pagas:
+
+- **Más llamadas al modelo**, y cada una arrastra toda la conversación anterior, así que los tokens crecen paso a paso.
+- **Más latencia**, por lo mismo.
+- **Menos previsibilidad**: el mismo caso puede seguir caminos distintos en ejecuciones distintas.
+- **Más difícil de probar y de depurar**: hay que mirar trayectorias, no solo respuestas.
+
+La recomendación habitual es empezar por lo más simple que funcione y añadir autonomía solo donde los datos digan que hace falta. Esta lección lo mide.
 
 ## Práctica
 
-TODO
+El caso de todo el módulo es un **agente de guardia** sobre la plataforma de los módulos 2 a 4: recibe una alerta, investiga y decide si abre una incidencia, con qué severidad y con qué mitigación. Tiene cuatro herramientas: `estado_servicio`, `buscar_logs`, `buscar_documentacion` (el RAG del módulo 3) y `abrir_incidencia`. Los 14 escenarios de [`datos/escenarios.jsonl`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/datos/escenarios.jsonl) están anclados al corpus: la severidad esperada sale de los criterios de `severidades.md` y la mitigación, del runbook de cada caso. [`plataforma.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/plataforma.py) comprueba el estado final de la plataforma, no lo que dice el sistema: si dice que ha abierto la incidencia, tiene que existir.
+
+La misma tarea, de dos formas:
+
+- [`workflow.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/workflow.py): **encadenar**. Una llamada al modelo dice a qué servicio afecta la alerta; el código recoge, siempre igual, el estado del servicio, sus logs y la documentación; una segunda llamada decide la incidencia con salida estructurada; el código la abre. Dos llamadas por alerta, siempre.
+- [`agente.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/agente.py): el agente decide qué herramienta usar en cada paso y cuándo terminar. Lo construirás paso a paso en la lección 03.
+
+Los dos usan el mismo modelo y las mismas herramientas. [`workflow_frente_agente.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/workflow_frente_agente.py) los ejecuta en los 9 escenarios de desarrollo (los 5 de prueba se reservan para la lección de evals). Tarda unos 15 minutos en la máquina del curso; con `--grabadas`, un segundo:
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/05-agentes/workflow_frente_agente.py
+```
+
+```text
+1. La misma tarea en los 9 escenarios de desarrollo
+              estado ok  llamadas al modelo   tokens s/escenario
+   workflow       4 de 9                  18     9944          22
+   agente         4 de 9                  28    39243          68
+   (llamadas y tokens: total de los escenarios; segundos: mediana por escenario)
+
+2. El agente gana ['catalogo-replica-normal'], pierde ['pagos-token-banco'], p = 1.00
+   workflow pagos-pool-despliegue: severidad alta (esperada critica)
+   workflow pagos-pool-sin-despliegue: severidad alta (esperada critica)
+   workflow busqueda-disco: severidad alta (esperada media)
+   workflow catalogo-replica-normal: abrió una incidencia que no hacía falta
+   workflow usuarios-deadlocks: severidad alta (esperada media)
+   agente   pagos-pool-despliegue: severidad alta (esperada critica)
+   agente   pagos-pool-sin-despliegue: no abrió la incidencia
+   agente   pagos-token-banco: severidad alta (esperada critica)
+   agente   busqueda-disco: severidad alta (esperada media)
+   agente   usuarios-deadlocks: severidad alta (esperada media)
+```
 
 ## Mide y depura
 
-TODO
+### Mismos aciertos, una fracción del coste
+
+Los dos aciertan 4 de 9. El agente gana un escenario y pierde otro: con 9 casos, empate (p = 1,00). Pero el workflow lo consigue con 18 llamadas al modelo frente a 28, con una cuarta parte de los tokens (9 944 frente a 39 243) y en un tercio del tiempo (22 s de mediana por escenario frente a 68).
+
+Los tokens del agente crecen porque cada paso reenvía toda la conversación anterior: la alerta, cada llamada a herramienta y cada resultado. El workflow hace dos llamadas cortas y deja al código lo que el código hace bien, como recoger datos que siempre hacen falta.
+
+### Fallan en lo mismo
+
+Mira los motivos de los fallos: en los dos casos, casi todos son la severidad. El modelo pone `alta` en casos que son `critica` (pagos sin poder cobrar: pérdida de dinero) o `media` (un fallo parcial). Ninguna de las dos arquitecturas lo arregla, porque el problema no está en quién decide los pasos, sino en el criterio del modelo en el último. Si cambias la arquitectura esperando arreglar un fallo de criterio, pagarás el coste del agente y seguirás fallando igual. Las lecciones siguientes atacan ese fallo directamente.
+
+### Por qué aquí no compensa el agente
+
+En estos escenarios, el camino es casi siempre el mismo: mirar el servicio de la alerta, sus logs y su runbook, y decidir. Eso se puede escribir de antemano, y escrito en código no se olvida de ningún paso. El agente, en cambio, a veces se salta uno: en `pagos-pool-sin-despliegue` no abrió la incidencia.
+
+El agente ganaría en casos que el workflow no prevé: una alerta que no dice qué servicio está afectado, un problema que salta de un servicio a otro, una investigación que necesita volver a mirar algo según lo que encuentra. Es el tipo de caso para el que se construyen las lecciones siguientes. La regla que deja esta lección: empieza por el workflow y añade autonomía donde los datos digan que hace falta.
+
+### El agente no da siempre lo mismo
+
+En una ejecución anterior de esta misma práctica, el agente acertó los mismos 4 escenarios, pero falló de otra forma en `pagos-pool-despliegue`: allí no abrió la incidencia, y aquí la abre con severidad `alta`. Con temperatura 0, un agente cambia entre ejecuciones: una diferencia mínima en un paso (por ejemplo, por la caché del servidor, como viste en el módulo 1) cambia la herramienta que pide después, y eso arrastra al resto. Por eso un agente se evalúa repitiendo cada escenario y midiendo con qué frecuencia acierta, lo que se verá en la lección de evals. El workflow, con solo dos llamadas cortas, varía mucho menos.
 
 ## Errores frecuentes
 
-TODO
+**Empezar por un agente.** Es lo que más se ve y lo que más cuesta. Si puedes dibujar el flujo, escríbelo como workflow y mide.
+
+**Comparar solo los aciertos.** Con los mismos aciertos, una arquitectura puede costar cuatro veces más. Cuenta llamadas, tokens y tiempo.
+
+**Contar un error como un acierto.** Si el sistema falla y deja la plataforma sin tocar, el comprobador puede darlo por bueno en los escenarios en los que no había que hacer nada. Lo ves en la anatomía.
+
+**Cambiar la arquitectura para arreglar un fallo de criterio.** Si los dos fallan en el mismo paso por la misma razón, el problema está en ese paso.
+
+### Anatomía de un error: el workflow que falla en silencio
+
+La primera ejecución de esta práctica dio esto:
+
+```text
+              estado ok  llamadas al modelo   tokens s/escenario
+   workflow       2 de 9                  18     2814         119
+   agente         4 de 9                  27    37375          68
+```
+
+El workflow, con dos llamadas cortas por escenario, tardaba casi el doble que el agente y gastaba muy pocos tokens. Algo no cuadraba. El resultado guardado de cada escenario lo explicaba:
+
+```text
+La respuesta no cumple Decision: 1 validation error for Decision
+  Invalid JSON: EOF while parsing a value at line 1 column 0 [type=json_invalid, input_value='', input_type=str]
+```
+
+**Cómo leerlo.** `input_value=''`: el paso de decisión devolvió un texto vacío, y Pydantic no puede leer un JSON vacío. Pasó en los 9 escenarios. Y los 2 "aciertos" del workflow eran los dos escenarios en los que no había que abrir incidencia: el workflow falló, no abrió nada, y el comprobador vio la plataforma tal como se esperaba. Eran dos falsos positivos.
+
+**Causa.** El modelo de esta lección razona antes de responder si no se le dice lo contrario, y ese razonamiento cuenta para el límite de tokens de salida. El agente se ejecutaba con el razonamiento desactivado; el workflow, por un descuido, no. Repitiendo el paso de decisión de un escenario con el mismo límite de 400 tokens:
+
+```text
+razonar=None: ErrorFormato | texto '' | salida 400 tokens | motivo_fin length | 62.0 s
+razonar=False: OK {'abrir': True, 'severidad': 'alta', ...} | salida 122 tokens | motivo_fin stop | 19.1 s
+```
+
+Razonando, el modelo gastó los 400 tokens pensando y se quedó sin espacio para responder: `motivo_fin length` y texto vacío. Sin razonar, 122 tokens y una decisión válida. Por eso el workflow era lento: cada decisión pasaba un minuto razonando para nada. Cómo funcionan los modelos que razonan, y cómo te pueden dejar sin respuesta, es el tema de la [lección 07 del módulo 1](../../01-fundamentos-de-llms/07-modelos-que-razonan/).
+
+**Solución.** Tres cosas, y las tres están ya en el código. Fijar explícitamente si el modelo razona, igual que la temperatura: no dependas del valor por defecto. Mirar `motivo_fin`: un `length` en un paso que debía devolver un JSON corto es una alarma. Y contar un error como un fallo, aunque deje la plataforma como se esperaba: `workflow_frente_agente.py` marca ahora cualquier error del workflow como fallo, con su motivo.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'Tu tarea siempre sigue los mismos pasos: mirar el servicio, sus logs y su runbook, y decidir. ¿Qué arquitectura eliges primero?',
+			opciones: [
+				{ texto: 'Un agente, porque es más flexible.', porque: 'En la práctica, el agente acertó lo mismo con cuatro veces más tokens y el triple de tiempo.' },
+				{ texto: 'Un workflow que encadene esos pasos.', correcta: true, porque: 'Si puedes dibujar el flujo, escríbelo como workflow y mide. Añade autonomía donde los datos digan que hace falta.' },
+				{ texto: 'Un sistema con varios agentes.', porque: 'Añade todavía más coste y complejidad a una tarea que no lo necesita.' },
+			],
+		},
+		{
+			pregunta: '¿Por qué los tokens del agente crecen paso a paso?',
+			opciones: [
+				{ texto: 'Porque cada paso reenvía toda la conversación anterior: la alerta, las llamadas y los resultados.', correcta: true, porque: 'La API no guarda estado (módulo 1): cada llamada paga todo lo anterior.' },
+				{ texto: 'Porque el agente escribe respuestas más largas.', porque: 'La mayoría de los tokens son de entrada: lo que se reenvía en cada paso.' },
+				{ texto: 'Porque usa un modelo más grande.', porque: 'Es el mismo modelo que el workflow.' },
+			],
+		},
+		{
+			pregunta: 'El workflow y el agente fallan los dos al poner "alta" donde toca "crítica". ¿Qué haces?',
+			opciones: [
+				{ texto: 'Pasar al agente: tiene más libertad.', porque: 'Falla igual. Pagarías el coste del agente y seguirías fallando.' },
+				{ texto: 'Atacar el paso que falla, porque es un problema de criterio del modelo, no de quién decide los pasos.', correcta: true, porque: 'Si los dos fallan en el mismo paso por la misma razón, el problema está en ese paso (\"Fallan en lo mismo\").' },
+			],
+		},
+		{
+			pregunta: 'Un paso que debía devolver un JSON corto termina con motivo_fin length y el texto vacío. ¿Qué sospechas?',
+			opciones: [
+				{ texto: 'Que el modelo no sabe escribir JSON.', porque: 'Sin razonar, el mismo modelo devolvió un JSON válido con 122 tokens.' },
+				{ texto: 'Que el modelo gastó el límite de salida razonando.', correcta: true, porque: 'El razonamiento cuenta para max_tokens. Fija explícitamente si razona (anatomía de la lección y lección 07 del módulo 1).' },
+				{ texto: 'Que el servidor está caído.', porque: 'El servidor respondió: con motivo_fin length, se cortó por el límite.' },
+			],
+		},
+	]}
+/>
 
 ## Para profundizar
 
-TODO
+- Anthropic, [Building effective agents](https://www.anthropic.com/engineering/building-effective-agents) (2024). Los patrones de workflow, cuándo pasar a un agente y por qué empezar por lo simple.
+- Yao et al., [ReAct: Synergizing Reasoning and Acting in Language Models](https://arxiv.org/abs/2210.03629) (2022). El artículo que popularizó el bucle de razonar, actuar y observar que usan los agentes.
+- Yao et al., [τ-bench](https://arxiv.org/abs/2406.12045) (2024). Evaluar agentes por el estado final del sistema y repitiendo cada caso.

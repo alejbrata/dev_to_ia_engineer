@@ -18,7 +18,9 @@ from plataforma import ArgsBuscar, ArgsLogs, ArgsServicio, Incidencia, Plataform
 from plataforma import Severidad as SeveridadIncidencia
 from pydantic import BaseModel
 
-OPCIONES = Opciones(temperatura=0, max_tokens=400)
+# Sin razonar, como el agente: razonando, el modelo gasta el límite de salida pensando y la
+# decisión llega vacía (anatomía de la lección 01; los modelos que razonan, en la 1.07).
+OPCIONES = Opciones(temperatura=0, max_tokens=400, razonar=False)
 
 
 class ServicioAfectado(BaseModel):

@@ -437,3 +437,19 @@ def test_razonar_se_traduce_a_think_en_ollama() -> None:
     c = ClienteLLM(CONFIG)
     assert c._preparar("Hola", "chat", Opciones(razonar=False), False).cuerpo["think"] is False
     assert "think" not in c._preparar("Hola", "chat", Opciones(), False).cuerpo
+
+
+def test_el_razonamiento_de_ollama_llega_aparte_del_texto(tmp_path: Path) -> None:
+    """Con un modelo que razona, Ollama devuelve el razonamiento aparte; sus tokens van en
+    eval_count. Si se agota el límite pensando, el texto llega vacío."""
+    agotado = {
+        "message": {"role": "assistant", "content": "", "thinking": "Veamos: 17 por 3..."},
+        "prompt_eval_count": 20,
+        "eval_count": 400,
+        "done_reason": "length",
+    }
+    r = cliente(lambda _: httpx.Response(200, json=agotado), tmp_path).chat("17*3")
+    assert r.texto == "" and r.razonamiento == "Veamos: 17 por 3..."
+    assert r.tokens_salida == 400 and r.motivo_fin == "length"
+    normal = cliente(lambda _: httpx.Response(200, json=OLLAMA_OK), tmp_path).chat("hola")
+    assert normal.razonamiento is None

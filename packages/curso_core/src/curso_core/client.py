@@ -123,6 +123,9 @@ class Respuesta(BaseModel):
     tokens: list[TokenGenerado] | None = None
     # Herramientas que el modelo pidió ejecutar en lugar de (o además de) responder.
     llamadas: list[LlamadaHerramienta] = []
+    # En modelos que razonan: el razonamiento, si el servidor lo devuelve aparte del texto.
+    # Sus tokens van incluidos en tokens_salida.
+    razonamiento: str | None = None
 
     def como_mensaje(self) -> Mensaje:
         """Esta respuesta como mensaje del asistente, para continuar la conversación."""
@@ -192,6 +195,8 @@ class Bruto(NamedTuple):
     logprobs: list[dict] | None
     motivo_fin: str | None
     llamadas: list[LlamadaHerramienta] = []
+    # Lo que el modelo razonó antes de responder, si el servidor lo devuelve aparte.
+    razonamiento: str | None = None
 
 
 class Trozo(NamedTuple):
@@ -300,6 +305,7 @@ def _respuesta_ollama(datos: dict) -> Bruto:
         datos.get("logprobs"),
         datos.get("done_reason"),
         llamadas,
+        datos["message"].get("thinking") or None,
     )
 
 
@@ -960,6 +966,7 @@ class ClienteLLM:
             primer_token_s=primer_token,
             tokens=_tokens_generados(bruto.logprobs),
             llamadas=bruto.llamadas,
+            razonamiento=bruto.razonamiento,
         )
 
     def _registrar_fallo(self, llamada: _Llamada, inicio: float, error: ErrorLLM) -> None:

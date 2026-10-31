@@ -35,13 +35,15 @@ def con_workflow(cliente: ClienteLLM, indice, escenarios) -> Informe:
         p = plataforma.Plataforma(e, indice)
         ej = workflow.ejecutar(cliente, p, rol=ROL)
         c = plataforma.comprobar(p)
+        # Un error del workflow es un fallo, aunque deje la plataforma como "no hacía falta".
+        ok, motivo = (False, f"error: {ej.error[:80]}") if ej.error else (c.ok, c.motivo)
         resultados.append(
             ResultadoCaso(
                 caso=e.id,
-                ok=c.ok,
+                ok=ok,
                 salida=ej.decision.model_dump_json() if ej.decision else (ej.error or ""),
                 detalle={
-                    "motivo": c.motivo,
+                    "motivo": motivo,
                     "llamadas_modelo": ej.llamadas_modelo,
                     "herramientas": 3,  # estado, logs y dos búsquedas cuentan como pasos fijos
                     "tokens": ej.tokens,
