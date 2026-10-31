@@ -60,7 +60,7 @@ En las lecciones, sustituye `uv run python` por `python` con el entorno activado
 - `ollama pull nomic-embed-text` y `ollama pull qwen3-embedding:0.6b`: comparar modelos de embeddings (lección 03 del módulo 3, ~1 GB).
 - Docker con Compose y `docker compose up -d`: el índice vectorial en PostgreSQL con pgvector (lección 03 del módulo 3).
 - `HF_TOKEN` en `.env`: ver los errores reales de un proveedor en la nube (lección 04 del módulo 1). Sin créditos en Hugging Face solo verás errores; la práctica lo explica.
-- `OPENAI_API_KEY` en `.env`: usar una API comercial en lugar del modelo local y medir si compensa (anexo G). Tiene coste por token.
+- `OPENAI_API_KEY` o `ANTHROPIC_API_KEY` en `.env`: usar OpenAI o Claude en lugar del modelo local y medir si compensa (anexos G y A). Tienen coste por token y no hacen falta para seguir el curso.
 
 ## Estructura
 
