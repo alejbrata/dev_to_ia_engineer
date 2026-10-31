@@ -131,15 +131,30 @@ def frontmatter(pagina: Pagina) -> str:
     )
 
 
+PLAN_URL = "https://github.com/alejbrata/dev_to_ia_engineer/blob/main/docs/PLAN.md"
+
+
+def aviso(frase: str) -> str:
+    """Lo que ve quien abre una página que aún no está escrita."""
+    return (
+        ":::note[En preparación]\n"
+        f"{frase} El temario completo y el estado de cada módulo están en "
+        f"[docs/PLAN.md]({PLAN_URL}). Cuando se publique, lo tendrás aquí al actualizar tu fork.\n"
+        ":::\n"
+    )
+
+
 def cuerpo_leccion() -> str:
-    bloques = []
-    for seccion in SECCIONES:
-        bloques.append(f"## {seccion}\n\nTODO\n")
-    return "\n".join(bloques)
+    # La estructura queda en un comentario, a mano para quien escriba la lección.
+    secciones = "\n".join(f"## {seccion}" for seccion in SECCIONES)
+    return f"{aviso('Esta lección aún no está escrita.')}\n<!--\n{secciones}\n-->\n"
 
 
 def contenido(grupo: Grupo, pagina: Pagina) -> str:
-    cuerpo = "TODO\n" if grupo.directory == ANEXOS_DIR else cuerpo_leccion()
+    if grupo.directory == ANEXOS_DIR:
+        cuerpo = aviso("Este anexo aún no está escrito.")
+    else:
+        cuerpo = cuerpo_leccion()
     return f"{frontmatter(pagina)}\n{cuerpo}"
 
 

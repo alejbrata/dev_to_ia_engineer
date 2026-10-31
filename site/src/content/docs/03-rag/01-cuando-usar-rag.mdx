@@ -47,6 +47,26 @@ Cada pieza tiene su lección en este módulo: trocear (02), embeddings e índice
 
 La plataforma de los tickets del módulo 2 tiene documentación interna: 29 documentos inventados para el curso (arquitectura, runbooks, SLA, política de guardias, postmortems), en `modulos/03-rag/datos/docs/`. Y 30 preguntas de evaluación, en `datos/preguntas.jsonl`: 26 con respuesta en la documentación y 4 sin ella ("¿cuál es el teléfono de la persona de guardia?"). Para esas 4, la respuesta correcta es decir que no aparece.
 
+Son documentos cortos en Markdown, como los de cualquier wiki interna. Así empieza uno de los runbooks, `runbook-pagos-conexiones.md`:
+
+```markdown
+# Runbook: pagos sin conexiones a la base de datos
+
+Usa este runbook cuando el servicio de pagos devuelva errores 500 y en los logs aparezca too many connections contra PostgreSQL.
+
+## Diagnóstico
+
+1. Abre el panel de PgBouncer y mira el número de conexiones activas.
+2. Comprueba si ha habido un despliegue de pagos en la última hora: la mayoría de incidentes de este tipo empiezan con una versión que no devuelve las conexiones al pool.
+...
+
+## Mitigación
+
+Si hubo un despliegue reciente, vuelve a la versión anterior: es la mitigación más rápida. Si no lo hubo, reinicia PgBouncer de forma ordenada, una réplica cada vez, para liberar las conexiones bloqueadas.
+```
+
+Ábrelos en el editor antes de empezar: entender qué dice la documentación es lo que te permitirá juzgar si el sistema responde bien. Los usarás hasta el final del módulo 5.
+
 Cada pregunta lleva el dato clave que debe contener una respuesta correcta ("200", "587", "99,5"...) y las frases exactas de la documentación que la responden. Así se puede medir sin un juez (el juez llega en la lección 06).
 
 ## Práctica

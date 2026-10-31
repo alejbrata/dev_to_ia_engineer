@@ -209,7 +209,7 @@ El script [`comprobar_entorno.py`](https://github.com/alejbrata/dev_to_ia_engine
 uv run python modulos/00-introduccion/comprobar_entorno.py
 ```
 
-Con el `.env` recién copiado verás esto:
+Con el `.env` recién copiado verás algo así (las rutas serán las de tu máquina):
 
 ```text
 Python
@@ -224,15 +224,18 @@ Variables (.env)
 
 Modelos (config/models.toml)
   OK chat
-  OK chat_compatible
-  OK remoto
-  -- judge
-  -- embeddings
+  OK chat_pequeno
+  OK chat_grande
+  ...
+  OK embeddings
+  OK reranker
 
 Todo listo.
 ```
 
-`OK` indica que algo está configurado y `--` que no lo está. Las claves y los roles vacíos no son un problema todavía; solo cuentan como error un Python antiguo o la falta de `.env`. Los roles `chat_compatible` y `remoto` los usarás en el módulo 1.
+`OK` indica que algo está configurado y `--` que no lo está. Las claves vacías no son un problema: ninguna práctica obligatoria las necesita. Solo cuentan como error un Python antiguo o la falta de `.env`.
+
+Ojo con lo que significa `OK` en los modelos: que el rol tiene un modelo asignado en `config/models.toml`, no que lo tengas descargado. El fichero trae ya todos los roles del curso. De momento solo necesitas el de `chat`, que acabas de descargar; cada lección dice qué otro modelo descargar cuando lo necesite.
 
 ### 7. Tu primer "hola mundo" con un LLM
 

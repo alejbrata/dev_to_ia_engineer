@@ -68,7 +68,13 @@ Esta lección hace un único viaje de ida y vuelta: una petición, una ejecució
 
 [`herramientas.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/02-prompting/herramientas.py) ofrece la herramienta `estado_servicio` al clasificar cada ticket, con el prompt [`tickets/con-herramienta`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/prompts/tickets/con-herramienta.md), que le pide consultar el estado antes de decidir. La herramienta lee una **página de estado simulada**: un diccionario con el estado de cada servicio. En un sistema real sería una llamada a tu monitorización; el viaje de ida y vuelta es el mismo.
 
-Compara el modelo del curso con el de 7B (lección 05 del módulo 1). Tarda unos dos minutos:
+Compara el modelo del curso con el de 7B (rol `chat_grande`, el de la lección 05 del módulo 1). Si no lo descargaste entonces, hazlo ahora (unos 4,7 GB):
+
+```sh title="Terminal de VS Code · raíz del repo"
+ollama pull qwen2.5:7b
+```
+
+La práctica tarda unos dos minutos:
 
 ```sh title="Terminal de VS Code · raíz del repo"
 uv run python modulos/02-prompting/herramientas.py --detalle

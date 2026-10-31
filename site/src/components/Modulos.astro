@@ -14,11 +14,17 @@ const modulos = sidebar.map(({ label, items }) => {
 		.filter((doc) => doc.id.startsWith(`${directory}/`))
 		.sort((a, b) => a.id.localeCompare(b.id));
 	const [numero, ...nombre] = label.split(' — ');
+	// Una página sin escribir lleva el aviso "En preparación" (scripts/plan_sync.py).
+	const escritas = lecciones.filter((doc) => !doc.body?.includes(':::note[En preparación]')).length;
+	const estado =
+		escritas === lecciones.length
+			? `${lecciones.length} lecciones`
+			: escritas === 0
+				? `${lecciones.length} lecciones · en preparación`
+				: `${escritas} de ${lecciones.length} lecciones escritas`;
 	return {
 		title: nombre.length ? nombre.join(' — ') : label,
-		description: nombre.length
-			? `${numero} · ${lecciones.length} lecciones`
-			: `${lecciones.length} anexos`,
+		description: nombre.length ? `${numero} · ${estado}` : `${lecciones.length} anexos`,
 		href: `${base}/${lecciones[0]?.id ?? directory}/`,
 	};
 });

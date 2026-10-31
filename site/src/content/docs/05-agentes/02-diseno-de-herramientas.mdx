@@ -59,7 +59,7 @@ La versión 1 de las herramientas es lo mínimo para que funcionen: una descripc
 uv run python modulos/05-agentes/medir_modelos.py
 ```
 
-Tarda alrededor de una hora en la máquina del curso, casi toda por el modelo que razona. Con `--grabadas`, un segundo. La salida, sin el detalle de los fallos:
+Usa tres modelos que ya conoces: los de 1,5B y 7B (`qwen2.5:1.5b`, `qwen2.5:7b`) y el del rol `agente` (`qwen3:8b`), con y sin razonamiento. Si te falta alguno, descárgalo con `ollama pull`. Tarda alrededor de una hora en la máquina del curso, casi toda por el modelo que razona. Con `--grabadas`, un segundo. La salida, sin el detalle de los fallos:
 
 ```text
 1. El agente en los 9 escenarios de desarrollo
@@ -70,6 +70,8 @@ Tarda alrededor de una hora en la máquina del curso, casi toda por el modelo qu
    qwen3-8b-razonando       5 de 9    5 de 9        34         0      3       0         217
    (pasos y segundos: mediana por escenario)
 ```
+
+Cómo leer las columnas: **estado ok**, escenarios en los que el estado final de la plataforma es el esperado (lección 01); **runbook**, en cuántos consultó el runbook que corresponde al problema; **llamadas**, el total de llamadas a herramientas; **inválidas**, las que no pasaron la validación de argumentos; **pasos**, las llamadas al modelo por escenario; **límite**, los escenarios que agotaron el máximo de pasos sin terminar.
 
 Ningún modelo pasa de 5 de 9. Pero la parte 2 de la salida (por qué falla cada uno) dice que casi todos los fallos son de dos tipos: no abrir la incidencia y equivocar la severidad. Y la columna de inválidas está a cero: los esquemas cerrados funcionan, ningún modelo pide una herramienta que no existe ni un servicio que no está en la lista.
 

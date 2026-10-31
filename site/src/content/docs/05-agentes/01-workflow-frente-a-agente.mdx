@@ -56,6 +56,36 @@ La recomendación habitual es empezar por lo más simple que funcione y añadir 
 
 El caso de todo el módulo es un **agente de guardia** sobre la plataforma de los módulos 2 a 4: recibe una alerta, investiga y decide si abre una incidencia, con qué severidad y con qué mitigación. Tiene cuatro herramientas: `estado_servicio`, `buscar_logs`, `buscar_documentacion` (el RAG del módulo 3) y `abrir_incidencia`. Los 14 escenarios de [`datos/escenarios.jsonl`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/datos/escenarios.jsonl) están anclados al corpus: la severidad esperada sale de los criterios de `severidades.md` y la mitigación, del runbook de cada caso. [`plataforma.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/plataforma.py) comprueba el estado final de la plataforma, no lo que dice el sistema: si dice que ha abierto la incidencia, tiene que existir.
 
+Así es un escenario por dentro (`pagos-pool-despliegue`, ordenado para leerlo):
+
+```json
+{
+  "id": "pagos-pool-despliegue",
+  "alerta": "PoolConexionesPagos: el pool de PgBouncer de pagos está al 97 %.",
+  "servicios": {
+    "pagos": {"estado": "degradado", "errores_pct": 41.0, "latencia_p95_ms": 2900,
+              "ultimo_despliegue": "hace 25 minutos (pagos 3.8.0)"}
+  },
+  "logs": {
+    "pagos": [
+      "ERROR POST /cobros 500: FATAL: sorry, too many clients already",
+      "ERROR conector-pasarela: could not obtain connection: too many connections",
+      "WARN pgbouncer: pool pagos 194/200 conexiones activas",
+      "INFO despliegue pagos 3.8.0 completado"
+    ]
+  },
+  "esperado": {
+    "incidencia": true, "servicio": "pagos", "severidades": ["critica"],
+    "mitigacion": ["versión anterior|version anterior|rollback|revertir"],
+    "runbook": "runbook-pagos-conexiones",
+    "nota": "Los cobros fallan: pérdida de dinero, crítica (severidades). Hubo despliegue en la última hora: volver a la versión anterior (runbook-pagos-conexiones)."
+  },
+  "particion": "desarrollo"
+}
+```
+
+El sistema solo recibe la `alerta`. Lo demás lo descubre con las herramientas: `estado_servicio` devuelve los datos de `servicios`, y `buscar_logs`, las líneas de `logs`. `esperado` no lo ve nunca: es lo que usa `comprobar` al final. En la salida de las prácticas, **estado ok** quiere decir que el estado final de la plataforma es el esperado: se abrió una incidencia si hacía falta (y ninguna si no), del servicio correcto, con una severidad aceptada y con una mitigación que menciona alguna de las alternativas de cada elemento de `mitigacion`.
+
 La misma tarea, de dos formas:
 
 - [`workflow.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/workflow.py): **encadenar**. Una llamada al modelo dice a qué servicio afecta la alerta; el código recoge, siempre igual, el estado del servicio, sus logs y la documentación; una segunda llamada decide la incidencia con salida estructurada; el código la abre. Dos llamadas por alerta, siempre.

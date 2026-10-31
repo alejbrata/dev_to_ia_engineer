@@ -54,6 +54,12 @@ Un framework se paga en dependencias, en versiones y en abstracciones. Instalar 
 
 ## Práctica
 
+LangGraph ya está en las dependencias del curso. Si actualizaste tu fork después de instalar el entorno, sincronízalo antes; si no, verás `ModuleNotFoundError: No module named 'langgraph'`:
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv sync
+```
+
 [`grafo_langgraph.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/grafo_langgraph.py) monta el grafo de guardia con LangGraph. Los nodos y la condición son los de `grafo_guardia.py`, sin cambiar una línea. Solo se añade el nodo de aprobación:
 
 ```python
