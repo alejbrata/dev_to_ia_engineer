@@ -1,6 +1,6 @@
 ---
-title: "Estado y memoria"
-description: "Estado y memoria"
+title: "Estado, memoria y contexto"
+description: "Estado, memoria y contexto"
 ---
 
 ## Objetivos

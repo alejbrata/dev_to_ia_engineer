@@ -1,6 +1,6 @@
 ---
 title: "Evals de agentes"
-description: "Evals de agentes: trayectorias, uso de herramientas y coste"
+description: "Evals de agentes: resultado, trayectoria, fiabilidad y coste"
 ---
 
 ## Objetivos

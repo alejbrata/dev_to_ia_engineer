@@ -58,18 +58,20 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 - **Decisiones**: se evalúan los sistemas ya construidos (tickets del módulo 2 y RAG del módulo 3); el núcleo de evals vive en `curso_core.evals`, sin frameworks (comparativa en el anexo F); en CI, métricas deterministas sobre respuestas grabadas en cada PR y la eval completa con modelo en un flujo manual o nocturno. Las evals de agentes van en el módulo 5. El dataset se ancla al corpus: cada pregunta lleva sus segmentos de referencia (frases literales del corpus, comprobadas por un test) y un tipo (con respuesta, sin respuesta con el tema en el corpus, fuera de ámbito, guardarraíl) con su comportamiento esperado; en las que no deben responderse, la puntuación se invierte y se mide aparte. Las etiquetas para calibrar el juez también se anclan a segmentos
 - **Errores clave**: un juez que siempre aprueba (o que siempre suspende), datasets contaminados, sobreajuste al set de evaluación
 
-## Módulo 5 — Agentes ⬜
+## Módulo 5 — Agentes 🟨
 
 1. Workflow frente a agente: no todo necesita autonomía
-2. Tool use a fondo
+2. Diseño de herramientas: tool use a fondo
 3. El bucle de un agente desde cero (sin framework)
-4. Frameworks (p. ej. LangGraph): qué te dan cuando ya entiendes el bucle
-5. Estado y memoria
+4. Grafos: del grafo propio a LangGraph
+5. Estado, memoria y contexto
 6. Multiagente: cuándo compensa y cuándo es complejidad gratuita
 7. MCP: conectar herramientas de forma estándar
-8. Evals de agentes: trayectorias, uso de herramientas y coste
-- **Mide y depura**: trazas de agente paso a paso
-- **Errores clave**: bucles infinitos, argumentos de herramienta alucinados, explosión de coste, pérdida de estado
+8. Evals de agentes: resultado, trayectoria, fiabilidad y coste
+9. Panorama: SDK de agentes, skills, A2A y lo que viene
+- **Decisiones** (aprobadas el 2026-10-31, ver `docs/PROPUESTA-modulo-5.md`): caso único, un agente de guardia sobre la plataforma de los módulos 2-4 (corpus, tickets, RAG), construido como workflow, como agente desde cero y como grafo; grafo propio antes que LangGraph; MCP con el SDK oficial sobre la revisión 2026-07-28; lo que caduca rápido va en la lección 9 (con nota "Revisado") y el detalle de herramientas en un anexo; el modelo local para agentes se elige midiendo en la lección 2
+- **Mide y depura**: trazas de agente paso a paso; pasos por tarea, terminación (resuelta, límite, error) y coste por tarea resuelta
+- **Errores clave**: bucles infinitos, argumentos de herramienta alucinados, explosión de coste, pérdida de estado, inyección a través del resultado de una herramienta
 
 ## Módulo 6 — Producción ⬜
 

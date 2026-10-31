@@ -1,6 +1,6 @@
 ---
-title: "Frameworks (p. ej. LangGraph)"
-description: "Frameworks (p. ej. LangGraph): qué te dan cuando ya entiendes el bucle"
+title: "Panorama"
+description: "Panorama: SDK de agentes, skills, A2A y lo que viene"
 ---
 
 ## Objetivos

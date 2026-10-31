@@ -62,6 +62,15 @@ provider = "huggingface"
 model = "Qwen/Qwen3-4B-Instruct-2507"
 hf_repo = "Qwen/Qwen3-4B-Instruct-2507"
 
+[roles.agente]
+# Modelo para los agentes del módulo 5: encadenan muchas llamadas con herramientas, y los
+# modelos más pequeños se equivocan con ellas. Elegido midiendo en la lección 02 del
+# módulo 5. Razona antes de responder si no se desactiva (Opciones.razonar).
+# Descárgalo con `ollama pull <model>` (~5 GB). Revisado: 2026-10.
+provider = "ollama"
+model = "qwen3:8b"
+hf_repo = "Qwen/Qwen3-8B"
+
 [roles.chat_openai]
 # Opcional (anexo G): una API comercial, para quien quiera comparar con el modelo local o
 # necesite más calidad. Necesita OPENAI_API_KEY en .env y saldo en la cuenta. El modelo
@@ -212,6 +221,10 @@ salida = 10.00
 # Precio publicado por Anthropic, USD por millón de tokens. Revisado: 2026-10.
 entrada = 4.00
 salida = 20.00
+
+[precios."ollama/qwen3:8b"]
+entrada = 0.0
+salida = 0.0
 
 [precios."ollama/bge-m3"]
 entrada = 0.0

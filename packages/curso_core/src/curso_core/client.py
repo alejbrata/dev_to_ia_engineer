@@ -90,6 +90,9 @@ class Opciones(BaseModel):
     formato: dict | None = None
     # Herramientas que el modelo puede pedir que ejecutes (tool calling).
     herramientas: list[Herramienta] | None = None
+    # En modelos que razonan antes de responder: activarlo o desactivarlo. Solo Ollama
+    # (parámetro `think`); `None` deja el comportamiento del modelo.
+    razonar: bool | None = None
 
 
 class Alternativa(BaseModel):
@@ -280,6 +283,8 @@ def _peticion_ollama(
         cuerpo["format"] = op.formato
     if op.herramientas:
         cuerpo["tools"] = _herramientas_api(op.herramientas)
+    if op.razonar is not None:
+        cuerpo["think"] = op.razonar
     return "/api/chat", cuerpo
 
 

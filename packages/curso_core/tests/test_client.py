@@ -431,3 +431,9 @@ def test_claude_sin_clave(tmp_path: Path, monkeypatch) -> None:
     with pytest.raises(ErrorLLM, match="Falta la variable de entorno CLAVE_CLAUDE"):
         c.chat("Hola", rol="claude")
     assert leer(tmp_path / "trazas.jsonl")[0].ok is False
+
+
+def test_razonar_se_traduce_a_think_en_ollama() -> None:
+    c = ClienteLLM(CONFIG)
+    assert c._preparar("Hola", "chat", Opciones(razonar=False), False).cuerpo["think"] is False
+    assert "think" not in c._preparar("Hola", "chat", Opciones(), False).cuerpo

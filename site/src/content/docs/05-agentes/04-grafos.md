@@ -1,6 +1,6 @@
 ---
-title: "Tool use a fondo"
-description: "Tool use a fondo"
+title: "Grafos"
+description: "Grafos: del grafo propio a LangGraph"
 ---
 
 ## Objetivos
