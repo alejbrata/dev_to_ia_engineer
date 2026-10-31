@@ -13,5 +13,6 @@
 - `comparar_modelos.py`: tres tamaños de la misma familia con las mismas preguntas.
 - `coste_y_latencia.py`: p50/p95 de una carga real y proyección de coste.
 - `reintentos.py` y `simulador.py`: reintentos frente a un límite de uso (429) simulado.
+- `razonamiento.py`: las mismas preguntas con y sin razonar; tokens, tiempo, aciertos y el límite de salida (lección 07).
 
 Ejecútalos desde la raíz del repo con `uv run python modulos/01-fundamentos-de-llms/<script>.py`.

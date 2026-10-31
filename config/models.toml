@@ -62,6 +62,13 @@ provider = "huggingface"
 model = "Qwen/Qwen3-4B-Instruct-2507"
 hf_repo = "Qwen/Qwen3-4B-Instruct-2507"
 
+[roles.razonador]
+# Un modelo que razona antes de responder, para la lección 07 del módulo 1. Es el mismo que
+# el de los agentes del módulo 5 (rol agente): no hace falta otra descarga. Revisado: 2026-10.
+provider = "ollama"
+model = "qwen3:8b"
+hf_repo = "Qwen/Qwen3-8B"
+
 [roles.agente]
 # Modelo para los agentes del módulo 5: encadenan muchas llamadas con herramientas, y los
 # modelos más pequeños se equivocan con ellas. Elegido midiendo en la lección 02 del

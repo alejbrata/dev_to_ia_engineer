@@ -1,0 +1,170 @@
+---
+title: "Modelos que razonan"
+description: "Modelos que razonan: qué son los tokens de razonamiento, cuándo ayudan, cuánto cuestan en tiempo y dinero, y cómo te dejan sin respuesta si no cuentas con ellos"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
+:::note[Revisado: 2026-10]
+Las salidas son reales, con Qwen3 8B (rol `razonador`) en Ollama, sobre CPU. Es un modelo que razona antes de responder y que permite desactivarlo, y el mismo que usan los agentes del módulo 5: si ya lo tienes, no hay que descargar nada (si no, unos 5 GB con `ollama pull qwen3:8b`). Puedes usar otro modelo que razone: cambia el rol en `config/models.toml` y vuelve a medir.
+:::
+
+## Objetivos
+
+Al terminar esta lección podrás:
+
+- Explicar qué hace un modelo que razona y por qué puede acertar más en tareas de varios pasos.
+- Medir lo que cuesta razonar: tokens de salida, latencia y aciertos, con y sin razonamiento.
+- Reconocer cuándo el razonamiento agota el límite de salida y te deja con una respuesta vacía o un JSON roto.
+- Decidir con datos si una tarea merece razonar.
+
+## Teoría
+
+### Qué es razonar
+
+En la lección 01 viste que un modelo genera token a token, sin plan: cada token condiciona los siguientes. Para un cálculo de varios pasos, eso es un problema. Si la respuesta tiene que ser un número y el modelo lo escribe directamente, tiene que acertarlo de golpe, sin haber escrito ninguno de los pasos intermedios.
+
+Un **modelo que razona** está entrenado para generar primero un texto de trabajo (el razonamiento), en el que va escribiendo los pasos, y después la respuesta. El razonamiento le da espacio para hacer el cálculo por escrito antes de comprometerse. Es la misma idea que pedir "razona paso a paso" en el prompt (lo probaste en el módulo 2), pero integrada en el entrenamiento del modelo, y suele funcionar mucho mejor.
+
+Según el servidor, el razonamiento llega aparte de la respuesta, mezclado con ella o no llega (algunos proveedores lo ocultan y solo te cobran sus tokens). Ollama lo devuelve aparte, y `curso_core` lo guarda en `Respuesta.razonamiento`.
+
+### Lo que cuesta
+
+Los tokens de razonamiento son tokens de salida, con todo lo que eso implica:
+
+- **Se cobran como salida**, la parte cara (lección 06). En los proveedores que lo ocultan, los pagas sin verlos.
+- **Cuentan para la latencia.** La salida es lo que más pesa en el tiempo de respuesta (lección 06), y el razonamiento puede ser cientos o miles de tokens antes de la primera palabra útil.
+- **Cuentan para `max_tokens`.** Si el límite está pensado para la respuesta, el razonamiento puede agotarlo antes de que la respuesta empiece. Es el error de esta lección.
+- **Ocupan la ventana de contexto.** Entrada y salida comparten la ventana (lección 02), y el razonamiento es salida. Un prompt largo más un razonamiento largo pueden no caber.
+
+### Cómo se controla
+
+Depende del modelo y del servidor. Hay modelos que siempre razonan, modelos que se pueden activar y desactivar (como el de esta lección, con el parámetro `think` de Ollama), y proveedores que dejan elegir cuánto razonar con un nivel de esfuerzo o un presupuesto de tokens. En `curso_core` es `Opciones(razonar=True/False)`. Los detalles de cada proveedor están en sus anexos.
+
+## Práctica
+
+[`razonamiento.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/01-fundamentos-de-llms/razonamiento.py) hace seis preguntas con respuesta comprobable, con y sin razonar. Cuatro son cálculos de operación de sistemas que necesitan varios pasos (la ley de Little, la capacidad de un pool, una hora de fin, la capacidad tras caer una réplica). Dos son directas. Después repite una con un límite de salida corto, y enseña lo que razona el modelo. Tarda unos 12 minutos en la máquina del curso, casi todos razonando:
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/01-fundamentos-de-llms/razonamiento.py
+```
+
+```text
+1. Las mismas preguntas, con y sin razonar
+                       sin razonar                  razonando
+   pasos    MAL      3 tok   9.5 s     bien   825 tok 236.0 s   Un servicio recibe 120 peticiones por ...
+   pasos    MAL      3 tok   2.2 s     bien   864 tok 120.0 s   Un pool tiene 200 conexiones y cada pe...
+   pasos    MAL      6 tok   2.6 s     bien   698 tok 216.2 s   Un despliegue empieza a las 22:45 y du...
+   pasos    MAL      5 tok   2.8 s     bien   255 tok  33.8 s   Tengo 3 réplicas y cada una aguanta 45...
+   directa   bien     3 tok   1.4 s     bien   179 tok  23.7 s   ¿Cuál es la capital de Francia? Respon...
+   directa   bien     2 tok   1.4 s     bien   142 tok  18.8 s   Traduce al inglés 'base de datos'. Res...
+   sin razonar  2 de 6 bien · 22 tokens de salida · 20 s
+   razonando    6 de 6 bien · 2963 tokens de salida · 649 s
+
+2. El mismo límite de salida (150 tokens), sin razonar y razonando
+   sin razonar  texto '45'         · 3 tokens · motivo_fin stop
+   razonando    texto ''           · 150 tokens · motivo_fin length
+   Con salida estructurada (JSON), razonando y el mismo límite:
+   ErrorFormato: La respuesta no cumple Numero: 1 validation error for Numero
+   texto recibido '' · motivo_fin length
+
+3. Lo que razona (la pregunta del despliegue)
+   razonamiento: 2201 caracteres · respuesta: '00:20'
+   | Okay, let's see. The event starts at 22:45 and lasts 95 minutes. I need to figure out what time 
+   | 
+   | So, 22:45 is the same as 22 hours and 45 minutes. To convert that into total minutes since midni
+   | 
+   | Now, the duration is 95 minutes. Adding that to the start time: 1365 + 95 = 1460 minutes. Wait, 
+   | 
+   | 1460 divided by 60 is 24 with a remainder of 20. Wait, 24 hours would be midnight, but that can'
+   | 
+   | [...]
+```
+
+## Mide y depura
+
+### Lo que gana
+
+Sin razonar, el modelo falla los cuatro cálculos y acierta las dos preguntas directas. Razonando, acierta las seis. Las cuatro preguntas de varios pasos son justo el tipo de cuenta que un modelo no puede hacer de golpe, y el razonamiento le da espacio para escribir los pasos. En la parte 3 se ve: pasa 22:45 a minutos, suma 95, divide entre 60 y se da cuenta de que ha pasado la medianoche.
+
+### Lo que cuesta
+
+Las seis respuestas sin razonar suman 22 tokens de salida y 20 segundos. Razonando, 2 963 tokens y 649 segundos: unas 135 veces más tokens y 32 veces más tiempo, en la CPU de la máquina del curso. Con GPU, el tiempo baja mucho, pero la proporción de tokens no: el modelo genera lo mismo. Y en un proveedor que cobra por token, esos 2 963 tokens se cobran como salida.
+
+En las preguntas directas, razonar no aporta nada: las dos ya estaban bien. Solo multiplica el tiempo por más de diez. Y la primera llamada sin razonar tarda 9,5 s porque incluye cargar el modelo en memoria (módulo 0); las siguientes, 1,4 a 2,8 s.
+
+La conclusión no es "razona siempre" ni "no razones nunca". Es la de todo el curso: razona en las tareas donde mejora el resultado, si puedes pagar su coste, y mídelo con tus casos.
+
+### El razonamiento no es una explicación fiable
+
+El razonamiento de la parte 3 está en inglés, aunque la pregunta era en español: el modelo razona en el idioma en el que más se entrenó. Leerlo es útil para depurar, porque a veces enseña dónde se equivoca. Pero es texto generado, igual que la respuesta, y no hay garantía de que describa el cálculo que de verdad lleva al resultado (lo estudian Turpin et al., enlazado al final). Úsalo como pista, no como prueba.
+
+## Errores frecuentes
+
+**Dejar el razonamiento en su valor por defecto.** Algunos modelos razonan si no dices nada. Fíjalo explícitamente, igual que la temperatura: es lo que te ahorra el error de la anatomía.
+
+**Un `max_tokens` pensado para la respuesta.** Si el modelo razona, el límite tiene que cubrir el razonamiento y la respuesta. Con 150 tokens, el modelo se quedó pensando y no respondió.
+
+**Razonar en tareas directas.** Clasificar, extraer un campo o traducir una palabra no necesitan razonar. Cuesta diez veces más tiempo y no mejora nada.
+
+**Medir la latencia sin separar el razonamiento.** Una respuesta de tres tokens puede haber tardado un minuto. Mira los tokens de salida totales, no solo la longitud de la respuesta.
+
+**Leer el razonamiento como la verdad.** Es una pista útil para depurar, no una traza fiable del cálculo.
+
+### Anatomía de un error: la respuesta vacía que no da error
+
+La parte 2 de la práctica, razonando con un límite de 150 tokens:
+
+```text
+   razonando    texto ''           · 150 tokens · motivo_fin length
+```
+
+**Cómo leerlo.** Tres datos juntos lo cuentan todo. `texto ''`: la respuesta está vacía. `150 tokens`: el modelo generó justo el límite. `motivo_fin length`: paró porque llegó al límite, no porque terminara (lección 02). Ha generado 150 tokens y ninguno es respuesta: los 150 fueron razonamiento. Sin excepción, sin error HTTP, con un 200. Si tu código no mira `motivo_fin`, le llega una cadena vacía que puede interpretar como "sin respuesta".
+
+**Causa.** El razonamiento cuenta para `max_tokens`. El límite estaba bien para la respuesta (sin razonar, el mismo número salió con 3 tokens), pero no para razonar primero. Con salida estructurada es peor: el JSON llega vacío y Pydantic lanza `ErrorFormato`.
+
+**Solución.** Si el modelo razona, dale un límite que cubra el razonamiento y la respuesta, o desactiva el razonamiento donde no lo necesitas. Comprueba siempre `motivo_fin`: un `length` en una respuesta que debía ser corta es una alarma. Este error apareció de verdad en el curso: en la lección 01 del módulo 5, un workflow devolvía un JSON vacío en todos los casos por esto mismo, y dos de sus fallos se contaban como aciertos.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'Tu sistema calcula la capacidad necesaria de un servicio a partir de varias cifras, y el modelo se equivoca a menudo. ¿Qué pruebas primero?',
+			opciones: [
+				{ texto: 'Activar el razonamiento y medir aciertos, tokens y tiempo.', correcta: true, porque: 'Es el tipo de tarea donde razonar ayuda: en la práctica, los cuatro cálculos pasaron de mal a bien (\"Lo que gana\").' },
+				{ texto: 'Subir la temperatura.', porque: 'Añade variedad, no capacidad de cálculo. Lo que le falta al modelo es espacio para escribir los pasos.' },
+				{ texto: 'Bajar max_tokens para que sea más rápido.', porque: 'Si razona, un límite bajo lo deja sin respuesta (anatomía de la lección).' },
+			],
+		},
+		{
+			pregunta: 'Clasificas tickets en cinco categorías y alguien propone activar el razonamiento "por si acaso". ¿Qué le dices?',
+			opciones: [
+				{ texto: 'Que sí: razonar siempre mejora.', porque: 'En las preguntas directas, razonar no mejoró nada y multiplicó el tiempo por más de diez.' },
+				{ texto: 'Que lo mida antes: en tareas directas suele costar mucho y no aportar.', correcta: true, porque: 'Razona donde mejora el resultado y puedas pagar su coste (\"Lo que cuesta\").' },
+			],
+		},
+		{
+			pregunta: 'Una llamada devuelve texto vacío, 150 tokens de salida y motivo_fin length, sin ningún error. ¿Qué ha pasado?',
+			opciones: [
+				{ texto: 'El servidor ha fallado.', porque: 'Respondió con éxito: el texto está vacío porque se acabó el límite.' },
+				{ texto: 'El modelo gastó el límite de salida razonando y no llegó a responder.', correcta: true, porque: 'El razonamiento cuenta para max_tokens (anatomía de la lección).' },
+				{ texto: 'El modelo no sabía la respuesta.', porque: 'Sin razonar, con el mismo límite, respondió con 3 tokens.' },
+			],
+		},
+		{
+			pregunta: 'El razonamiento del modelo explica paso a paso por qué eligió una respuesta incorrecta. ¿Cómo lo usas?',
+			opciones: [
+				{ texto: 'Como la explicación real de su decisión.', porque: 'Es texto generado: no hay garantía de que describa el cálculo que lleva al resultado.' },
+				{ texto: 'Como una pista para depurar, no como una prueba.', correcta: true, porque: 'Puede enseñar dónde se equivoca, pero no es una traza fiable (\"El razonamiento no es una explicación fiable\").' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- Wei et al., [Chain-of-Thought Prompting Elicits Reasoning in Large Language Models](https://arxiv.org/abs/2201.11903) (2022). El origen de la idea: escribir los pasos intermedios mejora los cálculos.
+- Turpin et al., [Language Models Don't Always Say What They Think](https://arxiv.org/abs/2305.04388) (2023). Por qué el razonamiento escrito no siempre refleja lo que lleva a la respuesta.
+- Qwen Team, [Qwen3 Technical Report](https://arxiv.org/abs/2505.09388) (2025). Cómo se entrena un modelo para razonar o no según se le pida.
+- La documentación de los proveedores sobre el razonamiento y su coste: [OpenAI](https://developers.openai.com/api/docs/guides/reasoning), [Anthropic](https://platform.claude.com/docs/en/build-with-claude/extended-thinking) y [Ollama](https://docs.ollama.com/capabilities/thinking).
