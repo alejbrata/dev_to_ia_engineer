@@ -1,0 +1,217 @@
+---
+title: "Planificar"
+description: "Planificar: un agente que escribe el plan como un grafo de tareas con dependencias, el código lo valida y lo ejecuta en orden, y se replanifica si falla"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
+:::note[Revisado: 2026-10]
+Las salidas son reales, con Qwen3 8B sin razonamiento (rol `agente`) en Ollama, sobre CPU.
+:::
+
+## Objetivos
+
+Al terminar esta lección podrás:
+
+- Separar la planificación de la ejecución: que el modelo escriba el plan y el código lo ejecute.
+- Representar un plan como un grafo de tareas con dependencias y validarlo antes de ejecutar nada.
+- Ordenar las tareas de un grafo (orden topológico) y pasar los resultados de unas a otras.
+- Replanificar cuando el plan no es válido, y medir si planificar compensa frente a un workflow o un agente.
+
+## Teoría
+
+### Planificar y luego ejecutar
+
+El agente de la lección 03 decide un paso cada vez: pide una herramienta, ve el resultado y decide el siguiente. Hay otra forma de usar el modelo: pedirle primero el **plan completo** (qué tareas hay que hacer y en qué orden) y dejar que el código lo ejecute. El modelo solo vuelve a intervenir al final, para decidir con todos los resultados.
+
+Si vienes de backend, es la diferencia entre un script que improvisa y un plan de ejecución que se revisa antes de lanzarlo: un plan de consulta de una base de datos, el plan de Terraform antes del `apply`, o un pipeline de CI definido como un grafo de trabajos.
+
+Lo que se gana:
+
+- **El plan se puede ver y validar antes de ejecutar nada.** Es texto estructurado: se comprueba con código, se registra y, si hace falta, lo aprueba una persona (lo verás en la lección de grafos).
+- **Menos llamadas al modelo**: una para planificar y una para decidir, en lugar de una por paso.
+- **La decisión no arrastra la conversación entera**, solo los resultados.
+
+Lo que se pierde: el plan se escribe **antes** de ver los datos. Si lo que hay que hacer depende de lo que se encuentre por el camino, el plan no lo sabe. Para eso están las dependencias con flujo de datos y la replanificación.
+
+### El plan como grafo
+
+Un plan es una lista de tareas, y cada tarea dice de cuáles depende. Eso es un grafo dirigido: una tarea no puede empezar hasta que terminen las que necesita. Además, una tarea puede usar el **resultado** de otra. En [`planificador.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/planificador.py), escribiendo `${t3}` dentro de un argumento, el código pone ahí el resultado de la tarea t3. Así se puede, por ejemplo, buscar en la documentación el error exacto que salga en los logs, algo que nadie sabe al escribir el plan.
+
+```python
+class Tarea(BaseModel):
+    id: str
+    herramienta: str
+    argumentos: dict          # puede contener ${tN}: el resultado de la tarea tN
+    depende_de: list[str] = []
+    para_que: str
+```
+
+### Validar antes de ejecutar
+
+El plan lo escribe un modelo, así que se valida como cualquier entrada externa, antes de ejecutar nada. `problemas(plan)` comprueba que cada herramienta existe, que sus argumentos son válidos (con los mismos modelos de Pydantic de la plataforma), que cada dependencia existe, que cada `${tN}` usado está entre las dependencias, y que no hay ciclos. Si algo falla, el modelo vuelve a planificar con el error delante, como cuando una herramienta devuelve un error en la lección 03.
+
+### El orden topológico
+
+Para ejecutar un grafo de dependencias hay que encontrar un orden en el que cada tarea vaya después de todas las que necesita. Es un **orden topológico**, y el algoritmo de Kahn lo calcula: empieza por las tareas sin dependencias, las va quitando del grafo y añade las que se quedan sin dependencias pendientes. Si al final quedan tareas, es que había un ciclo. Son quince líneas en `orden_topologico`. Las tareas que no dependen entre sí se podrían ejecutar en paralelo; aquí se ejecutan una tras otra.
+
+## Práctica
+
+[`planificar.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/planificar.py) ejecuta el planificador en los 9 escenarios de desarrollo y lo compara con el workflow y el agente de la lección 01, que reutiliza ya grabados. Tarda unos 20 minutos en la máquina del curso; con `--grabadas`, un segundo:
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/05-agentes/planificar.py
+```
+
+```text
+1. El plan de pagos-pool-despliegue
+   t1: estado_servicio({'servicio': 'pagos'})
+       para qué: Obtener el estado actual del servicio de pagos, incluyendo tasa de errores y latencia.
+   t2: buscar_logs({'servicio': 'pagos', 'texto': 'PoolConexionesPagos'})
+       para qué: Buscar mensajes relacionados con el pool de conexiones en los logs del servicio de pagos.
+   t3: buscar_documentacion({'consulta': 'PoolConexionesPagos'})
+       para qué: Consultar el runbook del problema para entender la causa y la mitigación estándar.
+   t4: buscar_documentacion({'consulta': 'Criterios severidad pool conexiones'})
+       para qué: Consultar los criterios de severidad para evaluar la gravedad de la alerta.
+   t5: buscar_documentacion({'consulta': 'Mitigacion PoolConexionesPagos'})
+       para qué: Buscar la mitigación específica para el pool de conexiones al 97%.
+   orden de ejecución: t1 → t2 → t3 → t4 → t5
+
+2. Las tres arquitecturas en los 9 escenarios de desarrollo
+                 estado ok  llamadas al modelo   tokens s/escenario
+   workflow          4 de 9                  18     9944          22
+   agente            4 de 9                  28    39243          68
+   planificador      4 de 9                  19    21816         117
+   frente a workflow: gana [], pierde [], p = 1.00
+   frente a agente: gana ['pagos-token-banco'], pierde ['catalogo-replica-normal'], p = 1.00
+
+3. Replanificaciones y fallos del planificador
+   escenarios que necesitaron replanificar: 1 de 9
+     pagos-token-banco: t5: usa ${t2} sin depender de t2
+   pagos-pool-despliegue: severidad alta (esperada critica)
+   pagos-pool-sin-despliegue: severidad alta (esperada critica)
+   busqueda-disco: severidad alta (esperada media)
+   catalogo-replica-normal: abrió una incidencia que no hacía falta
+   usuarios-deadlocks: severidad alta (esperada media)
+```
+
+## Mide y depura
+
+### Un plan que no es un grafo
+
+Mira el plan de ejemplo: cinco tareas y ninguna dependencia. Es una lista de comprobación, no un grafo. Y repite los fallos de la lección 02: busca en los logs el nombre de la alerta (que nunca aparece en un log) y consulta la documentación tres veces con consultas casi iguales. En los 9 escenarios, de 45 tareas solo 4 tenían dependencias y solo 1 usaba el resultado de otra. Con estas herramientas y este modelo, el planificador casi nunca aprovecha lo que hace distinto a un plan: el flujo de datos entre tareas.
+
+Cuando lo aprovechó, funcionó: es la anatomía de esta lección, y el único escenario que el planificador gana al agente.
+
+### Los mismos aciertos, otro coste
+
+Las tres arquitecturas aciertan 4 de 9, y los fallos del planificador son exactamente los del workflow: la severidad (`alta` donde tocaba `critica` o `media`) y una incidencia que no hacía falta. Sigue siendo el criterio del modelo en el último paso, no la forma de llegar a él.
+
+En coste, el planificador hace 19 llamadas (dos por escenario, más una replanificación), casi como el workflow, y gasta la mitad de tokens que el agente. Pero es el más lento: 117 segundos de mediana por escenario. Escribir un plan en JSON con cinco tareas y su "para qué" son cientos de tokens de salida, y la salida es lo que más tarda (módulo 1). Si el plan lo escribiera un modelo más rápido o el plan fuera más corto, la cuenta cambiaría. Mídelo con tu caso.
+
+### Cuándo compensa planificar
+
+Con estos escenarios, no compensa frente al workflow: mismos aciertos, cinco veces más lento. Compensa cuando:
+
+- **Hay que revisar o aprobar lo que se va a hacer antes de hacerlo**: el plan es un objeto que se puede enseñar, validar y firmar.
+- **Las tareas son muchas y en parte independientes**: un grafo se puede ejecutar en paralelo, y una sola llamada planifica lo que a un agente le costaría muchos pasos.
+- **El camino cambia de un caso a otro**, pero se puede decidir al principio (a diferencia del workflow, que es siempre el mismo).
+
+Las lecciones 05 y 08 usan esta misma idea: el orquestador del sistema multiagente del final del módulo planifica el incidente como un grafo de tareas y lo reparte entre subagentes.
+
+## Errores frecuentes
+
+**Ejecutar el plan sin validarlo.** Es una entrada externa escrita por un modelo: herramientas que no existen, argumentos inválidos, dependencias que faltan o ciclos. Valida antes de ejecutar nada.
+
+**Un plan que no puede replanificarse.** Si el primer plan falla y no hay segunda oportunidad, pierdes el caso. Devuelve el error al planificador.
+
+**Planificar lo que no se puede saber.** Si un argumento depende de lo que se va a encontrar (el error de los logs), el plan tiene que poder decirlo: referencias a resultados, o una segunda planificación después de ver los datos.
+
+**Planes largos para tareas cortas.** El plan se paga en tokens de salida. En la práctica, era lo que hacía al planificador el más lento.
+
+### Anatomía de un error: el plan que se corrige solo
+
+Escenario `pagos-token-banco` (todos los cobros fallan desde las 08:12). El primer plan:
+
+```text
+   t1 estado_servicio {'servicio': 'pagos'} deps []
+   t2 buscar_logs {'servicio': 'pagos', 'texto': 'error'} deps []
+   t3 buscar_documentacion {'consulta': 'PagosErroresAltos'} deps []
+   t4 buscar_documentacion {'consulta': 'Criterios de severidad'} deps []
+   t5 buscar_documentacion {'consulta': '${t2}'} deps []
+```
+
+El validador:
+
+```text
+     pagos-token-banco: t5: usa ${t2} sin depender de t2
+```
+
+El segundo plan, ya válido:
+
+```text
+   t1 estado_servicio {'servicio': 'pagos'} deps []
+   t2 buscar_documentacion {'consulta': 'PagosErroresAltos'} deps []
+   t3 buscar_logs {'servicio': 'pagos', 'texto': 'error'} deps []
+   t4 buscar_documentacion {'consulta': '${t3}'} deps ['t3']
+   t5 buscar_documentacion {'consulta': 'Criterios de severidad'} deps []
+```
+
+Y lo que devolvió cada tarea, en el orden en que se ejecutaron (`t1 → t2 → t3 → t5 → t4`):
+
+```text
+   t1 -> servicio: pagos | estado: caido | errores: 100.0 % | latencia p95: 180 ms | ...
+   t2 -> [monitorizacion] Monitorización y alertas > Alertas principales | | Alerta | ...
+   t3 -> ERROR banco-api: 401 Unauthorized: token expired | ERROR POST /cobros 502: ...
+   t5 -> [severidades] Criterios de severidad de las incidencias | ...
+   t4 -> [runbook-pagos-credenciales] Runbook: credenciales de pagos | El token de la API ...
+```
+
+**Cómo leerlo.** El primer plan quería usar en t5 el resultado de los logs (`${t2}`), pero no declaró la dependencia: sin ella, nada garantiza que t2 se ejecute antes. El validador lo detecta sin ejecutar nada, y el planificador lo corrige al segundo intento: ahora t4 depende de t3. El orden de ejecución lo respeta, t4 va el último. Y la diferencia se ve en los resultados: la búsqueda por el nombre de la alerta (t2) devuelve la tabla de monitorización, que no sirve para nada; la búsqueda con el error de los logs (t4) encuentra el runbook de credenciales, que es el bueno. Con él, la decisión fue correcta: crítica, renovar el token.
+
+**Causa.** El modelo entendió la idea de usar un resultado, pero se olvidó de la regla que la hace segura (declarar la dependencia). Es el tipo de fallo que un modelo comete y un validador caza sin coste.
+
+**Solución.** La que ya está en el código: validar el plan y devolver el error al planificador para que lo corrija, con un máximo de intentos. Y fíjate en lo que demuestra el caso: el flujo de datos entre tareas es lo que hace útil un plan. Que el modelo lo use tan poco (1 de 45 tareas) es la siguiente cosa que mejorar: describirlo mejor en el prompt del planificador, con un ejemplo, y medir de nuevo.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'El modelo te devuelve un plan de cinco tareas. ¿Qué haces antes de ejecutarlo?',
+			opciones: [
+				{ texto: 'Ejecutarlo: lo ha escrito el modelo, debe estar bien.', porque: 'Es una entrada externa: puede tener herramientas que no existen, dependencias que faltan o ciclos.' },
+				{ texto: 'Validarlo con código: herramientas, argumentos, dependencias y ciclos.', correcta: true, porque: 'Si falla, se devuelve el error al planificador para que lo corrija (\"Validar antes de ejecutar\").' },
+				{ texto: 'Pedirle al modelo que confirme que está bien.', porque: 'Su confirmación sería otro texto generado. La validación se hace con código.' },
+			],
+		},
+		{
+			pregunta: 'La tarea t4 busca en la documentación el error que salga en los logs (tarea t3). ¿Qué tiene que declarar el plan?',
+			opciones: [
+				{ texto: 'Que t4 depende de t3, y usar ${t3} en su argumento.', correcta: true, porque: 'La dependencia garantiza que t3 se ejecute antes y su resultado exista (anatomía de la lección).' },
+				{ texto: 'Nada: el código ejecuta las tareas en el orden en que aparecen.', porque: 'El orden lo decide el grafo de dependencias, no la posición en la lista.' },
+			],
+		},
+		{
+			pregunta: 'Al calcular el orden topológico de un plan quedan tareas sin ordenar. ¿Qué significa?',
+			opciones: [
+				{ texto: 'Que hay un ciclo en las dependencias.', correcta: true, porque: 'Kahn quita las tareas sin dependencias pendientes; si quedan tareas, ninguna puede empezar (\"El orden topológico\").' },
+				{ texto: 'Que esas tareas se pueden ejecutar en paralelo.', porque: 'Las que se pueden paralelizar sí se ordenan: son las que no dependen entre sí.' },
+				{ texto: 'Que el modelo se equivocó de herramienta.', porque: 'Eso lo detecta otra comprobación. El orden solo mira las dependencias.' },
+			],
+		},
+		{
+			pregunta: 'Con tus escenarios, el planificador acierta lo mismo que un workflow y es cinco veces más lento. ¿Cuándo lo elegirías igualmente?',
+			opciones: [
+				{ texto: 'Nunca: si no acierta más, no compensa.', porque: 'Hay casos donde lo que importa es poder revisar el plan antes de ejecutarlo.' },
+				{ texto: 'Cuando hay que revisar o aprobar lo que se va a hacer antes de hacerlo, o hay muchas tareas paralelizables.', correcta: true, porque: '(\"Cuándo compensa planificar\")' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- Wang et al., [Plan-and-Solve Prompting](https://arxiv.org/abs/2305.04091) (2023). Pedir el plan antes de resolver.
+- Kim et al., [An LLM Compiler for Parallel Function Calling](https://arxiv.org/abs/2312.04511) (2023). El plan como grafo de llamadas a herramientas, ejecutado en paralelo respetando las dependencias.
+- [Ordenación topológica](https://en.wikipedia.org/wiki/Topological_sorting) en Wikipedia, con el algoritmo de Kahn.

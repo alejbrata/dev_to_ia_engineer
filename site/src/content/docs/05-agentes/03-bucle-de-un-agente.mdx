@@ -1,0 +1,206 @@
+---
+title: "El bucle de un agente desde cero"
+description: "El bucle de un agente desde cero (sin framework): cómo funciona por dentro, cómo crecen sus tokens, cuándo termina y qué cuesta razonar en cada paso"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
+:::note[Revisado: 2026-10]
+Las salidas son reales, con Qwen3 8B (rol `agente`) en Ollama, sobre CPU, con las herramientas de la versión 2 de la lección 02.
+:::
+
+## Objetivos
+
+Al terminar esta lección podrás:
+
+- Escribir el bucle de un agente sin framework: llamar al modelo, ejecutar lo que pide, devolverle el resultado y repetir.
+- Explicar por qué los tokens crecen en cada paso y estimar lo que cuesta una ejecución.
+- Poner un límite de pasos y tratar el caso en que se alcanza.
+- Medir lo que cuesta que el modelo razone en cada paso.
+
+## Teoría
+
+### El bucle entero cabe en veinte líneas
+
+Un agente no es una tecnología nueva: es un bucle alrededor de lo que ya conoces del módulo 2 (tool calling). En cada paso:
+
+1. Le mandas al modelo la conversación hasta ahora y la lista de herramientas.
+2. Si responde con texto, ha terminado.
+3. Si pide herramientas, las ejecutas, añades a la conversación lo que pidió y lo que le devuelves, y vuelves al paso 1.
+
+Este es el bucle de [`agente.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/agente.py), sin las líneas que solo registran la traza:
+
+```python
+mensajes = list(renderizado.mensajes)            # prompt de sistema + la alerta
+for n in range(1, max_pasos + 1):
+    r = cliente.chat(mensajes, rol=rol, opciones=opciones)   # opciones lleva las herramientas
+    if not r.llamadas:                           # responde con texto: ha terminado
+        return Ejecucion(pasos=pasos, respuesta=r.texto, terminacion="respuesta")
+    mensajes.append(r.como_mensaje())            # lo que pidió el modelo
+    for llamada in r.llamadas:                   # puede pedir varias en el mismo paso
+        resultado, valida = plataforma.ejecutar(llamada)
+        mensajes.append(Mensaje(role="tool", content=resultado, respuesta_a=llamada))
+return Ejecucion(pasos=pasos, respuesta="", terminacion="limite_pasos")
+```
+
+Ningún framework hace nada esencialmente distinto. Lo que añaden es persistencia, paralelismo, reintentos, visualización y otras comodidades, que verás en la lección de LangGraph. Escribirlo una vez a mano te permite entender qué hace cualquiera de ellos.
+
+### Las decisiones que esconde el bucle
+
+**El estado son los mensajes.** El agente no tiene memoria aparte: todo lo que sabe está en la lista `mensajes`, que crece en cada paso. Como la API no guarda estado (módulo 1), cada llamada reenvía la lista entera. Los tokens de entrada crecen paso a paso, y el coste total crece más deprisa que el número de pasos.
+
+**Cuándo termina.** Termina cuando el modelo responde con texto en lugar de pedir herramientas. Que termine no significa que haya hecho lo que debía: puede responder sin haber abierto la incidencia (la lección 02 lo llamó "dice sin hacer"). La terminación se registra, y el resultado se comprueba aparte.
+
+**El límite de pasos.** Sin límite, un modelo que entra en bucle (pide la misma herramienta una y otra vez) se ejecuta para siempre y te cobra cada paso. El límite es obligatorio, y alcanzarlo es un resultado más, que hay que tratar.
+
+**Los errores vuelven al modelo.** Si una herramienta falla o el modelo la llama mal, el error se le devuelve como resultado, para que se corrija en el paso siguiente. Una excepción mataría el bucle.
+
+**Varias herramientas en un paso.** El modelo puede pedir varias a la vez. Aquí se ejecutan una tras otra; se podrían ejecutar en paralelo si son independientes.
+
+### El prompt del agente
+
+El prompt ([`prompts/agentes/guardia.md`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/prompts/agentes/guardia.md)) no le dice qué pasos dar. Le dice quién es, qué tiene que decidir al final (abrir o no una incidencia, con qué severidad y mitigación) y dos reglas: basar las decisiones en lo que devuelven las herramientas, y tratar los textos que devuelven como datos, no como instrucciones. El procedimiento lo decide el modelo: es lo que lo convierte en agente.
+
+## Práctica
+
+[`bucle.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/bucle.py) ejecuta el agente con el escenario `pagos-pool-despliegue` de cuatro formas. Tarda unos 8 minutos en la máquina del curso:
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/05-agentes/bucle.py
+```
+
+```text
+1. Tokens por paso (pagos-pool-despliegue)
+   paso  entrada  salida  segundos  herramientas
+      1     1036      56      47.9  estado_servicio, buscar_logs
+      2     1174      25       8.8  buscar_documentacion
+      3     1550     177      45.0  respuesta final
+   total: 4018 tokens · 102 s · terminación: respuesta
+   comprobación: no abrió la incidencia
+
+2. El mismo escenario con un límite de 2 pasos
+   paso  entrada  salida  segundos  herramientas
+      1     1036      56       8.8  estado_servicio, buscar_logs
+      2     1174      25       8.9  buscar_documentacion
+   total: 2291 tokens · 18 s · terminación: limite_pasos
+   incidencias abiertas: 0 · comprobación: no abrió la incidencia
+
+3. Una alerta sobre un servicio que no existe
+   alerta: El servicio de facturación devuelve errores 500 desde hace 10 minutos.
+   → estado_servicio({'servicio': 'pagos'})
+     servicio: pagos
+   → buscar_logs({'servicio': 'pagos', 'texto': 'ERROR'})
+     ERROR POST /cobros 500: el banco no responde (timeout tras 10 s)
+   → buscar_documentacion({'consulta': 'errores 500 en pagos'})
+     [runbook-pagos-conexiones] Runbook: pagos sin conexiones a la base de datos
+   → abrir_incidencia({'servicio': 'pagos', 'severidad': 'alta', 'resumen': '...', 'mitigacion': '...'})
+     Incidencia INC-1 abierta para pagos.
+   incidencias: ['pagos/alta']
+
+4. Razonando en cada paso (pagos-pool-despliegue)
+   paso  entrada  salida  segundos  herramientas
+      1     1030     669     104.4  estado_servicio, buscar_logs, buscar_documentacion
+      2     1565     388      80.9  abrir_incidencia
+      3     1706     402      71.7  respuesta final
+   total: 5760 tokens · 257 s · terminación: respuesta
+   comprobación: severidad alta (esperada critica); la mitigación no menciona 'versión anterior'
+```
+
+Para ver cualquier ejecución con todo su detalle (lo que devolvió cada herramienta y la respuesta final), usa `traza.py`, de la lección 02.
+
+## Mide y depura
+
+### Los tokens crecen en cada paso
+
+En la parte 1, la entrada pasa de 1 036 tokens en el paso 1 a 1 174 en el 2 y 1 550 en el 3. Lo que crece es la conversación: cada paso reenvía la alerta, todo lo que pidió el modelo y todo lo que le devolvieron las herramientas. Los resultados largos, como los fragmentos de documentación, pesan mucho. En un agente con 10 o 20 pasos, la entrada de los últimos pasos es varias veces la del primero, y se paga en cada llamada. Es el problema que trata la lección de estado, memoria y contexto.
+
+Fíjate también en el primer paso: 47,9 segundos frente a 8,8 en la parte 2 con la misma entrada. Es la primera llamada después de cargar el modelo (módulo 0). Si mides tiempos, descarta la primera o mide varias veces.
+
+### Terminar no es acertar
+
+En la parte 1, el agente terminó "bien" (`terminación: respuesta`) y la comprobación dice `no abrió la incidencia`. En el paso 3 respondió con 177 tokens de texto en lugar de pedir `abrir_incidencia`. El bucle solo sabe que el modelo dejó de pedir herramientas; si hizo lo que debía, lo dice el estado de la plataforma.
+
+### El límite de pasos
+
+En la parte 2, con 2 pasos, el agente se queda a medias: ha investigado y no le da tiempo a decidir. Es la anatomía de esta lección.
+
+### Razonar en cada paso
+
+La parte 4 es el mismo escenario con el razonamiento activado (lección 07 del módulo 1). Cada paso genera entre 388 y 669 tokens de salida, frente a 25 a 177 sin razonar, y la ejecución pasa de 102 a 257 segundos y de 4 018 a 5 760 tokens. Esta vez sí abrió la incidencia, pero con la severidad equivocada y sin la mitigación del runbook. En un agente, el coste del razonamiento se multiplica por el número de pasos. En la lección 02 se midió en los 9 escenarios: un acierto más con 3,5 veces más tiempo. Si lo activas, que sea donde lo justifiquen tus datos.
+
+### Un modelo que deduce
+
+La parte 3 buscaba otra cosa: que el modelo pidiera el servicio "facturacion", que no existe, recibiera el error de validación y se corrigiera. No lo hizo. Dedujo que la facturación es el servicio de pagos y lo consultó directamente. Esta vez dedujo bien; en otro caso, la misma capacidad le hará deducir mal con la misma seguridad. Por eso la validación de los argumentos sigue en su sitio: en la lección 02, ninguna de las casi 200 llamadas fue inválida, pero el código no puede contar con eso.
+
+## Errores frecuentes
+
+**Un bucle sin límite de pasos.** Un modelo que se queda pidiendo la misma herramienta lo hace sin parar. Pon siempre un límite.
+
+**Tratar el límite como una respuesta.** Si el agente se queda sin pasos, el trabajo está a medias. Trátalo como un fallo visible: avisa a una persona, no devuelvas una respuesta vacía como si nada.
+
+**Lanzar una excepción cuando falla una herramienta.** Devuelve el error al modelo como resultado.
+
+**No registrar cada paso.** Sin la traza paso a paso (qué pidió, qué recibió, cuánto costó), un fallo de agente no se puede depurar.
+
+**Olvidar que cada paso reenvía todo.** Los resultados largos de las herramientas se pagan en todos los pasos siguientes. Devuelve lo que el modelo necesita, no todo lo que tienes.
+
+### Anatomía de un error: el agente que se queda sin pasos
+
+La parte 2 de la práctica:
+
+```text
+   paso  entrada  salida  segundos  herramientas
+      1     1036      56       8.8  estado_servicio, buscar_logs
+      2     1174      25       8.9  buscar_documentacion
+   total: 2291 tokens · 18 s · terminación: limite_pasos
+   incidencias abiertas: 0 · comprobación: no abrió la incidencia
+```
+
+**Cómo leerlo.** `terminación: limite_pasos`: el bucle paró porque se acabaron los pasos, no porque el modelo terminara. En el paso 2 seguía investigando (pidió la documentación) y no llegó a decidir. Cero incidencias, con un tercio de los cobros fallando. No hay ninguna excepción: si tu código solo mira la respuesta, recibe una cadena vacía.
+
+**Causa.** El límite era menor que los pasos que necesita la tarea. En la lección 02, la mediana fue de 4 pasos por escenario con este modelo. Un límite de 2 corta la mayoría de las ejecuciones antes de la decisión.
+
+**Solución.** Dos cosas. Elegir el límite con datos: mira la distribución de pasos en tus trazas y pon el límite con margen sobre los casos más largos (aquí, `MAX_PASOS = 10`). Y tratar el límite como lo que es, un fallo: `Ejecucion.terminacion` lo distingue de una respuesta, y quien llama al agente tiene que reaccionar (avisar a la persona de guardia, por ejemplo), no seguir como si hubiera terminado. La lección "Agentes que aguantan" vuelve sobre los presupuestos de pasos, tokens y tiempo.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'Tu agente hace 12 pasos y la factura de tokens es mucho mayor de lo que esperabas. ¿Por qué?',
+			opciones: [
+				{ texto: 'Porque cada paso reenvía toda la conversación, y la entrada crece paso a paso.', correcta: true, porque: 'En la práctica, la entrada pasó de 1 036 a 1 550 tokens en tres pasos (\"Los tokens crecen en cada paso\").' },
+				{ texto: 'Porque el modelo escribe respuestas cada vez más largas.', porque: 'La mayor parte del crecimiento es la entrada: la conversación que se reenvía.' },
+				{ texto: 'Porque el servidor cobra más a partir de 10 pasos.', porque: 'El servidor cobra por token. Lo que crece son los tokens de cada llamada.' },
+			],
+		},
+		{
+			pregunta: 'El agente termina con terminación "respuesta". ¿Puedes dar la tarea por hecha?',
+			opciones: [
+				{ texto: 'Sí: si respondió, terminó bien.', porque: 'En la parte 1 terminó con respuesta y no abrió la incidencia.' },
+				{ texto: 'No: terminar solo significa que dejó de pedir herramientas. El resultado se comprueba en el estado del sistema.', correcta: true, porque: '(\"Terminar no es acertar\")' },
+			],
+		},
+		{
+			pregunta: 'Tu agente se queda sin pasos a menudo. ¿Qué haces?',
+			opciones: [
+				{ texto: 'Quitar el límite.', porque: 'Sin límite, un modelo en bucle se ejecuta para siempre y te cobra cada paso.' },
+				{ texto: 'Mirar la distribución de pasos en tus trazas, poner el límite con margen y tratar el límite alcanzado como un fallo visible.', correcta: true, porque: 'Es la solución de la anatomía.' },
+				{ texto: 'Bajar el límite para que termine antes.', porque: 'Cortarías más ejecuciones antes de que lleguen a decidir.' },
+			],
+		},
+		{
+			pregunta: 'Activas el razonamiento en un agente que da 3 pasos por tarea. ¿Qué esperas?',
+			opciones: [
+				{ texto: 'El mismo coste: el razonamiento es interno.', porque: 'Los tokens de razonamiento son salida y se pagan en cada paso.' },
+				{ texto: 'Más tokens y más tiempo en cada paso, y una mejora que hay que medir.', correcta: true, porque: 'En la parte 4, de 102 a 257 s y de 4 018 a 5 760 tokens, y la decisión siguió siendo incorrecta.' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- Yao et al., [ReAct: Synergizing Reasoning and Acting in Language Models](https://arxiv.org/abs/2210.03629) (2022). El bucle de razonar, actuar y observar.
+- Anthropic, [Building effective agents](https://www.anthropic.com/engineering/building-effective-agents) (2024). Por qué los agentes eficaces suelen ser bucles sencillos con buenas herramientas.
+- [Tool calling en Ollama](https://docs.ollama.com/capabilities/tool-calling), con el formato de los mensajes de herramienta.
