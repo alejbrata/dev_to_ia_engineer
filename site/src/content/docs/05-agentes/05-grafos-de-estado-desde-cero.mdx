@@ -34,7 +34,7 @@ Si vienes de backend Java, ya lo conoces con otros nombres: la máquina de estad
 
 ### Aristas condicionales y ciclos
 
-Una arista condicional puede volver atrás. Así se expresa "si la decisión no se pudo leer, vuelve a intentarlo": un ciclo de `decidir` a `decidir`. Los ciclos son lo que diferencia un grafo de estado de una cadena fija de pasos, y también su riesgo: un ciclo cuya condición nunca cambia no termina. Por eso el motor tiene un límite de pasos, igual que el bucle de la lección 03, y el ciclo de reintento, un contador en el estado.
+Una arista condicional puede volver atrás. Así se expresa "si la decisión no se pudo leer, vuelve a intentarlo": un ciclo de `decidir` a `decidir`. Los ciclos son lo que diferencia un grafo de estado de una cadena fija de pasos, y también su riesgo: un ciclo cuya condición nunca cambia no termina. Por eso el motor tiene un límite de pasos, igual que el bucle de la lección 03, y el ciclo de reintento lleva la cuenta de intentos en el estado.
 
 ### Checkpoints
 
@@ -183,7 +183,7 @@ usuarios-deadlocks            42.4 s             17.4 s     41.8 s
 
 El workflow de ahora tarda lo mismo que el grafo. Lo que cambió es la máquina entre la ejecución en la que se grabó el workflow y esta. El log de Ollama lo confirma: evaluar el prompt de `decidir` (unos 800 tokens) cuesta ahora entre 25 y 34 segundos, antes de generar nada. No está claro por qué el portátil iba más lento (estaba enchufado y sin otras tareas pesadas a la vista), pero eso ya no cambia la conclusión: no es el código.
 
-Y una trampa más, que apareció por el camino. Antes de esa prueba, el workflow se ejecutó dos veces seguidas en los mismos escenarios, y la segunda tardó 18 segundos en `decidir`. Era la caché de prompts de Ollama: el log decía `cached n_tokens = 800`, el prompt entero ya estaba evaluado de la vez anterior. Por eso los scripts del curso descargan el modelo antes de medir (módulo 2).
+Y una trampa más, que apareció por el camino. Antes de esa prueba se ejecutaron seguidos el workflow y el grafo en los mismos escenarios, sin descargar el modelo entre uno y otro, y el grafo tardó solo 18 segundos en `decidir`. Era la caché de prompts de Ollama: los dos envían el mismo prompt, el log decía `cached n_tokens = 800` y el prompt entero ya estaba evaluado de la vez anterior. Por eso los scripts del curso descargan el modelo antes de medir (módulo 2).
 
 Las reglas que salen de aquí:
 

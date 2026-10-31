@@ -1,0 +1,238 @@
+---
+title: "Subagentes"
+description: "Subagentes: un orquestador que delega la investigación en agentes con su propio contexto, sus herramientas y sus permisos, medido frente al agente único"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
+:::note[Revisado: 2026-10]
+Las salidas son reales, con Qwen3 8B sin razonamiento (rol `agente`) en Ollama, sobre CPU.
+:::
+
+## Objetivos
+
+Al terminar esta lección podrás:
+
+- Construir un orquestador que delega tareas en subagentes, cada uno con su prompt, sus herramientas y una conversación nueva.
+- Limitar lo que puede hacer cada subagente con código, no con instrucciones en el prompt.
+- Medir lo que ahorra delegar en el contexto principal y lo que cuesta en tokens totales, tiempo y aciertos.
+- Comprobar si ejecutar subagentes en paralelo ahorra tiempo con tu infraestructura, en lugar de suponerlo.
+
+## Teoría
+
+### Qué es un subagente
+
+Un subagente es un agente que otro agente usa como herramienta. El orquestador le pasa un encargo en texto; el subagente arranca con una conversación nueva, su propio prompt y sus propias herramientas, hace su bucle y devuelve un informe. Al orquestador solo le llega ese informe: los resultados en bruto de las herramientas (los logs, los fragmentos de documentación) se quedan en el contexto del subagente y desaparecen con él.
+
+Es lo mismo que llamar a una función: quien llama ve el valor de retorno, no las variables locales. O, en términos de backend, encargar un trabajo a un servicio que hace su parte y devuelve un resultado resumido, en lugar de pasarte sus tablas.
+
+### Por qué delegar
+
+- **Contexto aislado.** Es la razón principal, y conecta con la lección 07: el contexto del orquestador no crece con cada resultado de herramienta, solo con los informes. La exploración, que es lo que más tokens produce, ocurre fuera.
+- **Especialización.** Cada subagente tiene un prompt corto y centrado en su tarea, y solo las herramientas que necesita. Un prompt con cuatro herramientas y todas las reglas compite consigo mismo; dos prompts con dos herramientas cada uno, menos.
+- **Mínimo privilegio.** El subagente que lee logs no necesita poder abrir incidencias. Y ese límite se pone en el código: si el modelo pide una herramienta que no tiene, se rechaza. Nunca te fíes de que un modelo no pida algo solo porque no se lo has ofrecido.
+- **Paralelismo.** Si el orquestador encarga dos cosas independientes en el mismo paso (los logs de pagos y el runbook), pueden ejecutarse a la vez. Si eso ahorra tiempo depende de tu infraestructura, y lo vas a medir.
+
+### Lo que cuesta
+
+- **Más llamadas.** Cada subagente paga su prompt y sus propios pasos. El contexto principal es más pequeño, pero el total de tokens puede ser mayor.
+- **Información que se pierde por el camino.** El informe es un resumen escrito por un modelo. Si el subagente no copia la línea de log importante, el orquestador decide sin ella, y no tiene forma de saberlo. Es el juego del teléfono escacharrado.
+- **Encargos mal hechos.** El orquestador tiene que saber qué preguntar. Si pregunta mal, el subagente responde bien a otra cosa.
+- **Depurar es más difícil.** Las trazas están anidadas: para entender un fallo hay que mirar qué pidió el orquestador, qué hizo cada subagente y qué devolvió.
+
+Los subagentes son jerárquicos y de vida corta: existen mientras dura un encargo y solo hablan con quien los llamó. Cuando varios agentes colaboran como iguales, con estado compartido, es un sistema multiagente, y es la lección 09.
+
+## Práctica
+
+[`subagentes.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/subagentes.py) reparte el agente de guardia en tres papeles:
+
+- **El orquestador** no toca logs ni documentación. Tiene tres herramientas: `investigar(servicio, pregunta)`, `consultar_documentacion(pregunta)` y `abrir_incidencia`. Las dos primeras lanzan un subagente cada una.
+- **El investigador** tiene `estado_servicio` y `buscar_logs`, y devuelve un informe de 120 palabras como mucho, con los datos concretos y las líneas de log copiadas literalmente. No propone severidad ni mitigación.
+- **El documentalista** tiene `buscar_documentacion`, y devuelve lo que dice la documentación citando el documento y copiando literalmente los criterios o la mitigación.
+
+Cada subagente es el mismo bucle de la lección 03 (`agente.ejecutar`), con su prompt (`prompts/agentes/subagente-*.md`), sus herramientas y el encargo como variable. El orquestador también lo es: lo que cambia son sus herramientas. Cuando pide `investigar`, la "plataforma" que ejecuta esa herramienta lanza un subagente y devuelve su informe como resultado:
+
+```python
+ej = agente.ejecutar(
+    self.cliente,
+    PlataformaRestringida(self.plataforma, sub.herramientas),
+    rol=self.rol,
+    prompt=sub.prompt,
+    max_pasos=MAX_PASOS_SUBAGENTE,
+    opciones=self.opciones,
+    herramientas=[POR_NOMBRE[h] for h in sub.herramientas],
+    variables={"tarea": tarea},
+)
+respuesta = ej.respuesta or "El ayudante no terminó: agotó sus pasos sin informe."
+```
+
+`PlataformaRestringida` es el mínimo privilegio en código: deja pasar solo las herramientas del subagente y rechaza cualquier otra, aunque el modelo la pida con argumentos válidos. `test_contexto.py` comprueba que un investigador que pide `abrir_incidencia` no abre nada.
+
+Si el orquestador pide varias delegaciones en el mismo paso, `agente.ejecutar(..., paralelo=True)` las lanza a la vez en hilos.
+
+[`delegar.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/delegar.py) ejecuta el orquestador en los 9 escenarios de desarrollo y lo compara con el agente único de la lección 07, grabado en la misma sesión. Al final mide si las peticiones en paralelo ahorran tiempo con el modelo local. Tarda unos 25 minutos en la máquina del curso; con `--grabadas`, un segundo.
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/05-agentes/delegar.py
+```
+
+```text
+1. pagos-pool-despliegue: lo que delega el orquestador
+   investigar              2 pasos   1301 tokens    63 s  servicio: pagos pregunta: ¿Cuál es el estado del servicio de
+      informe: 'El servicio de pagos está degradado con un 41.0 % de errores. La latencia p95 es de 2900 ms y el último despliegue fue hace 25 minutos (versión 3.8.0)'
+   consultar_documentacion 2 pasos   1405 tokens    95 s  pregunta: ¿Qué dice el runbook sobre el pool de conexiones d
+      informe: 'El runbook menciona que si el pool de conexiones de PgBouncer alcanza el 97%, la mitigación más rápida es volver a la versión anterior si hubo un desp'
+   orquestador: 3 pasos, 4112 tokens → severidad alta (esperada critica)
+
+2. Los 9 escenarios de desarrollo
+               estado ok  tokens principal  tokens total  entrada máx. s/escenario
+   agente          4 de 9             37375         37375          1620          73
+   subagentes      3 de 9             36916         61944          1583         139
+   subagentes gana ['pagos-token-banco'], pierde ['catalogo-replica-normal', 'pagos-latencia-pasajera'], p = 1.00
+   delegaciones: 19 {'investigar': 9, 'consultar_documentacion': 10}; sin informe: 0
+
+3. 3 peticiones iguales al mismo modelo local
+   en serie: 19.7 s; a la vez: 19.7 s
+
+4. Fallos con subagentes
+   pagos-pool-despliegue: severidad alta (esperada critica)
+   pagos-pool-sin-despliegue: severidad alta (esperada critica)
+   busqueda-disco: severidad alta (esperada media); la mitigación no menciona 'índices antiguos'
+   catalogo-replica-normal: abrió una incidencia que no hacía falta
+   usuarios-deadlocks: no abrió la incidencia
+   pagos-latencia-pasajera: abrió una incidencia que no hacía falta
+```
+
+## Mide y depura
+
+### El contexto principal no bajó
+
+Era la razón principal para delegar, y aquí no se cumple: el orquestador gastó 36916 tokens y el agente único 37375, con una entrada máxima casi igual (1583 frente a 1620). Lo que se aísla son los resultados en bruto de las herramientas, y en esta plataforma son pequeños: un estado de servicio de seis líneas, diez líneas de log como mucho, tres fragmentos de documentación. Un informe de 120 palabras ocupa más o menos lo mismo que lo que resume. Es el mismo hallazgo de la lección 07, visto desde otro lado: en este agente, lo que pesa es la parte fija del prompt, no el historial.
+
+Delegar ahorra contexto cuando lo que se queda en el subagente es grande: leer ficheros enteros, recorrer veinte resultados de búsqueda, explorar un repositorio. Si tus herramientas devuelven poco, no esperes ese ahorro.
+
+### Lo que sí costó
+
+- **1,7 veces más tokens en total** (61944 frente a 37375). Cada subagente paga su prompt y sus pasos.
+- **Casi el doble de tiempo** (139 segundos de mediana por escenario frente a 73): son más llamadas, y en esta máquina van una detrás de otra.
+- **Un acierto menos** (3 de 9 frente a 4). Con un caso de diferencia y p = 1,00 no se puede decir que sea peor, pero tampoco hay nada que diga que es mejor. Y el tipo de fallo nuevo sí es significativo: los dos escenarios en los que no había que hacer nada (`catalogo-replica-normal` y `pagos-latencia-pasajera`) terminan con una incidencia abierta. Es la anatomía de esta lección.
+
+Los subagentes cumplieron su parte mecánica: 19 delegaciones, todas con informe (ninguna agotó sus pasos), y el permiso restringido no tuvo que rechazar nada.
+
+### El paralelo, medido
+
+La parte 3 lanza tres peticiones iguales al modelo local, primero en serie y luego a la vez: 19,7 segundos en los dos casos. Ollama, con su configuración por defecto en esta máquina (`OLLAMA_NUM_PARALLEL=1`, CPU), atiende las peticiones de una en una: las que llegan a la vez esperan en cola. Lanzar subagentes en paralelo no ahorra ni un segundo aquí.
+
+Con una API comercial, o con un servidor configurado para atender varias peticiones a la vez (y una máquina que lo aguante), el paralelo sí reduce el tiempo de pared. Por eso la regla es medir con tu infraestructura, con una prueba tan simple como esta, antes de diseñar alrededor del paralelismo.
+
+### Cómo depurar un sistema con subagentes
+
+Un fallo del orquestador puede venir de tres sitios: un encargo mal planteado, un informe que pierde o inventa algo, o una mala decisión con buenos informes. Para saber cuál, `delegar.py` guarda cada delegación con su encargo, las herramientas que usó el subagente y su informe completo (en `resultados/subagentes.jsonl`). El procedimiento es comparar tres cosas: lo que había en la plataforma, lo que dijo el informe y lo que decidió el orquestador. La anatomía lo hace con un caso.
+
+## Errores frecuentes
+
+**Delegar para ahorrar contexto sin medir cuánto ocupa lo que delegas.** Si las herramientas devuelven poco, el informe ocupa lo mismo y pagas los subagentes encima.
+
+**Dar por hecho que el paralelo ahorra tiempo.** Depende del servidor. Con el modelo local de esta práctica, tres peticiones a la vez tardan lo mismo que en serie.
+
+**Confiar en que el subagente respete su papel porque lo dice el prompt.** El documentalista tenía prohibido proponer severidades y propuso una. Lo que importa de verdad (las herramientas que puede usar) se limita en el código; lo demás, se comprueba.
+
+**Informes que resumen lo que había que copiar.** Pide en el prompt del subagente que copie literalmente los datos que deciden (las notas del estado, las líneas de log, los criterios), y compruébalo en las trazas.
+
+**Depurar solo el orquestador.** Si solo miras la decisión final, no sabes si el fallo estaba en el encargo, en el informe o en la decisión.
+
+### Anatomía de un error: el informe que se dejó lo importante
+
+Escenario `pagos-latencia-pasajera`. La alerta dice que la latencia de pagos superó los 800 ms durante cinco minutos y que ya se ha recuperado. No hay que abrir nada: según la documentación de monitorización, una alerta que salta sin requerir acción se revisa en la reunión semanal. El agente único lo resolvió bien. El orquestador, no:
+
+```text
+pagos-latencia-pasajera: abrió una incidencia que no hacía falta
+```
+
+Lo que había en la plataforma, según `estado_servicio`:
+
+```text
+servicio: pagos
+estado: operativo
+errores: 0.2 %
+latencia p95: 310 ms
+último despliegue: hace 6 días (pagos 3.7.2)
+La latencia volvió a 310 ms hace 10 minutos; no hubo errores por encima de lo normal.
+```
+
+El informe del investigador, que llamó a `estado_servicio` y a `buscar_logs`:
+
+```text
+**Servicio: pagos**
+**Estado:** operativo
+**Porcentaje de errores:** 0.2 %
+**Latencia p95:** 310 ms
+**Último despliegue:** hace 6 días (pagos 3.7.2)
+
+**Logs relevantes:**
+- `WARN latencia p95 830 ms`
+- `INFO latencia p95 310 ms`
+```
+
+El informe del documentalista, al que se le encargó buscar los "criterios de severidad para latencia p95 alta en pagos":
+
+```text
+La documentación indica que los criterios de severidad se clasifican en cuatro niveles: crítica, alta, media y baja. Para la latencia p95 alta en pagos, no se especifica directamente una severidad, pero se puede inferir que, si la latencia afecta significativamente al rendimiento de los pagos, podría clasificarse como "alta" o "media", dependiendo de la gravedad y el impacto en los usuarios. [...]
+```
+
+Y la decisión del orquestador: `abrir_incidencia` con severidad `media` y la mitigación "monitorear la latencia".
+
+**Cómo leerlo.** Compara la plataforma con el informe del investigador, línea a línea. Copió los cinco datos con formato, y se dejó la sexta línea, la única que dice en palabras lo que importa: que ya se recuperó y que no hubo errores. Después, el informe del documentalista: su prompt le dice que no invente lo que no aparezca, y él mismo escribe que la documentación "no especifica directamente una severidad"... y a continuación propone una. El orquestador recibe un informe sin la frase que lo tranquilizaría y otro que le sugiere una severidad. Hace lo que le sugieren.
+
+**Causa.** Dos fallos de los subagentes que se suman: un resumen que pierde información y un subagente que se sale de su papel. Pero ojo con culpar solo al resumen: en el otro escenario sin acción, `catalogo-replica-normal`, los informes fueron fieles (decían que el retraso estaba bajando y que hasta 30 segundos es normal), y el orquestador abrió la incidencia igual. Parte del fallo es la decisión, con o sin delegación.
+
+**Solución.**
+
+- **Que el subagente devuelva datos estructurados, no prosa.** Si el investigador devuelve un objeto con los campos del estado (incluidas las notas) y las líneas de log tal cual, no puede "resumir" la nota que importa. Es la salida estructurada del módulo 2 aplicada a los informes.
+- **Encargos que no induzcan la respuesta.** "Criterios de severidad para latencia p95 alta" da por hecho que hay que poner severidad. "Qué dice la documentación sobre una alerta de latencia que ya se ha recuperado" no.
+- **Comprobar el papel con código cuando se pueda.** Un informe del documentalista que contenga una severidad propia se puede detectar y rechazar, igual que una herramienta no permitida.
+
+La lección de fondo: cada salto entre agentes es un sitio donde se pierde o se añade información. Con un solo agente, el modelo ve la línea de la nota; con subagentes, depende de que alguien la copie.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'Tus herramientas devuelven resultados cortos (unas pocas líneas cada una). ¿Qué esperas al pasar a subagentes?',
+			opciones: [
+				{ texto: 'Un contexto principal mucho más pequeño.', porque: 'El informe ocupa lo mismo que lo que resume; aquí, 36916 tokens frente a 37375 ("El contexto principal no bajó").' },
+				{ texto: 'Más tokens en total y más tiempo, sin ahorro de contexto que compense.', correcta: true, porque: 'Cada subagente paga su prompt y sus pasos: 1,7 veces más tokens y casi el doble de tiempo ("Lo que sí costó").' },
+				{ texto: 'Más aciertos, porque cada subagente está especializado.', porque: 'La especialización no garantiza aciertos: aquí fueron 3 de 9 frente a 4.' },
+			],
+		},
+		{
+			pregunta: 'Lanzas tres subagentes a la vez contra tu modelo local y tardan lo mismo que uno detrás de otro. ¿Qué pasa?',
+			opciones: [
+				{ texto: 'Que los hilos de Python no funcionan en paralelo.', porque: 'Las peticiones sí salen a la vez; es el servidor el que las atiende de una en una.' },
+				{ texto: 'Que el servidor atiende una petición cada vez y las demás esperan en cola.', correcta: true, porque: 'Con OLLAMA_NUM_PARALLEL=1, en serie y a la vez dieron 19,7 s ("El paralelo, medido").' },
+			],
+		},
+		{
+			pregunta: 'Un subagente no debe abrir incidencias. ¿Cómo lo garantizas?',
+			opciones: [
+				{ texto: 'Diciéndoselo en el prompt.', porque: 'El documentalista tenía prohibido proponer severidades y propuso una. El prompt no es una barrera.' },
+				{ texto: 'No dándole la herramienta y rechazando en el código cualquier llamada a ella.', correcta: true, porque: 'Es lo que hace PlataformaRestringida, y lo comprueba test_contexto.py.' },
+				{ texto: 'Pidiendo al orquestador que revise lo que hace.', porque: 'El orquestador solo ve el informe, no lo que el subagente ejecutó.' },
+			],
+		},
+		{
+			pregunta: 'El orquestador abre una incidencia que no hacía falta. ¿Por dónde empiezas a depurar?',
+			opciones: [
+				{ texto: 'Por el prompt del orquestador.', porque: 'Puede ser, pero antes hay que saber si sus informes eran correctos.' },
+				{ texto: 'Comparando lo que había en la plataforma, lo que dijeron los informes y lo que decidió el orquestador.', correcta: true, porque: 'El fallo puede estar en el encargo, en el informe o en la decisión (anatomía de la lección).' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- Anthropic, [How we built our multi-agent research system](https://www.anthropic.com/engineering/multi-agent-research-system) (2025). Un orquestador con subagentes en paralelo en producción, con sus cifras de coste en tokens.
+- Cognition, [Don't Build Multi-Agents](https://cognition.ai/blog/dont-build-multi-agents) (2025). La postura contraria: por qué repartir el contexto entre agentes rompe decisiones.
+- Ollama, [FAQ: How does Ollama handle concurrent requests?](https://docs.ollama.com/faq#how-does-ollama-handle-concurrent-requests). `OLLAMA_NUM_PARALLEL` y cuándo el servidor atiende varias peticiones a la vez.
