@@ -4,6 +4,7 @@ description: "Ingesta y chunking: estrategias y sus consecuencias"
 ---
 
 import LabChunking from '../../../components/LabChunking.astro';
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
 
 :::note[Revisado: 2026-10]
 Las medidas son reales, con el modelo de embeddings bge-m3 en Ollama y el corpus del módulo. Los tamaños de fragmento que funcionan mejor dependen de tu documentación: el método para elegirlos, no.
@@ -119,6 +120,67 @@ arquitectura-busqueda@100 la variable de entorno OPENSEARCH_URL para arrancar. S
 **Causa.** El troceado fijo cuenta palabras sin mirar el contenido. Cada corte cae donde toque, y aquí tocó en la frase importante. El segundo fragmento tiene el nombre de la variable, pero ha perdido el sujeto ("la búsqueda") y el título de la sección.
 
 **Solución.** Respeta la estructura (secciones) o añade solape: con 15 palabras de solape, la frase cabe entera en uno de los dos fragmentos. Y mide las evidencias partidas de tu corpus antes de dar por buena una estrategia: es un número barato de calcular que te avisa antes de que fallen las respuestas.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+	{
+		"pregunta": "Con fragmentos de 200 palabras, el recall@3 es el más alto. ¿Te quedas con ellos?",
+		"opciones": [
+			{
+				"texto": "Sí: recuperan mejor.",
+				"porque": "Recuperan mejor porque son casi documentos enteros, y meten 3,5 veces más tokens con mucho texto irrelevante."
+			},
+			{
+				"texto": "Depende: mira también cuánto contexto metes para conseguirlo.",
+				"correcta": true,
+				"porque": "Un recall alto con fragmentos grandes diluye el contexto que recibe el modelo, y cuesta más (\"El compromiso, en números\")."
+			},
+			{
+				"texto": "No: los fragmentos grandes siempre son peores.",
+				"porque": "No hay un tamaño correcto universal. Se decide midiendo."
+			}
+		]
+	},
+	{
+		"pregunta": "La frase con la respuesta queda cortada entre dos fragmentos de tamaño fijo. ¿Qué lo arregla?",
+		"opciones": [
+			{
+				"texto": "Respetar la estructura del documento (secciones) o añadir solape.",
+				"correcta": true,
+				"porque": "Con 15 palabras de solape, la frase cabe entera en uno de los dos fragmentos (anatomía de la lección)."
+			},
+			{
+				"texto": "Recuperar más fragmentos.",
+				"porque": "Seguiría partida: ninguno de los dos fragmentos tiene la frase completa."
+			},
+			{
+				"texto": "Usar un modelo de embeddings mejor.",
+				"porque": "El problema está en el troceado, antes del embedding."
+			}
+		]
+	},
+	{
+		"pregunta": "Cambias la estrategia de troceado. ¿Qué tienes que hacer con el índice?",
+		"opciones": [
+			{
+				"texto": "Nada: el índice se actualiza solo.",
+				"porque": "Los vectores son de los fragmentos antiguos."
+			},
+			{
+				"texto": "Reindexar: recalcular los embeddings de todos los fragmentos.",
+				"correcta": true,
+				"porque": "Un índice con fragmentos de dos estrategias distintas es difícil de depurar (\"Olvidar reindexar\")."
+			},
+			{
+				"texto": "Añadir los fragmentos nuevos a los antiguos.",
+				"porque": "Mezclarías dos estrategias en el mismo índice."
+			}
+		]
+	}
+]}
+/>
 
 ## Para profundizar
 

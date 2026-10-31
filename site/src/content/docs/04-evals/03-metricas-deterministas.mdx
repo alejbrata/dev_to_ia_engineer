@@ -3,6 +3,8 @@ title: "Métricas deterministas"
 description: "Comprobaciones que no necesitan un modelo: cómo escribirlas sin falsos positivos, cómo recalcularlas sobre resultados grabados y cuánto margen de error tienen"
 ---
 
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
 :::note[Revisado: 2026-10]
 La práctica no llama a ningún modelo: trabaja sobre los resultados grabados en las lecciones 01 y 02 (Qwen2.5 1.5B Instruct y bge-m3 en Ollama).
 :::
@@ -159,6 +161,63 @@ n-07: bien → MAL  ['4 horas', 'dos personas']  'La restauración tardó aproxi
 **Causa.** `contiene_subcadena` busca "4 horas" en cualquier posición del texto, y "24 horas" lo contiene. No había ningún error ni aviso: el número salía un punto más alto y parecía normal.
 
 **Solución.** Exigir límites en las comprobaciones de texto: que el dato no vaya pegado a otras cifras o letras. Escribir un test con los casos difíciles ("24 horas", "99,95 %") para que el comprobador no vuelva a romperse. Y, como las respuestas están guardadas, repuntuar todos los resultados anteriores con el comprobador corregido, sin volver a llamar al modelo.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+	{
+		"pregunta": "La respuesta dice \"tardó 24 horas\" y tu comprobador busca \"4 horas\". ¿Qué devuelve un comprobador ingenuo de subcadenas?",
+		"opciones": [
+			{
+				"texto": "Que la respuesta es correcta: un falso positivo.",
+				"correcta": true,
+				"porque": "\"4 horas\" está dentro de \"24 horas\". Por eso el comprobador del curso exige límites de palabra y número (pregunta n-07)."
+			},
+			{
+				"texto": "Que es incorrecta.",
+				"porque": "Una búsqueda de subcadena sin límites encuentra \"4 horas\" dentro de \"24 horas\"."
+			}
+		]
+	},
+	{
+		"pregunta": "Tu sistema acierta 28 de 42. ¿Qué intervalo de confianza del 95 % le corresponde, más o menos?",
+		"opciones": [
+			{
+				"texto": "Un 67 % exacto.",
+				"porque": "El 67 % es la estimación. Con 42 casos, el valor real puede estar bastante lejos."
+			},
+			{
+				"texto": "Entre un 52 % y un 79 %.",
+				"correcta": true,
+				"porque": "Es el intervalo de Wilson para 28 de 42. Con pocos casos, el margen es amplio."
+			},
+			{
+				"texto": "Entre un 66 % y un 68 %.",
+				"porque": "Ese margen sería de miles de casos, no de 42."
+			}
+		]
+	},
+	{
+		"pregunta": "Para comparar dos versiones sobre los mismos casos, ¿qué cuenta la prueba de McNemar?",
+		"opciones": [
+			{
+				"texto": "Los casos que una gana y la otra pierde.",
+				"correcta": true,
+				"porque": "Los casos que las dos aciertan o fallan no dicen nada de la diferencia."
+			},
+			{
+				"texto": "La diferencia entre los totales.",
+				"porque": "Dos versiones pueden tener el mismo total y fallar casos distintos."
+			},
+			{
+				"texto": "La media de la latencia.",
+				"porque": "McNemar compara aciertos caso a caso, no tiempos."
+			}
+		]
+	}
+]}
+/>
 
 ## Para profundizar
 

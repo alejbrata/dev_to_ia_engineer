@@ -3,6 +3,8 @@ title: "Qué hace un AI Engineer (y qué no)"
 description: "Qué hace un AI Engineer (y qué no): frente a ML Engineer, Data Scientist y dev \"que usa IA\""
 ---
 
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
 ## Objetivos
 
 Al terminar esta lección podrás:
@@ -138,6 +140,85 @@ El modelo ha añadido una frase de cortesía antes del JSON. No es un bug del mo
 **Solución.** No confíes en el formato; contrólalo y valídalo. Los proveedores ofrecen salida estructurada, que restringe la respuesta a un esquema. Además, valida siempre lo que llega y decide qué hacer si falla: reintentar, corregir o registrar el error. Lo verás a fondo en [Salida estructurada](../../02-prompting/03-salida-estructurada/).
 
 La lección general sirve para todo el curso: cada vez que uses la salida de un modelo, pregúntate qué pasa si no viene como esperas.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+	{
+		"pregunta": "Tu equipo quiere un asistente que responda dudas internas usando la documentación de la empresa. ¿Qué perfil encaja mejor?",
+		"opciones": [
+			{
+				"texto": "ML Engineer, porque hay que entrenar un modelo con esa documentación.",
+				"porque": "No hace falta entrenar: se construye sobre un modelo ya entrenado, conectándolo con los datos (RAG)."
+			},
+			{
+				"texto": "AI Engineer: RAG sobre un modelo ya entrenado.",
+				"correcta": true,
+				"porque": "Construir producto sobre modelos existentes, con datos propios y medido con evals, es justo el rol (\"Cuatro perfiles que se confunden\")."
+			},
+			{
+				"texto": "Data Scientist, porque hay que analizar los documentos.",
+				"porque": "El entregable del Data Scientist suele ser una decisión o un informe, no un servicio en producción."
+			}
+		]
+	},
+	{
+		"pregunta": "Un compañero integra una llamada a un LLM, la prueba con tres ejemplos y la da por terminada. ¿Qué le falta para hacer el trabajo de un AI Engineer?",
+		"opciones": [
+			{
+				"texto": "Entrenar un modelo propio.",
+				"porque": "El AI Engineer rara vez entrena desde cero. Lo que falta está después de la demo."
+			},
+			{
+				"texto": "Medir, depurar y sostener el sistema cuando el modelo se equivoque.",
+				"correcta": true,
+				"porque": "Es la diferencia entre el dev \"que usa IA\" y el puesto: lo que viene después de la demo."
+			},
+			{
+				"texto": "Un prompt más largo.",
+				"porque": "El prompt es una pieza más, como una consulta SQL. No sustituye a medir."
+			}
+		]
+	},
+	{
+		"pregunta": "En un sistema con un LLM, ¿cuál de estos casos cuenta como error aunque la llamada HTTP devuelva 200?",
+		"opciones": [
+			{
+				"texto": "Ninguno: si la llamada fue bien, no hay error.",
+				"porque": "Con un LLM también es error una respuesta que llega bien pero no sirve (\"Mide y depura\")."
+			},
+			{
+				"texto": "Un JSON mal formado o un dato inventado en la respuesta.",
+				"correcta": true,
+				"porque": "La tasa de error incluye respuestas inválidas, no solo excepciones. Medir eso es el tema del módulo 4."
+			},
+			{
+				"texto": "Que la respuesta tarde más de un segundo.",
+				"porque": "Eso es latencia, otra métrica. Una respuesta lenta pero correcta no es un error."
+			}
+		]
+	},
+	{
+		"pregunta": "Parseas con json.loads la respuesta de un modelo y falla con Expecting value: line 1 column 1 (char 0). ¿Qué es lo más probable?",
+		"opciones": [
+			{
+				"texto": "El modelo ha añadido texto antes del JSON.",
+				"correcta": true,
+				"porque": "El primer carácter no es el comienzo de un JSON: típicamente, una frase de cortesía como \"Claro, aquí tienes el JSON\" (anatomía de la lección)."
+			},
+			{
+				"texto": "La librería json de Python tiene un bug.",
+				"porque": "El error dice exactamente dónde falla: en el primer carácter. El texto no empieza como un JSON."
+			},
+			{
+				"texto": "El JSON tiene demasiados campos.",
+				"porque": "Los campos de más no impiden parsear. El fallo es en la posición 0."
+			}
+		]
+	}
+]}
+/>
 
 ## Para profundizar
 

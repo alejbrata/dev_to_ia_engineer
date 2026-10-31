@@ -30,6 +30,7 @@ SECCIONES = [
     "Práctica",
     "Mide y depura",
     "Errores frecuentes",
+    "Comprueba lo que has entendido",
     "Para profundizar",
 ]
 

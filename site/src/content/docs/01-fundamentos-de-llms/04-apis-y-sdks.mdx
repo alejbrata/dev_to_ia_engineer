@@ -4,6 +4,7 @@ description: "APIs y SDKs: llamada mínima, streaming, mensajes y roles"
 ---
 
 import ReproduccionStreaming from '../../../components/ReproduccionStreaming.astro';
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
 
 
 :::note[Revisado: 2026-10]
@@ -244,6 +245,81 @@ motivo: {"error":"You have no remaining credits. Purchase pre-paid credits to co
 **Causa.** El token es válido y tiene el permiso correcto, pero la cuenta no tiene créditos. En Hugging Face, las cuentas gratuitas no los incluyen: el token sirve para descargar modelos sin límites estrictos, pero llamar a un proveedor en la nube cuesta dinero.
 
 **Solución.** Compra créditos, suscríbete a PRO o usa un modelo local. Y en cualquier proveedor, comprueba la facturación antes de culpar a tu código: un 402 o un 429 por cuota agotada pueden aparecer de un día para otro en un sistema que funcionaba.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+	{
+		"pregunta": "Tu chat debe recordar lo que el usuario dijo hace dos turnos. ¿Qué tiene que hacer tu código?",
+		"opciones": [
+			{
+				"texto": "Nada: la API guarda la conversación.",
+				"porque": "La API no guarda estado. Cada llamada es independiente."
+			},
+			{
+				"texto": "Reenviar la conversación entera en cada petición.",
+				"correcta": true,
+				"porque": "Es como HTTP sin sesión: el estado lo mantiene el cliente, y cada turno paga en tokens los anteriores (\"Mensajes y roles\")."
+			},
+			{
+				"texto": "Ponerlo en el mensaje de sistema una vez al principio.",
+				"porque": "El mensaje de sistema también hay que reenviarlo en cada llamada. La API no recuerda nada."
+			}
+		]
+	},
+	{
+		"pregunta": "¿Cuál de estos errores tiene sentido reintentar automáticamente?",
+		"opciones": [
+			{
+				"texto": "Un 401 (credenciales).",
+				"porque": "Un 401 no se arregla solo. Reintentarlo retrasa el error."
+			},
+			{
+				"texto": "Un 402 (sin saldo).",
+				"porque": "Tampoco se arregla solo: hay que añadir créditos."
+			},
+			{
+				"texto": "Un 429 (límite de uso) o un 5xx.",
+				"correcta": true,
+				"porque": "Son errores transitorios. curso_core reintenta 429, 5xx y timeouts con backoff y jitter, y ningún otro 4xx (\"Errores HTTP: cuáles se reintentan\")."
+			}
+		]
+	},
+	{
+		"pregunta": "Activas el streaming en tu asistente. ¿Qué mejora?",
+		"opciones": [
+			{
+				"texto": "El tiempo total de la respuesta.",
+				"porque": "El streaming no hace la respuesta más rápida: el modelo genera al mismo ritmo."
+			},
+			{
+				"texto": "El tiempo hasta que el usuario ve el primer fragmento.",
+				"correcta": true,
+				"porque": "En la práctica, el primer fragmento llegó en 0,37 s y la respuesta completa, en 7,37 s (\"Streaming\")."
+			},
+			{
+				"texto": "El coste en tokens.",
+				"porque": "El modelo genera los mismos tokens con streaming o sin él."
+			}
+		]
+	},
+	{
+		"pregunta": "Pones en el mensaje de sistema \"responde siempre en mayúsculas\" y el modelo no lo hace. ¿Qué conclusión sacas?",
+		"opciones": [
+			{
+				"texto": "Que el mensaje de sistema no se ha enviado.",
+				"porque": "Se envió. En la práctica, el contador no cambió porque el tuyo sustituyó al de Ollama, que ocupaba lo mismo."
+			},
+			{
+				"texto": "Que el mensaje de sistema es una instrucción, no una garantía.",
+				"correcta": true,
+				"porque": "Los modelos pequeños lo ignoran a veces. Si necesitas un formato garantizado, valídalo en el código (\"Errores frecuentes\")."
+			}
+		]
+	}
+]}
+/>
 
 ## Para profundizar
 

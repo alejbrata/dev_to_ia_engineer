@@ -3,6 +3,8 @@ title: "Ventana de contexto y sus límites"
 description: "Ventana de contexto, límites y qué pasa cuando te pasas"
 ---
 
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
 :::note[Revisado: 2026-10]
 Las medidas de esta lección se tomaron con el modelo con el que se construyó el curso (Qwen2.5 1.5B Instruct) en Ollama 0.40.13, en un equipo sin GPU. El comportamiento al superar el contexto no está documentado por Ollama y puede cambiar entre versiones: ejecuta la práctica para ver el de la tuya.
 :::
@@ -196,6 +198,81 @@ El servidor procesó un tercio de lo que mandaste.
 **Causa.** El contexto por defecto de Ollama (4 096 tokens en este equipo) era menor que el prompt. Ollama descartó el principio del texto, donde estaba el dato, sin avisar. El modelo respondió con lo que le quedaba.
 
 **Solución.** A corto plazo, amplía el contexto (`Opciones(contexto=8192)` u `OLLAMA_CONTEXT_LENGTH`) para que quepa tu caso. A largo plazo, mide: registra los tokens procesados de cada llamada y alerta cuando sean menos que los enviados. Y no metas en el prompt más de lo necesario; en el módulo de RAG aprenderás a seleccionar solo los fragmentos relevantes.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+	{
+		"pregunta": "La ficha de tu modelo dice que admite 32 768 tokens y mandas un texto de 10 000 a Ollama. ¿Qué puede pasar?",
+		"opciones": [
+			{
+				"texto": "Nada: cabe de sobra.",
+				"porque": "Cabe en el máximo del modelo, pero Ollama usa por defecto 4 096 en equipos con poca memoria de GPU. Mira el contexto real con ollama ps."
+			},
+			{
+				"texto": "Que Ollama recorte el principio en silencio, porque usa un contexto configurado menor.",
+				"correcta": true,
+				"porque": "El máximo del modelo y el contexto configurado son cosas distintas, y Ollama recorta sin avisar (\"Qué es la ventana de contexto\")."
+			},
+			{
+				"texto": "Que Ollama devuelva un error 400.",
+				"porque": "Eso lo hace llama.cpp. Ollama recorta en silencio y sigue adelante."
+			}
+		]
+	},
+	{
+		"pregunta": "Una respuesta sale con seguridad y sin errores, pero el dato que pedías estaba al principio de un texto largo. ¿Qué métrica te dice si se recortó?",
+		"opciones": [
+			{
+				"texto": "Que tokens_entrada sea menor que los tokens de tu texto.",
+				"correcta": true,
+				"porque": "Con la plantilla de chat, el servidor debería procesar siempre algo más que tu texto. Si procesa menos, ha recortado (\"Tokens enviados frente a procesados\")."
+			},
+			{
+				"texto": "Que motivo_fin sea stop.",
+				"porque": "En la anatomía, la respuesta inventada terminó con stop. motivo_fin habla de la salida, no de si se recortó la entrada."
+			},
+			{
+				"texto": "La latencia de la llamada.",
+				"porque": "No distingue entre un texto procesado entero y uno recortado."
+			}
+		]
+	},
+	{
+		"pregunta": "Para que nunca te recorte, decides poner el contexto al máximo en todas las llamadas. ¿Qué problema tiene?",
+		"opciones": [
+			{
+				"texto": "Ninguno: más contexto siempre es mejor.",
+				"porque": "Más contexto reserva memoria aunque no la llenes y, si la llenas, multiplica la latencia."
+			},
+			{
+				"texto": "Reserva memoria aunque no la uses, y llenarla multiplica la latencia.",
+				"correcta": true,
+				"porque": "Dimensiona según la distribución de tokens_entrada en tus trazas, con margen, no al máximo (\"Errores frecuentes\")."
+			},
+			{
+				"texto": "El modelo deja de seguir instrucciones.",
+				"porque": "No es lo que se mide en la lección. El coste es de memoria y de latencia."
+			}
+		]
+	},
+	{
+		"pregunta": "Pruebas tu sistema con un documento en el que el dato importante está al final, y funciona. ¿Es suficiente?",
+		"opciones": [
+			{
+				"texto": "Sí, si funciona con un documento real.",
+				"porque": "En la práctica, el caso con el dato al final acertaba aunque el texto se recortaba: lo importante estaba en la parte que se conservó."
+			},
+			{
+				"texto": "No: prueba con la información importante en distintas posiciones.",
+				"correcta": true,
+				"porque": "Un recorte del principio no se nota si tu dato de prueba está al final (\"Validar solo con casos que funcionan por casualidad\")."
+			}
+		]
+	}
+]}
+/>
 
 ## Para profundizar
 

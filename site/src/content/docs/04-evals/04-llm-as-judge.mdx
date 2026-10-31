@@ -3,6 +3,8 @@ title: "LLM-as-judge"
 description: "Usar un modelo como juez: calibrarlo con etiquetas ancladas al corpus, medir su acuerdo, mejorarlo moviendo parte del juicio a código y conocer sus fallos"
 ---
 
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
 :::note[Revisado: 2026-10]
 Las salidas son reales. Los jueces son Qwen2.5 7B Instruct (rol `judge`) y Qwen2.5 1.5B Instruct, en Ollama, sobre CPU. Las respuestas evaluadas son las del RAG de las lecciones anteriores.
 :::
@@ -170,6 +172,77 @@ real-m3-26 (etiqueta: no fiel, juez: fiel)
 **Causa.** El código comprueba que la cita existe, no que apoye la afirmación. Esa segunda parte la hace el modelo, y el modelo eligió la frase que habla del tema (avisar a atención al cliente según la severidad) sin comprobar que dijera lo mismo. Una frase relacionada pasa por una frase de apoyo.
 
 **Solución.** Hay varias, y todas se validan contra las etiquetas: pedir al juez que, además de citar, diga si la cita implica la afirmación (una segunda pregunta, más concreta); usar un modelo de inferencia textual entrenado para eso (NLI, *natural language inference*); o, como mínimo, conocer este fallo y no usar el veredicto "fiel" del juez como garantía. Cuando el juez marca una respuesta como no fiel, acierta casi siempre; cuando la marca como fiel, se le pueden colar respuestas así.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+	{
+		"pregunta": "Tu juez detecta el 100 % de las respuestas no fieles, pero su especificidad es del 69 %. ¿Qué pasa?",
+		"opciones": [
+			{
+				"texto": "Que suspende de más: rechaza muchas respuestas fieles.",
+				"correcta": true,
+				"porque": "Un juez que sospecha de todo detecta todas las trampas. La especificidad y la kappa lo delatan; la sensibilidad sola, no."
+			},
+			{
+				"texto": "Que es un juez casi perfecto.",
+				"porque": "Detecta todo porque marca casi todo. Rechazó 11 de 35 respuestas fieles."
+			}
+		]
+	},
+	{
+		"pregunta": "¿Por qué la kappa de Cohen es mejor que el porcentaje de acuerdo para calibrar un juez?",
+		"opciones": [
+			{
+				"texto": "Porque descuenta el acuerdo que se daría por azar.",
+				"correcta": true,
+				"porque": "Un juez que siempre da la misma respuesta tiene kappa 0, aunque acierte mucho si una clase domina."
+			},
+			{
+				"texto": "Porque es más fácil de calcular.",
+				"porque": "No es por eso: el acuerdo bruto engaña cuando las clases están desequilibradas."
+			},
+			{
+				"texto": "Porque mide la latencia del juez.",
+				"porque": "La kappa mide acuerdo con las etiquetas, no tiempo."
+			}
+		]
+	},
+	{
+		"pregunta": "Con el juez v2, el modelo copia la frase que apoya cada afirmación y el código comprueba que existe. ¿Qué fallo le sigue colando?",
+		"opciones": [
+			{
+				"texto": "Una cita que existe pero no apoya la afirmación.",
+				"correcta": true,
+				"porque": "El código comprueba que la cita existe, no que diga lo mismo. Es la anatomía de la lección."
+			},
+			{
+				"texto": "Una cita inventada.",
+				"porque": "Esa la caza el código: comprueba que la frase está en el contexto."
+			},
+			{
+				"texto": "Ninguno: el código lo comprueba todo.",
+				"porque": "Lo que el código no puede comprobar (que la cita implique la afirmación) sigue dependiendo del modelo."
+			}
+		]
+	},
+	{
+		"pregunta": "Quieres ahorrar usando como juez el mismo modelo de 1,5B que genera las respuestas. ¿Qué esperas?",
+		"opciones": [
+			{
+				"texto": "Que funcione igual de bien.",
+				"porque": "Con el de 1,5B, el mismo juez v2 detectaba el 45 % de las respuestas no fieles, con kappa 0,26."
+			},
+			{
+				"texto": "Que no sirva: para juzgar, usa un modelo más capaz que el que genera.",
+				"correcta": true,
+				"porque": "Si el generador comete un error, es probable que un juez igual de pequeño no lo vea."
+			}
+		]
+	}
+]}
+/>
 
 ## Para profundizar
 

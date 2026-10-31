@@ -3,6 +3,8 @@ title: "Prompts como código"
 description: "Prompts como código: versionado y plantillas"
 ---
 
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
 :::note[Revisado: 2026-10]
 Las salidas son reales, con el modelo con el que se construyó el curso (Qwen2.5 1.5B Instruct en Ollama). El formato de los ficheros de prompt es el de este curso; las ideas valen para cualquier formato.
 :::
@@ -165,6 +167,63 @@ servicio: usuarios
 **Causa.** `str.replace` no avisa cuando no encuentra el texto que busca. El modelo, por su parte, no dice "no veo ningún ticket": hace lo que se le pide con lo que tiene. Un modelo rara vez se niega a contestar porque la entrada esté vacía o rota.
 
 **Solución.** Declara las variables y comprueba que encajan antes de llamar al modelo. `curso_core.prompts` lo hace y lanza `ErrorPrompt` con las que faltan y las que sobran. Además, el repositorio tiene un test que carga todos los prompts de `prompts/` en cada ejecución de CI: un prompt mal formado no llega a `main`.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+	{
+		"pregunta": "Aparece en producción una respuesta extraña. ¿Qué necesitas para saber qué prompt la generó?",
+		"opciones": [
+			{
+				"texto": "El identificador del prompt con su versión en la traza de la llamada.",
+				"correcta": true,
+				"porque": "Por eso cada cambio del prompt sube la versión: las trazas guardan id@vN (\"Versión y trazas\")."
+			},
+			{
+				"texto": "Preguntárselo al modelo.",
+				"porque": "El modelo no sabe qué versión del prompt recibió. Tiene que quedar registrado."
+			},
+			{
+				"texto": "El historial de git, sin más.",
+				"porque": "Git tiene el historial, pero sin la versión en la traza no sabes cuál estaba desplegada en esa llamada."
+			}
+		]
+	},
+	{
+		"pregunta": "Alguien renombra {{ticket}} a {{texto}} en el fichero del prompt, pero no en el código. ¿Qué debería pasar?",
+		"opciones": [
+			{
+				"texto": "Que el modelo reciba {{texto}} sin rellenar.",
+				"porque": "Es lo que pasa con un reemplazo ingenuo, y el modelo responde a ciegas."
+			},
+			{
+				"texto": "Que la llamada falle antes de llegar al modelo, con un error que diga qué falta y qué sobra.",
+				"correcta": true,
+				"porque": "curso_core.prompts lanza ErrorPrompt: mejor fallar aquí que mandar un prompt roto (\"Variables comprobadas\")."
+			}
+		]
+	},
+	{
+		"pregunta": "Despliegas la versión 2 de un prompt. ¿Cómo sabes si ha subido la tasa de error?",
+		"opciones": [
+			{
+				"texto": "Agrupando las trazas por prompt y comparando las métricas de cada versión.",
+				"correcta": true,
+				"porque": "Así ves tokens, latencia, coste y errores de cada versión por separado (\"Métricas por versión\")."
+			},
+			{
+				"texto": "Mirando la tasa de error global del servicio.",
+				"porque": "Mezcla versiones, prompts y causas. No te dice qué cambió."
+			},
+			{
+				"texto": "No se puede saber en producción.",
+				"porque": "Con el id del prompt en cada traza, sí se puede."
+			}
+		]
+	}
+]}
+/>
 
 ## Para profundizar
 

@@ -4,6 +4,7 @@ description: "Qué es un embedding, cómo se compara, por qué el modelo de inde
 ---
 
 import LabEmbeddings from '../../../components/LabEmbeddings.astro';
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
 
 :::note[Revisado: 2026-10]
 Las salidas son reales, con los modelos de embeddings bge-m3, nomic-embed-text y qwen3-embedding (0.6B) en Ollama, y PostgreSQL 18 con pgvector 0.8.7 en Docker. Puedes usar otros modelos: cámbialos en `config/models.toml` y vuelve a medir.
@@ -195,6 +196,67 @@ El segundo caso no da ningún error. qwen3-embedding también genera vectores de
 **Causa.** Los vectores de dos modelos distintos no son comparables. Que tengan la misma longitud es una coincidencia que oculta el problema: el código no tiene forma de saber que esos números vienen de espacios distintos.
 
 **Solución.** El error ruidoso es el bueno: te avisa. El silencioso solo lo detectas de dos formas. Guardando con el índice el nombre del modelo y negándote a consultar si no coincide con el de la configuración. Y midiendo la recuperación con tus preguntas de evaluación después de cada cambio de configuración, como harás en el módulo 4. Un recall que pasa del 85 % al 4 % no necesita interpretación.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+	{
+		"pregunta": "Alguien cambia el modelo de embeddings en la configuración, sin reindexar, por otro con las mismas dimensiones. ¿Qué pasa?",
+		"opciones": [
+			{
+				"texto": "Da un error de dimensiones.",
+				"porque": "Solo si las dimensiones son distintas. Con las mismas, la multiplicación funciona."
+			},
+			{
+				"texto": "Nada: las búsquedas siguen funcionando igual.",
+				"porque": "Funcionan sin error, pero devuelven resultados prácticamente aleatorios."
+			},
+			{
+				"texto": "No da ningún error, pero la recuperación se hunde.",
+				"correcta": true,
+				"porque": "En la práctica, el recall@3 cayó del 85 % al 4 %. Los vectores de dos modelos no son comparables (anatomía de la lección)."
+			}
+		]
+	},
+	{
+		"pregunta": "Dos frases que dicen lo mismo dan 0,63 de similitud y dos sin relación, 0,53. ¿Cómo lo lees?",
+		"opciones": [
+			{
+				"texto": "Como porcentajes de acierto: 63 % y 53 %.",
+				"porque": "La similitud no es un porcentaje. Cada modelo reparte sus valores en un rango distinto."
+			},
+			{
+				"texto": "Lo que importa es el orden entre fragmentos, no el número absoluto.",
+				"correcta": true,
+				"porque": "Con este modelo, temas sin relación pueden dar 0,5 (\"La similitud no es un porcentaje de acierto\")."
+			},
+			{
+				"texto": "Que el modelo no distingue las frases.",
+				"porque": "Las distingue: ordena la parecida por encima. Lo que falla es leer el número como un porcentaje."
+			}
+		]
+	},
+	{
+		"pregunta": "Tu búsqueda en pgvector tarda 97 ms con 97 fragmentos. ¿Dónde se va el tiempo?",
+		"opciones": [
+			{
+				"texto": "En la consulta SQL: hay que añadir un índice.",
+				"porque": "La consulta tarda 2,3 ms. Con 97 filas, PostgreSQL prefiere recorrer la tabla."
+			},
+			{
+				"texto": "En calcular el embedding de la pregunta.",
+				"correcta": true,
+				"porque": "Unos 75 ms. Con este volumen, la base de datos no es el cuello de botella (\"Dónde se va el tiempo\")."
+			},
+			{
+				"texto": "En la red.",
+				"porque": "La base de datos está en local. El tiempo se va en el modelo de embeddings."
+			}
+		]
+	}
+]}
+/>
 
 ## Para profundizar
 

@@ -3,11 +3,13 @@ title: "Cómo usar este curso"
 description: "Cómo usar este curso: estructura, prerrequisitos, ritmo, tu fork del repo"
 ---
 
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
 ## Objetivos
 
 Al terminar esta lección podrás:
 
-- Describir las seis secciones de una lección y para qué sirve cada una.
+- Describir las siete secciones de una lección y para qué sirve cada una.
 - Comprobar si cumples los prerrequisitos.
 - Tener tu propia copia (fork) del repositorio del curso, clonada y abierta en VS Code.
 - Localizar en el repo el código, la configuración y el texto de cada lección.
@@ -34,14 +36,15 @@ Los anexos recogen lo específico de herramientas concretas. El núcleo del curs
 
 ### Cómo es cada lección
 
-Todas las lecciones siguen las mismas seis secciones, en este orden:
+Todas las lecciones siguen las mismas siete secciones, en este orden:
 
 1. **Objetivos.** Lo que sabrás hacer al terminar. Son verificables: úsalos para comprobar si has aprendido algo.
 2. **Teoría.** Lo justo para entender la práctica.
 3. **Práctica.** Código ejecutable en `modulos/NN-*/`.
 4. **Mide y depura.** Qué instrumentar, qué métrica mirar y cómo iterar con datos.
 5. **Errores frecuentes.** Incluye al menos una "Anatomía de un error": un error real, cómo leerlo, su causa y la solución.
-6. **Para profundizar.** Fuentes primarias: papers y documentación oficial.
+6. **Comprueba lo que has entendido.** Tres o cuatro preguntas para aplicar lo que acabas de leer. Al elegir una opción, te explica por qué es correcta o no y qué releer si fallas. No hay nota ni registro: es para ti.
+7. **Para profundizar.** Fuentes primarias: papers y documentación oficial.
 
 No te saltes "Mide y depura". Es la sección que más te acerca al trabajo real.
 
@@ -165,6 +168,67 @@ fatal: repository 'https://github.com/alejbrata/dev_to_ia_enginer.git/' not foun
 **Causa.** Una errata en el nombre. GitHub responde igual si el repositorio no existe y si es privado y no tienes acceso, así que también puede ser que estés usando una cuenta distinta de la del fork.
 
 **Solución.** No escribas URLs a mano: cópialas del botón **Code** de GitHub. Y si la URL es correcta, comprueba con qué cuenta está autenticado git.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+	{
+		"pregunta": "Has clonado el repositorio original del curso, no tu fork, y git push falla. ¿Qué haces?",
+		"opciones": [
+			{
+				"texto": "Borrar la carpeta y empezar de nuevo.",
+				"porque": "No hace falta perder nada: basta con cambiar el remoto."
+			},
+			{
+				"texto": "Hacer el fork y apuntar el remoto a él con git remote set-url origin.",
+				"correcta": true,
+				"porque": "El repositorio original es de otra persona. Con el remoto apuntando a tu fork, tus cambios suben a tu cuenta (\"Errores frecuentes\")."
+			},
+			{
+				"texto": "Pedir permisos de escritura en el repositorio original.",
+				"porque": "La idea es que trabajes en tu copia, para conservar tus cambios y seguir recibiendo las actualizaciones."
+			}
+		]
+	},
+	{
+		"pregunta": "Abres la carpeta modulos/ en VS Code y no aparecen las tareas del curso. ¿Por qué?",
+		"opciones": [
+			{
+				"texto": "Porque las tareas se instalan aparte.",
+				"porque": "Ya vienen en el repositorio, en .vscode/."
+			},
+			{
+				"texto": "Porque la configuración está en .vscode/ de la raíz, y solo funciona abriendo la raíz.",
+				"correcta": true,
+				"porque": "Hay que abrir la carpeta dev_to_ia_engineer, no una subcarpeta (paso 4 de la práctica)."
+			},
+			{
+				"texto": "Porque falta la extensión de Python.",
+				"porque": "Aunque esté instalada, sin abrir la raíz no ve la configuración del curso."
+			}
+		]
+	},
+	{
+		"pregunta": "git clone falla con remote: Repository not found y la URL es correcta. ¿Qué compruebas?",
+		"opciones": [
+			{
+				"texto": "Con qué cuenta está autenticado git.",
+				"correcta": true,
+				"porque": "GitHub responde igual si el repositorio no existe que si es privado y no tienes acceso (anatomía de la lección)."
+			},
+			{
+				"texto": "La versión de git.",
+				"porque": "Una versión vieja no hace que GitHub diga que el repositorio no existe."
+			},
+			{
+				"texto": "Que tengas espacio en disco.",
+				"porque": "El mensaje lo escribe el servidor (la línea remote:): el problema está en la URL o en el acceso."
+			}
+		]
+	}
+]}
+/>
 
 ## Para profundizar
 

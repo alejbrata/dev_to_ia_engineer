@@ -3,6 +3,8 @@ title: "Cuándo usar RAG (y cuándo no)"
 description: "Cuándo usar RAG (y cuándo no)"
 ---
 
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
 :::note[Revisado: 2026-10]
 Las salidas son reales, con el modelo con el que se construyó el curso (Qwen2.5 1.5B Instruct) y el modelo de embeddings bge-m3, en Ollama. Los precios de la comparación son los publicados por la API de Hugging Face en la fecha de revisión.
 :::
@@ -138,6 +140,67 @@ Pregunta número 28, sin respuesta en la documentación: la plataforma no tiene 
 **Causa.** El RAG siempre devuelve los k fragmentos más parecidos, aunque ninguno sea relevante. Para el modelo, "aquí hay documentación sobre bases de datos de servicios" se parece mucho a "aquí está la respuesta". El prompt le pide decir "No aparece en la documentación", pero el contexto le da material para no hacerlo.
 
 **Solución.** Dos defensas, que verás más adelante. En la recuperación: fíjate en la puntuación. La mejor coincidencia para esta pregunta es 0,47. En las 26 preguntas con respuesta, la mejor coincidencia va de 0,57 a 0,85 (mediana 0,68); en las 4 sin respuesta, de 0,47 a 0,60. Los rangos se solapan, así que un umbral mínimo ayuda pero no basta: con 0,60, descartarías 2 preguntas que sí tienen respuesta y dejarías pasar una que no. En la generación: pedir citas y comprobar que la respuesta se apoya en ellas (lección 06).
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+	{
+		"pregunta": "Tu documentación ocupa 5 000 tokens y quieres un asistente que la conozca. ¿Por dónde empiezas?",
+		"opciones": [
+			{
+				"texto": "Montando un RAG con base vectorial.",
+				"porque": "Antes, prueba la alternativa sencilla: en la práctica, meterlo todo con contexto suficiente acertaba más que el RAG (19 frente a 17 de 26)."
+			},
+			{
+				"texto": "Midiendo cuánto acierta metiéndola entera, con un contexto que quepa.",
+				"correcta": true,
+				"porque": "Si cabe en el contexto, es la línea base. RAG compensa cuando no cabe o cuando el coste por pregunta importa (\"Errores frecuentes\")."
+			},
+			{
+				"texto": "Entrenando el modelo con la documentación.",
+				"porque": "Es lo último que necesitas. Primero, darle el contexto."
+			}
+		]
+	},
+	{
+		"pregunta": "Metes toda la documentación en el prompt y los aciertos son peores que con RAG, sin ningún error. ¿Qué sospechas?",
+		"opciones": [
+			{
+				"texto": "Que el servidor recortó el prompt por un contexto por defecto pequeño.",
+				"correcta": true,
+				"porque": "Con los 4 096 tokens por defecto de Ollama, \"meterlo todo\" dio 9 de 26: recortó en silencio (\"Leer la tabla\")."
+			},
+			{
+				"texto": "Que el modelo es demasiado pequeño.",
+				"porque": "Con contexto suficiente, el mismo modelo acertó 19 de 26."
+			},
+			{
+				"texto": "Que la documentación está mal escrita.",
+				"porque": "Es la misma documentación que funciona con contexto suficiente."
+			}
+		]
+	},
+	{
+		"pregunta": "Tu RAG responde con mucha seguridad sobre un servicio que no existe. ¿Por qué pasa?",
+		"opciones": [
+			{
+				"texto": "El RAG siempre devuelve los k fragmentos más parecidos, aunque ninguno sea relevante.",
+				"correcta": true,
+				"porque": "El modelo completa el patrón con lo que se parece (anatomía de la lección). Por eso hay que evaluar preguntas sin respuesta."
+			},
+			{
+				"texto": "Porque el índice tiene un fragmento con ese servicio.",
+				"porque": "No existe en la documentación: el modelo lo dedujo de los fragmentos parecidos."
+			},
+			{
+				"texto": "Porque la temperatura era alta.",
+				"porque": "Con temperatura 0 pasa igual: el problema es el contexto que recibe."
+			}
+		]
+	}
+]}
+/>
 
 ## Para profundizar
 

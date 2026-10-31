@@ -3,6 +3,8 @@ title: "Tool calling básico"
 description: "Tool calling básico"
 ---
 
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
 :::note[Revisado: 2026-10]
 Las salidas son reales, con el modelo con el que se construyó el curso (Qwen2.5 1.5B Instruct) y uno mayor de la misma familia (Qwen2.5 7B Instruct), en Ollama. La capacidad de usar herramientas varía mucho entre modelos: compruébala con el tuyo.
 :::
@@ -148,6 +150,63 @@ servicio: autenticacion
 **Causa.** El modelo tiene una idea propia de cómo es el sistema: para él, el login es un servicio de autenticación. Ni el esquema de la herramienta (que Ollama no aplica) ni el mensaje de error cambian esa idea. Es el mismo error de la lección 01 (mezclar categorías y servicios), ahora dentro de una herramienta.
 
 **Solución.** Lo que hizo bien el código: validar antes de ejecutar. Si la herramienta hubiera sido "reiniciar servicio", ejecutarla con un argumento inventado habría sido un problema real. Para la respuesta final, impón el esquema con salida estructurada (lección 03), que sí es obligatorio. Y si un argumento inválido se repite, no reintentes indefinidamente: marca el caso para revisión. En el módulo de agentes verás cómo limitar estos bucles.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+	{
+		"pregunta": "Le das al modelo una herramienta reiniciar_servicio. ¿Quién la ejecuta?",
+		"opciones": [
+			{
+				"texto": "El modelo, cuando decide usarla.",
+				"porque": "El modelo solo responde con una petición estructurada. No ejecuta nada."
+			},
+			{
+				"texto": "Tu código, que decide si la ejecuta y con qué argumentos.",
+				"correcta": true,
+				"porque": "Eso te da el control: qué se ejecuta, con qué permisos y con qué argumentos (\"El modelo no ejecuta nada\")."
+			},
+			{
+				"texto": "El servidor del modelo.",
+				"porque": "Ollama o el proveedor solo devuelven la petición. La ejecución es cosa tuya."
+			}
+		]
+	},
+	{
+		"pregunta": "El esquema de la herramienta solo admite cinco servicios, y el modelo pide servicio=autenticacion. ¿Qué haces?",
+		"opciones": [
+			{
+				"texto": "Confiar en el servidor: no debería haberlo permitido.",
+				"porque": "Ollama no restringe los argumentos de las herramientas como hace con la salida estructurada."
+			},
+			{
+				"texto": "Validar los argumentos antes de ejecutar y devolver el error al modelo.",
+				"correcta": true,
+				"porque": "Valida lo que te pide como validarías cualquier petición de un cliente externo (anatomía de la lección)."
+			},
+			{
+				"texto": "Ejecutarla igualmente con el valor más parecido.",
+				"porque": "No ejecutes nada que no hayas validado."
+			}
+		]
+	},
+	{
+		"pregunta": "Con la herramienta, el modelo de 7B acierta 9 de 10, y el de 1,5B sin ella acertaba 3. ¿Cuánto aporta la herramienta?",
+		"opciones": [
+			{
+				"texto": "Seis aciertos.",
+				"porque": "Estás comparando modelos distintos. Casi toda esa mejora viene del modelo."
+			},
+			{
+				"texto": "No lo sabes hasta medir el mismo modelo de 7B sin la herramienta.",
+				"correcta": true,
+				"porque": "Sin ella, el de 7B acertaba 8: la herramienta aportó un acierto (\"¿Cuánto aporta la herramienta?\")."
+			}
+		]
+	}
+]}
+/>
 
 ## Para profundizar
 

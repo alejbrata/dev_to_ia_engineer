@@ -3,6 +3,8 @@ title: "Coste y latencia"
 description: "Coste y latencia: cómo se calculan y cómo medirlos"
 ---
 
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
 :::note[Revisado: 2026-10]
 Las medidas son reales, con el modelo con el que se construyó el curso en un equipo sin GPU. Los precios son los que publicaba la API de Hugging Face en la fecha de revisión; la práctica consulta los de hoy.
 :::
@@ -195,6 +197,85 @@ http://127.0.0.1:11434     cliente  0.40 s · servidor  0.12 s · diferencia  0.
 Todas las latencias medidas hasta entonces incluían esos 2,3 s, que no tenían nada que ver con el modelo.
 
 **Solución.** Las URLs locales de `config/models.toml` usan `127.0.0.1` en lugar de `localhost`, y `curso_core` reutiliza una conexión por proveedor entre llamadas. Las cifras de las lecciones anteriores se volvieron a medir después del arreglo. La lección general: cuando una latencia no cuadra con lo que esperas, compara lo que mide el cliente con lo que mide el servidor. Si no coinciden, el problema está entre los dos.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+	{
+		"pregunta": "Nueve peticiones tardan 1 s y una tarda 20 s. ¿Qué métrica describe lo que sufren tus usuarios más lentos?",
+		"opciones": [
+			{
+				"texto": "La media: 2,9 s.",
+				"porque": "No describe ninguna petición real: ni las rápidas ni la lenta."
+			},
+			{
+				"texto": "El p95.",
+				"correcta": true,
+				"porque": "Lo que tarda el 5 % más lento. Ahí aparecen los reintentos, las colas y las recargas del modelo (\"Percentiles, no medias\")."
+			},
+			{
+				"texto": "La mediana.",
+				"porque": "La mediana describe la petición típica (1 s). No ve el caso lento."
+			}
+		]
+	},
+	{
+		"pregunta": "Tu sistema tiene un 0 % de errores, pero los usuarios se quejan de lentitud. ¿Qué miras?",
+		"opciones": [
+			{
+				"texto": "Los reintentos y el p95.",
+				"correcta": true,
+				"porque": "Los reintentos convierten un error en una respuesta lenta, y la tasa de error no los ve (\"Límites de uso y reintentos\")."
+			},
+			{
+				"texto": "Nada: sin errores, el sistema está bien.",
+				"porque": "Un sistema con un 0 % de errores puede estar reintentando la mitad de sus llamadas."
+			},
+			{
+				"texto": "Los tokens de entrada.",
+				"porque": "Podrían influir, pero lo primero es ver si hay reintentos escondidos tras ese 0 %."
+			}
+		]
+	},
+	{
+		"pregunta": "Proyectas el coste de un millón de peticiones con 46 tokens de entrada y 106 de salida de media. ¿Dónde está la mayor parte del coste?",
+		"opciones": [
+			{
+				"texto": "En la entrada.",
+				"porque": "La salida cuesta más por token y, aquí, tiene más tokens."
+			},
+			{
+				"texto": "En la salida: el 87 % del coste.",
+				"correcta": true,
+				"porque": "Por eso limitar la salida con max_tokens es la palanca más directa (\"Dónde está el coste\")."
+			},
+			{
+				"texto": "Se reparte a medias.",
+				"porque": "Con un precio de salida tres veces mayor y más tokens de salida, la salida domina."
+			}
+		]
+	},
+	{
+		"pregunta": "Tu cliente mide 2,4 s por llamada y Ollama dice que el servidor tardó 0,13 s. ¿Qué haces?",
+		"opciones": [
+			{
+				"texto": "Cambiar a un modelo más rápido.",
+				"porque": "El modelo tardó 0,13 s. El tiempo se está yendo fuera de él."
+			},
+			{
+				"texto": "Buscar el tiempo fuera del modelo: la red, la conexión o tu código.",
+				"correcta": true,
+				"porque": "En la anatomía, localhost añadía más de 2 s por conexión en Windows; con 127.0.0.1 desaparecían (\"Cliente frente a servidor\")."
+			},
+			{
+				"texto": "Activar el streaming.",
+				"porque": "No arregla un retraso que no viene del modelo."
+			}
+		]
+	}
+]}
+/>
 
 ## Para profundizar
 

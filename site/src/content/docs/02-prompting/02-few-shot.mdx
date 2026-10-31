@@ -3,6 +3,8 @@ title: "Few-shot, técnicas y mitos"
 description: "Few-shot y técnicas que sí funcionan (y mitos que no)"
 ---
 
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
 :::note[Revisado: 2026-10]
 Las salidas son reales, con el modelo con el que se construyó el curso (Qwen2.5 1.5B Instruct en Ollama), temperatura 0. Las técnicas que funcionan con un modelo pueden no funcionar con otro: lo que se aprende aquí es a comprobarlo.
 :::
@@ -144,6 +146,81 @@ Cuatro de diez. Mismo prompt, mismos tickets, temperatura 0.
 **Causa.** Todas las variantes comparten el mismo mensaje de sistema. Ollama reutiliza el cálculo de los tokens que ya ha visto (la caché del prompt de la lección 06 del módulo 1). Las cuentas con y sin caché dan probabilidades casi iguales, pero no idénticas bit a bit, y en las decisiones reñidas (la severidad lo es) eso basta para cambiar la respuesta. Es el mismo efecto que viste en la lección de sampling con la semilla.
 
 **Solución.** Compara variantes **en las mismas condiciones**: este script descarga el modelo antes de cada una. Y desconfía de cualquier mejora de uno o dos casos: repite la medición, cambia el orden, añade casos. Si la mejora no sobrevive a eso, no era una mejora.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+	{
+		"pregunta": "Para tus ejemplos few-shot eliges tres tickets del grupo eval porque son los más representativos. ¿Qué problema hay?",
+		"opciones": [
+			{
+				"texto": "Ninguno, si son representativos.",
+				"porque": "El modelo vería la respuesta antes de que le preguntes, y la medición dejaría de valer."
+			},
+			{
+				"texto": "La nota sube por haber visto las respuestas, no por haber aprendido.",
+				"correcta": true,
+				"porque": "Los ejemplos salen siempre del grupo ejemplos. Es el mismo principio que no entrenar con los datos de test (\"Ejemplos y evaluación, por separado\")."
+			},
+			{
+				"texto": "Que gastan demasiados tokens.",
+				"porque": "Gastan tokens, pero el problema grave es que contaminan la evaluación."
+			}
+		]
+	},
+	{
+		"pregunta": "\"Paso a paso\" sube un acierto, pero sus tokens de salida son los mismos que sin la instrucción. ¿Qué concluyes?",
+		"opciones": [
+			{
+				"texto": "Que razonar paso a paso funciona.",
+				"porque": "El modelo no razonó: contestó directamente las tres líneas. Lo que cambió no viene del razonamiento."
+			},
+			{
+				"texto": "Que la instrucción ni siquiera se cumplió, así que el cambio no viene de ahí.",
+				"correcta": true,
+				"porque": "Mide también si se cumple lo que pides. Con 17 tokens de salida, no hubo razonamiento (\"Qué dicen los datos\")."
+			},
+			{
+				"texto": "Que hay que pedirlo dos veces.",
+				"porque": "Antes de repetir la técnica, comprueba con datos si se aplica."
+			}
+		]
+	},
+	{
+		"pregunta": "Una variante pasa de 4 a 6 aciertos de 10 cuando la mides justo después de otras. Medida sola, da 4. ¿Qué pasó?",
+		"opciones": [
+			{
+				"texto": "El resultado dependía del estado del servidor, no solo del prompt.",
+				"correcta": true,
+				"porque": "Ollama reutiliza cálculos en caché entre variantes que comparten el mensaje de sistema. Compara siempre en las mismas condiciones (anatomía de la lección)."
+			},
+			{
+				"texto": "La primera medición fue un error del script.",
+				"porque": "El script funcionó bien. El número medía también lo que se había ejecutado antes."
+			},
+			{
+				"texto": "La variante es buena, pero inestable.",
+				"porque": "La mejora no sobrevivió a medirla sola. Si no sobrevive a eso, no era una mejora."
+			}
+		]
+	},
+	{
+		"pregunta": "Con diez casos, tu variante acierta 5 y la de referencia, 3. ¿Puedes decir que es mejor?",
+		"opciones": [
+			{
+				"texto": "Sí: es casi el doble.",
+				"porque": "Con diez casos, cada uno vale un 10 %, y dos tickets pueden caer de un lado o del otro por ruido."
+			},
+			{
+				"texto": "No con estos datos: necesitas más casos y medir varias veces.",
+				"correcta": true,
+				"porque": "\"Con estos datos no puedes decir que una variante sea mejor\" (\"Lo que los datos no dicen\")."
+			}
+		]
+	}
+]}
+/>
 
 ## Para profundizar
 

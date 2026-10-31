@@ -3,6 +3,8 @@ title: "Evals en CI"
 description: "Llevar las evals a la integración continua: un control sin modelo en cada PR sobre respuestas grabadas, con huella para detectar resultados desactualizados, y la eval completa con modelos aparte"
 ---
 
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
 :::note[Revisado: 2026-10]
 Las salidas son reales. El sistema vigente es el elegido en la lección 06: reranker, 3 fragmentos, el prompt `rag/con-citas-reglas` y Qwen2.5 7B Instruct (rol `chat_grande`), en Ollama, sobre CPU. El CI usa GitHub Actions.
 :::
@@ -159,6 +161,77 @@ La huella incluye `config/models.toml` entero. Si alguien cambia el modelo de ot
 **Causa.** La huella cubre una lista de ficheros (`evaluar.ficheros()`), y basta con que cambie un byte de cualquiera de ellos. El control no sabe si ese byte afecta a las respuestas. Por eso pide repetir la eval en lugar de dar por buenas unas respuestas que quizá ya no lo son.
 
 **Solución.** Mira qué fichero de la lista toca el PR (`git diff --stat main` contra `evaluar.ficheros()`). Si el cambio afecta al sistema vigente, ejecuta `evaluar.py` y sube el nuevo `vigente.jsonl`: el control lo comparará con la base. Si no le afecta, repítela igualmente: saldrán las mismas respuestas y la nueva huella. Si esto pasa a menudo, es la señal para afinar qué cubre la huella.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+	{
+		"pregunta": "¿Por qué no se ejecuta la eval completa con modelos en cada PR?",
+		"opciones": [
+			{
+				"texto": "Porque es lenta, cara y no determinista: daría falsos fallos por ruido.",
+				"correcta": true,
+				"porque": "En cada PR va lo determinista sobre respuestas grabadas; la eval con modelos, aparte."
+			},
+			{
+				"texto": "Porque GitHub no permite llamar a modelos.",
+				"porque": "Se puede, pero un CI que falla por ruido acaba siendo ignorado."
+			},
+			{
+				"texto": "Porque no hace falta evaluar los cambios.",
+				"porque": "Hace falta. La cuestión es cuándo y cómo."
+			}
+		]
+	},
+	{
+		"pregunta": "Alguien cambia el prompt y no repite la eval. ¿Cómo lo detecta el CI?",
+		"opciones": [
+			{
+				"texto": "Con la huella de los ficheros de los que dependen las respuestas.",
+				"correcta": true,
+				"porque": "Si no coincide con la guardada, los resultados grabados ya no corresponden al código."
+			},
+			{
+				"texto": "No puede detectarlo.",
+				"porque": "Sin huella, no. Con huella, falla en el paso 1."
+			},
+			{
+				"texto": "Repuntuando las respuestas grabadas.",
+				"porque": "Repuntuar no cambia las respuestas: seguirían siendo las del prompt viejo."
+			}
+		]
+	},
+	{
+		"pregunta": "Un PR sube el total de aciertos, pero pierde un guardarraíl. ¿Debe pasar el control?",
+		"opciones": [
+			{
+				"texto": "Sí: el total ha mejorado.",
+				"porque": "Un sistema que acierta más pero vuelve a filtrar su prompt no es mejor."
+			},
+			{
+				"texto": "No: perder un caso crítico falla aunque el total mejore.",
+				"correcta": true,
+				"porque": "Es una de las dos reglas del control, decididas antes de ver los resultados."
+			}
+		]
+	},
+	{
+		"pregunta": "Cambias un comprobador y la versión base se puntuó con el antiguo. ¿Qué tienes que hacer al comparar?",
+		"opciones": [
+			{
+				"texto": "Puntuar las dos versiones con el comprobador actual.",
+				"correcta": true,
+				"porque": "Así, un cambio del comprobador no aparece como una regresión del sistema."
+			},
+			{
+				"texto": "Comparar las cifras tal cual.",
+				"porque": "Mezclarías el cambio del comprobador con el del sistema."
+			}
+		]
+	}
+]}
+/>
 
 ## Para profundizar
 

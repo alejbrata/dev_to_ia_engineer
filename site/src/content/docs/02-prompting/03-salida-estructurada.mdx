@@ -3,6 +3,8 @@ title: "Salida estructurada"
 description: "Salida estructurada: JSON Schema y Pydantic"
 ---
 
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
 :::note[Revisado: 2026-10]
 Las salidas son reales, con el modelo con el que se construyó el curso (Qwen2.5 1.5B Instruct en Ollama). La salida estructurada con esquema la admiten Ollama y muchas APIs compatibles con OpenAI, pero no todos los modelos ni todos los proveedores: compruébalo en la documentación del tuyo.
 :::
@@ -135,6 +137,81 @@ Esquema impuesto, pero max_tokens=12:
 **Causa.** El servidor restringe los tokens que el modelo puede elegir, pero no el número de tokens. Con 12 tokens, el modelo empieza un JSON válido y se queda sin espacio a mitad. El esquema no protege contra un corte.
 
 **Solución.** Da a la salida espacio de sobra para el JSON más largo que esperas, y comprueba siempre el motivo de fin: un `length` significa que la respuesta está incompleta, sea cual sea su formato. `curso_core` lo expone en `Respuesta.motivo_fin` y, cuando la validación falla, en `ErrorFormato.respuesta`.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+	{
+		"pregunta": "Con el esquema impuesto, las diez respuestas son JSON válido y solo una es correcta. ¿Qué te dice eso?",
+		"opciones": [
+			{
+				"texto": "Que el esquema está mal definido.",
+				"porque": "El esquema funcionó: garantiza la forma. El contenido es otra cosa."
+			},
+			{
+				"texto": "Que el esquema garantiza la forma, no que el contenido sea correcto.",
+				"correcta": true,
+				"porque": "Si el modelo cree que es un problema de red, el esquema le deja escribir \"red\". La calidad depende del prompt (\"Lo que un esquema no hace\")."
+			},
+			{
+				"texto": "Que hay que validar con otra librería.",
+				"porque": "La validación pasó porque las respuestas cumplen el esquema. El problema es de calidad."
+			}
+		]
+	},
+	{
+		"pregunta": "Tu modelo de Pydantic define severidad como str. ¿Qué riesgo corres?",
+		"opciones": [
+			{
+				"texto": "Ninguno: str acepta cualquier valor.",
+				"porque": "Justo ese es el riesgo: aceptaría \"Muy Alta\"."
+			},
+			{
+				"texto": "Que el esquema deje pasar valores como \"Muy Alta\".",
+				"correcta": true,
+				"porque": "Restringe con Literal todo lo que tu código necesite controlar (\"Un esquema demasiado blando\")."
+			},
+			{
+				"texto": "Que el modelo deje de responder.",
+				"porque": "Seguirá respondiendo, pero con valores que tu código no espera."
+			}
+		]
+	},
+	{
+		"pregunta": "Con el esquema impuesto, una respuesta llega como JSON sin cerrar. ¿Cuál es la causa más probable?",
+		"opciones": [
+			{
+				"texto": "El servidor no aplicó el esquema.",
+				"porque": "Lo aplicó hasta donde pudo: la generación se cortó antes de terminar."
+			},
+			{
+				"texto": "Un max_tokens demasiado bajo cortó la respuesta.",
+				"correcta": true,
+				"porque": "Un límite pensado para tres líneas corta un JSON, que es más verboso. Por eso hay que validar siempre (anatomía de la lección)."
+			},
+			{
+				"texto": "El modelo no sabe escribir JSON.",
+				"porque": "Con el esquema impuesto, cada token es válido para el esquema. Se quedó sin tokens."
+			}
+		]
+	},
+	{
+		"pregunta": "Tu código quita los bloques ```json con una expresión regular antes de parsear. ¿Qué es mejor?",
+		"opciones": [
+			{
+				"texto": "Mejorar la expresión regular para más casos.",
+				"porque": "Funciona hasta que el modelo responde de una forma que tu limpieza no contempla."
+			},
+			{
+				"texto": "Usar salida estructurada con esquema, si el servidor la admite, y validar siempre.",
+				"correcta": true,
+				"porque": "Cambia quién garantiza el formato: el servidor, no la buena voluntad del modelo (\"Limpiar el JSON a mano\")."
+			}
+		]
+	}
+]}
+/>
 
 ## Para profundizar
 

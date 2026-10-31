@@ -3,6 +3,8 @@ title: "Generación con citas"
 description: "Pedir respuestas con citas, abstenerse cuando no hay respuesta, y medir fidelidad y relevancia: con comprobaciones deterministas y con un modelo juez, que también hay que comprobar"
 ---
 
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
 :::note[Revisado: 2026-10]
 Las salidas son reales. Genera Qwen2.5 1.5B Instruct, el modelo con el que se construyó el curso; juzga Qwen2.5 7B Instruct (rol `judge`); el contexto sale de bge-m3 con el reranker de la lección 05. Con otros modelos, los números cambian. Incluso con los mismos, puede variar alguna respuesta entre ejecuciones (módulo 1).
 :::
@@ -169,6 +171,77 @@ La pregunta 30 no tiene respuesta en la documentación. Con los dos prompts, el 
 **Causa.** El contexto sí habla del responsable de Cobros. Es la sección de escalado del runbook de pagos, la que en la lección 05 el reranker puntuaba alto: "escala al responsable del equipo Cobros". El modelo encuentra la expresión exacta de la pregunta en el contexto y construye una respuesta con ella. Para un modelo de 1,5B, "la documentación menciona esto" y "la documentación responde esto" se parecen demasiado.
 
 **Solución.** Tres capas. En el prompt: pedir que se abstenga si el contexto no da el dato concreto, no solo si no menciona el tema. En el código: detectar respuestas que repiten la pregunta (por ejemplo, con similitud muy alta entre pregunta y respuesta) y tratarlas como abstenciones. Y en la evaluación: tener preguntas sin respuesta cuyo tema sí aparezca en la documentación, como esta. Las preguntas sin respuesta sobre temas que no aparecen en ningún sitio son fáciles; estas son las que fallan.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+	{
+		"pregunta": "Tu juez de fidelidad detecta 13 de 13 respuestas con un dato cambiado. ¿Es un buen juez?",
+		"opciones": [
+			{
+				"texto": "Sí: no se le escapa ninguna.",
+				"porque": "Un juez que suspende de más también detecta todas las trampas. Falta la otra mitad de la calibración."
+			},
+			{
+				"texto": "No lo sabes hasta ver cuántas respuestas fieles rechaza.",
+				"correcta": true,
+				"porque": "En la práctica rechazaba 4 de 13 respuestas correctas: se equivocaba en el 31 % (\"El juez: antes de mirar sus números, mira la calibración\")."
+			}
+		]
+	},
+	{
+		"pregunta": "El modelo devuelve citas [1] y [3] en todas sus respuestas. ¿Qué tienes que hacer con ellas?",
+		"opciones": [
+			{
+				"texto": "Nada: si cita, está apoyado en la documentación.",
+				"porque": "Una cita que nadie comprueba es decoración."
+			},
+			{
+				"texto": "Comprobar que los números existen y que el fragmento citado contiene la evidencia.",
+				"correcta": true,
+				"porque": "En 6 de 26 respuestas citaba algo, pero no el fragmento con el dato: una señal barata de qué revisar (\"Pedir citas y no comprobarlas\")."
+			}
+		]
+	},
+	{
+		"pregunta": "Una respuesta es fiel al contexto recuperado, pero el dato es falso. ¿Cómo es posible?",
+		"opciones": [
+			{
+				"texto": "Porque el contexto estaba desactualizado.",
+				"correcta": true,
+				"porque": "Fidelidad no es corrección: con dos versiones del SLA en la documentación, el modelo puede ser fiel a la antigua (\"Confundir fidelidad con corrección\")."
+			},
+			{
+				"texto": "No es posible: fiel significa correcto.",
+				"porque": "Fiel significa que sale del contexto. Si el contexto está mal, la respuesta también."
+			},
+			{
+				"texto": "Porque el juez se equivoca.",
+				"porque": "Puede pasar, pero aquí el problema es el contexto, no el juez."
+			}
+		]
+	},
+	{
+		"pregunta": "A \"¿Quién es el responsable del equipo Cobros?\", sin respuesta en la documentación, el modelo responde \"El responsable del equipo Cobros es el equipo de Cobros\". ¿Qué lo habría evitado?",
+		"opciones": [
+			{
+				"texto": "Pedir en el prompt que se abstenga si el contexto no da el dato concreto, no solo si no menciona el tema.",
+				"correcta": true,
+				"porque": "Es la primera de las tres capas de la anatomía, junto con detectarlo en el código y evaluarlo con preguntas así."
+			},
+			{
+				"texto": "Subir la temperatura.",
+				"porque": "No cambia que el modelo vea la expresión exacta de la pregunta en el contexto y construya una respuesta con ella."
+			},
+			{
+				"texto": "Recuperar menos fragmentos.",
+				"porque": "El fragmento que lo confunde es el más relevante: seguiría llegando."
+			}
+		]
+	}
+]}
+/>
 
 ## Para profundizar
 

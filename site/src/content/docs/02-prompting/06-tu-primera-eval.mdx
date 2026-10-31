@@ -4,6 +4,7 @@ description: "Tu primera eval: 10 casos, una aserción, un número"
 ---
 
 import TablaEval from '../../../components/TablaEval.astro';
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
 
 :::note[Revisado: 2026-10]
 Las salidas son reales, con el modelo con el que se construyó el curso (Qwen2.5 1.5B Instruct en Ollama), temperatura 0 y cada versión medida desde el mismo estado del servidor.
@@ -151,6 +152,63 @@ Regresión: tu versión acierta menos que la de referencia.
 **Causa.** En el prompt conviven una instrucción (una línea con comas) y cinco ejemplos que la contradicen (tres líneas). El modelo sigue los ejemplos. Y el cambio en el texto alteró lo justo para que el ticket 6, que ya estaba al límite, se rompiera.
 
 **Solución.** Si quieres cambiar el formato, cámbialo en todas partes: instrucción, ejemplos y el código que lee la respuesta (es un contrato, como viste en la lección 05). Y no confirmes el cambio hasta que la eval diga que no rompe nada y una medida del objetivo (aquí, los tokens de salida) diga que funciona.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+	{
+		"pregunta": "Tu cambio de prompt pretende ahorrar tokens de salida y la eval da 3 de 10 frente a 4. ¿Qué más compruebas?",
+		"opciones": [
+			{
+				"texto": "Si el cambio consiguió su objetivo: si de verdad bajaron los tokens.",
+				"correcta": true,
+				"porque": "En la práctica, las respuestas seguían en tres líneas: el cambio no ahorró nada y rompió un caso (\"Mira los casos, no solo el número\")."
+			},
+			{
+				"texto": "Nada más: ha bajado, así que se descarta.",
+				"porque": "Descartarlo está bien, pero entender por qué falló te dice qué probar después."
+			},
+			{
+				"texto": "La latencia.",
+				"porque": "El objetivo del cambio eran los tokens de salida. Mide también eso, no solo la calidad general."
+			}
+		]
+	},
+	{
+		"pregunta": "Tres cambios distintos del prompt suben un acierto, y siempre en el mismo ticket. ¿Qué indica?",
+		"opciones": [
+			{
+				"texto": "Que los tres cambios son buenos.",
+				"porque": "Cambios sin nada en común con la misma mejora en el mismo caso apuntan a otra cosa."
+			},
+			{
+				"texto": "Que ese ticket está en la frontera y cualquier retoque le da la vuelta.",
+				"correcta": true,
+				"porque": "Una diferencia es creíble cuando afecta a varios casos y se repite al medir de nuevo (\"Un +1 no es una mejora\")."
+			}
+		]
+	},
+	{
+		"pregunta": "¿Para qué sirve que evaluar.py termine con código de error si tu versión acierta menos que la de git?",
+		"opciones": [
+			{
+				"texto": "Para que una eval pueda bloquear un cambio en CI, como un test que falla.",
+				"correcta": true,
+				"porque": "Es la base del control de regresiones que se monta en el módulo de evals (\"Comparar con lo que ya tenías\")."
+			},
+			{
+				"texto": "Para avisar de que el modelo está caído.",
+				"porque": "No indica un fallo técnico, sino una regresión de calidad frente a la versión anterior."
+			},
+			{
+				"texto": "Para nada: solo importa el porcentaje.",
+				"porque": "El código de salida es lo que permite automatizar la decisión."
+			}
+		]
+	}
+]}
+/>
 
 ## Para profundizar
 

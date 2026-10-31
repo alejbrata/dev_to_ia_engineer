@@ -3,6 +3,8 @@ title: "Reranking"
 description: "Reordenar los candidatos de la búsqueda con un cross-encoder: cuánto mejora el orden, cuánto cuesta en latencia y qué no arregla"
 ---
 
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
 :::note[Revisado: 2026-10]
 Las salidas son reales, con el reranker bge-reranker-v2-m3 (GGUF Q8_0) en `llama-server` de llama.cpp, sobre CPU, y bge-m3 en Ollama para la búsqueda. Puedes usar otro reranker: cambia el rol `reranker` en `config/models.toml` y vuelve a medir.
 :::
@@ -134,6 +136,63 @@ La parte 4 parece una buena noticia: con un umbral de -2,0 no se pierde ninguna 
 **Causa.** Y lo es. La sección dice: "Si en 15 minutos los cobros no se recuperan, escala al responsable del equipo Cobros." Habla exactamente de lo que pregunta la pregunta. Pero no dice **quién** es el responsable. El reranker mide si un texto trata de lo que se pregunta, no si contiene la respuesta. Son cosas distintas, y en documentación real pasa a menudo: un procedimiento menciona un rol, una tabla o un sistema sin dar el dato.
 
 **Solución.** No uses la puntuación de recuperación, ni siquiera la del reranker, para decidir que hay respuesta. Úsala como señal en las trazas. La decisión se toma en la generación: el modelo tiene que poder citar el fragmento que contiene el dato y abstenerse si no lo encuentra. Y lo que dice el modelo hay que comprobarlo midiendo la fidelidad de la respuesta al contexto. Es la lección 06.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+	{
+		"pregunta": "El reranker sube el recall@1 del 62 % al 73 %, pero la búsqueda pasa de 100 ms a 1,2 s. ¿Lo usas en un autocompletado?",
+		"opciones": [
+			{
+				"texto": "Sí: la calidad es lo primero.",
+				"porque": "Para un autocompletado, 1,2 s antes de generar no es aceptable."
+			},
+			{
+				"texto": "Depende del presupuesto de latencia de tu caso.",
+				"correcta": true,
+				"porque": "Para un asistente interno puede valer; para un autocompletado, no. Mídelo por separado en tus trazas (\"Cuesta diez veces más\")."
+			},
+			{
+				"texto": "No: un reranker nunca compensa.",
+				"porque": "Es la primera técnica del módulo que mejora claramente el orden."
+			}
+		]
+	},
+	{
+		"pregunta": "Con 5 candidatos, el reranker consigue lo mismo que con 20, y con 10 sale peor. ¿Qué haces?",
+		"opciones": [
+			{
+				"texto": "Usar 40, por si acaso.",
+				"porque": "La latencia crece con cada candidato, y la calidad no siempre."
+			},
+			{
+				"texto": "Quedarte con 5: lo mismo en un tercio del tiempo.",
+				"correcta": true,
+				"porque": "Cada candidato es una oportunidad de encontrar la respuesta y otra de colar un distractor (\"Más candidatos no siempre es mejor\")."
+			}
+		]
+	},
+	{
+		"pregunta": "El reranker puntúa muy alto un fragmento que habla del responsable del equipo Cobros, pero no dice quién es. ¿Qué te enseña?",
+		"opciones": [
+			{
+				"texto": "Que el reranker mide si un texto trata de lo que se pregunta, no si contiene la respuesta.",
+				"correcta": true,
+				"porque": "Por eso la puntuación de recuperación no sirve para decidir que hay respuesta (anatomía de la lección)."
+			},
+			{
+				"texto": "Que el reranker está mal configurado.",
+				"porque": "Funciona como debe: el fragmento sí es relevante. Simplemente, no tiene el dato."
+			},
+			{
+				"texto": "Que hay que subir el umbral.",
+				"porque": "Siete preguntas con respuesta puntuaban por debajo. El problema no se arregla con un umbral."
+			}
+		]
+	}
+]}
+/>
 
 ## Para profundizar
 

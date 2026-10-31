@@ -46,7 +46,7 @@ La web se publica en GitHub Pages bajo la subruta `/dev_to_ia_engineer/`. En los
 - Español de España, con tuteo y tono directo y técnico. Frases cortas.
 - Términos técnicos en inglés cuando es lo habitual (embedding, chunking, tracing), explicados la primera vez.
 - Sin humo: nada de "revolucionario" ni "potente". Si algo tiene limitaciones, se dice.
-- Cada lección sigue las secciones: Objetivos, Teoría, Práctica, Mide y depura, Errores frecuentes y Para profundizar.
+- Cada lección sigue las secciones: Objetivos, Teoría, Práctica, Mide y depura, Errores frecuentes, Comprueba lo que has entendido y Para profundizar.
 - Código en Python 3.12+, con type hints, que pase ruff y pytest.
 - Los nombres de modelos van solo en `config/models.toml`. Los secretos, solo en `.env`.
 - No copies material con copyright: explica con tus palabras y enlaza la fuente.

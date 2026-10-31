@@ -4,6 +4,7 @@ description: "Cómo funciona un LLM sin matemáticas innecesarias: tokens, predi
 ---
 
 import VisorTokens from '../../../components/VisorTokens.astro';
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
 
 
 :::note[Revisado: 2026-10]
@@ -204,6 +205,85 @@ Invalid username or password.
 **Causa.** El repositorio no existe por la errata. Hugging Face responde 401 tanto si un repositorio no existe como si es privado y no tienes acceso. Así no revela qué repositorios privados existen. Es una práctica de seguridad habitual, pero confunde al depurar.
 
 **Solución.** Copia la URL de la petición (`https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruc/...`) y abre la parte del repositorio en el navegador. Si da 404, es una errata. Copia el identificador desde la página del modelo en vez de escribirlo a mano.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+	{
+		"pregunta": "Quieres estimar cuánto costará procesar tus 10 000 fichas de producto en español, llenas de códigos y números. ¿Cómo cuentas los tokens?",
+		"opciones": [
+			{
+				"texto": "Contando palabras y multiplicando por 1,3.",
+				"porque": "Se desvía mucho con números, jerga y nombres propios: en la práctica, los números salen a 4 tokens por palabra (\"Tokens por palabra\")."
+			},
+			{
+				"texto": "Tokenizando una muestra real con el tokenizador del modelo que vas a usar.",
+				"correcta": true,
+				"porque": "Cada modelo tiene su tokenizador y los números cambian de uno a otro. No estimes contando palabras."
+			},
+			{
+				"texto": "Contando caracteres y dividiendo entre 4.",
+				"porque": "Es otra aproximación que falla con el español, el código y los números. Tokeniza tus textos reales."
+			}
+		]
+	},
+	{
+		"pregunta": "Tu pregunta tiene 15 tokens y la traza dice que el servidor procesó 44. ¿De dónde salen los otros 29?",
+		"opciones": [
+			{
+				"texto": "Del prompt de sistema por defecto y de las marcas de la plantilla de chat.",
+				"correcta": true,
+				"porque": "El servidor convierte los mensajes en una sola secuencia con marcas, y Ollama añade un prompt de sistema si no mandas uno (\"Los tokens que no escribes\")."
+			},
+			{
+				"texto": "De un error de medida del servidor.",
+				"porque": "No es un error: son tokens que el modelo recibe de verdad y que pagas en cada llamada."
+			},
+			{
+				"texto": "De la respuesta del modelo.",
+				"porque": "Los tokens de salida se cuentan aparte. Esos 29 son de entrada."
+			}
+		]
+	},
+	{
+		"pregunta": "Con temperatura 0, el modelo responde que el cielo despejado es \"blanco\". ¿Qué te dice eso?",
+		"opciones": [
+			{
+				"texto": "Que la temperatura 0 está mal configurada.",
+				"porque": "Funciona bien: elige siempre el token más probable. El problema es que lo más probable era incorrecto."
+			},
+			{
+				"texto": "Que el token más probable no tiene por qué ser el correcto.",
+				"correcta": true,
+				"porque": "Temperatura 0 hace la salida más estable, no más correcta. \"bl\" tenía un 48,6 % y \"az\", un 30 % (práctica, parte 2)."
+			},
+			{
+				"texto": "Que el modelo no conoce la palabra \"azul\".",
+				"porque": "\"az\" estaba en la lista de alternativas con un 30 %. Simplemente no era la más probable."
+			}
+		]
+	},
+	{
+		"pregunta": "Descargar un tokenizador de Hugging Face falla con 401 Unauthorized y RepositoryNotFoundError. ¿Qué compruebas primero?",
+		"opciones": [
+			{
+				"texto": "Que tu HF_TOKEN sea válido.",
+				"porque": "El 401 confunde: Hugging Face responde así tanto si el repositorio es privado como si no existe."
+			},
+			{
+				"texto": "Que el nombre del repositorio esté bien escrito.",
+				"correcta": true,
+				"porque": "Cuando un error se contradice, fíate del tipo de excepción: RepositoryNotFoundError. Abre la URL en el navegador; si da 404, es una errata (anatomía de la lección)."
+			},
+			{
+				"texto": "Que tengas conexión a internet.",
+				"porque": "Sin conexión no habría respuesta 401: el servidor ha contestado."
+			}
+		]
+	}
+]}
+/>
 
 ## Para profundizar
 

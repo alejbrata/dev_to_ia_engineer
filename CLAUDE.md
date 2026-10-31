@@ -34,7 +34,8 @@ Todas las lecciones siguen estas secciones, en este orden:
 3. **Práctica**: código ejecutable en `modulos/NN-*/`.
 4. **Mide y depura**: qué instrumentar, qué métrica mirar, cómo iterar.
 5. **Errores frecuentes**: incluye al menos una "Anatomía de un error" (error o traza real → cómo leerlo → causa → solución).
-6. **Para profundizar**: fuentes primarias (papers, documentación oficial).
+6. **Comprueba lo que has entendido**: 3-4 preguntas de aplicar (no de memorizar) con el componente `Autoevaluacion`; cada opción lleva su porqué y, si es incorrecta, qué sección releer. Sin nota ni registro. La lección tiene que ser `.mdx`.
+7. **Para profundizar**: fuentes primarias (papers, documentación oficial).
 
 Las lecciones no llevan contenido personal. La experiencia de Alex va en un apartado aparte y opcional, el anexo H ("El proceso del autor"), para que quien lo quiera lo lea y no se mezcle con el aprendizaje (decisión de Alex, 2026-10-31).
 

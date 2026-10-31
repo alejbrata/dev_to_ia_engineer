@@ -3,6 +3,8 @@ title: "Recuperación"
 description: "Recuperación densa, léxica (BM25) e híbrida (RRF): cuándo gana cada una, cómo medirlas y por qué un umbral de similitud no basta"
 ---
 
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
 :::note[Revisado: 2026-10]
 Las salidas son reales, con el modelo de embeddings bge-m3 en Ollama y la implementación de BM25 de `curso_core`. Con otro modelo de embeddings, los números cambian; el método para compararlos, no.
 :::
@@ -169,6 +171,77 @@ perfil_edicion
 **Causa.** El tokenizador de bge-m3 parte `perfil_edicion` en cuatro tokens: `▁perfil`, `_`, `edici` y `on`. El vector que sale de ahí representa algo como "perfil, edición": un tema, no un nombre que haya que encontrar literalmente. Y de perfiles habla también la sección de arquitectura. BM25 no entiende nada, pero tampoco lo necesita: la palabra aparece en un único fragmento, así que su IDF es máximo.
 
 **Solución.** Si tus usuarios buscan identificadores, añade búsqueda léxica: como búsqueda híbrida, o como una ruta aparte cuando la consulta parece un identificador. Y añade esas consultas a tu evaluación, porque las preguntas en lenguaje natural no lo detectan: con ellas, la híbrida parecía peor.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+	{
+		"pregunta": "Tus usuarios pegan identificadores sueltos, como perfil_edicion, copiados de los logs. ¿Qué búsqueda añades?",
+		"opciones": [
+			{
+				"texto": "Ninguna: la densa entiende el significado.",
+				"porque": "La densa trocea el identificador en piezas y busca el tema, no el nombre literal: devolvió primero una sección que no lo menciona."
+			},
+			{
+				"texto": "Búsqueda léxica (BM25), como híbrida o como ruta aparte.",
+				"correcta": true,
+				"porque": "BM25 no entiende nada, pero no se le escapa un identificador (anatomía de la lección)."
+			},
+			{
+				"texto": "Más fragmentos en el prompt.",
+				"porque": "No arregla que el fragmento correcto no salga entre los primeros."
+			}
+		]
+	},
+	{
+		"pregunta": "Metes 3 fragmentos en el prompt. ¿Qué recall miras?",
+		"opciones": [
+			{
+				"texto": "recall@5: es el más alto.",
+				"porque": "Un recall@5 alto no ayuda si solo metes 3."
+			},
+			{
+				"texto": "recall@3.",
+				"correcta": true,
+				"porque": "El recall con el k que usas en el prompt (\"Qué métrica mirar\")."
+			},
+			{
+				"texto": "recall@1.",
+				"porque": "Importa si el orden cuenta, pero lo que llega al modelo son los 3 primeros."
+			}
+		]
+	},
+	{
+		"pregunta": "Quieres que el RAG diga \"no lo sé\" cuando la documentación no tiene la respuesta. ¿Pones un umbral a la similitud?",
+		"opciones": [
+			{
+				"texto": "Sí: si la similitud es baja, no hay respuesta.",
+				"porque": "Los rangos se solapan: con 0,60 descartas preguntas que sí tienen respuesta, y los identificadores puntúan por debajo de 0,5."
+			},
+			{
+				"texto": "Úsalo como señal, no como decisión: la decisión se toma en la generación.",
+				"correcta": true,
+				"porque": "Un umbral sirve en trazas o paneles; para decidir hay que mirar la respuesta generada (\"Un umbral no separa las preguntas sin respuesta\")."
+			}
+		]
+	},
+	{
+		"pregunta": "La búsqueda híbrida es la recomendación habitual, pero en tu corpus empeora el orden. ¿Qué haces?",
+		"opciones": [
+			{
+				"texto": "Usarla igualmente: es lo recomendado.",
+				"porque": "Mide con tus preguntas antes de añadir complejidad."
+			},
+			{
+				"texto": "Quedarte con lo que miden tus preguntas, si se parecen a las reales.",
+				"correcta": true,
+				"porque": "Ninguna búsqueda es mejor en abstracto: depende de qué preguntan tus usuarios (\"Dar por hecho que la híbrida siempre gana\")."
+			}
+		]
+	}
+]}
+/>
 
 ## Para profundizar
 

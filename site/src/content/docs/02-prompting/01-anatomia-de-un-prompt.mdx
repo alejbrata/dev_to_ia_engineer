@@ -3,6 +3,8 @@ title: "Anatomía de un prompt"
 description: "Anatomía de un prompt: system, instrucciones, contexto, ejemplos"
 ---
 
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
 :::note[Revisado: 2026-10]
 Las salidas son reales, con el modelo con el que se construyó el curso (Qwen2.5 1.5B Instruct en Ollama), temperatura 0. Con otro modelo, las cifras cambian; el método para medirlas, no.
 :::
@@ -207,6 +209,67 @@ servicio
 **Causa.** `autenticacion` es un valor válido, pero de otro campo: es una categoría. El modelo ha mezclado las listas del prompt. Con texto libre, nada le impide escribir lo que quiera en cada línea.
 
 **Solución.** Valida siempre la respuesta antes de usarla: así detectas el error en lugar de propagarlo. Para evitarlo de raíz, restringe la salida al esquema desde el servidor, de modo que el modelo no pueda escribir un valor fuera de la lista. Es la salida estructurada de la lección 03.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+	{
+		"pregunta": "Tu prompt mínimo no devuelve ninguna respuesta que tu código pueda leer. ¿Qué pieza añades primero?",
+		"opciones": [
+			{
+				"texto": "El formato de respuesta y los valores posibles.",
+				"correcta": true,
+				"porque": "En la práctica pasó de 0 a 10 respuestas utilizables: el formato es la pieza que más aporta, y la más barata (\"Dos números, no uno\")."
+			},
+			{
+				"texto": "Un rol detallado: \"eres el sistema de triaje...\".",
+				"porque": "El rol y el contexto apenas cambiaron los resultados, y costaban más del doble de tokens."
+			},
+			{
+				"texto": "Más contexto sobre la empresa.",
+				"porque": "Sin un formato explícito, el modelo sigue escribiendo ensayos que tu código no puede leer."
+			}
+		]
+	},
+	{
+		"pregunta": "Añadir criterios detallados duplicó los tokens del prompt y los aciertos casi no cambiaron. ¿Qué haces?",
+		"opciones": [
+			{
+				"texto": "Dejarlos: un prompt más detallado siempre es mejor.",
+				"porque": "Con un modelo pequeño, más listas de valores le hicieron mezclar campos (servicio: autenticacion)."
+			},
+			{
+				"texto": "Medir con y sin ellos y quedarte con lo que mejore los números.",
+				"correcta": true,
+				"porque": "La única forma de saber si una parte del prompt ayuda es quitarla y medir (\"Más no siempre es mejor\")."
+			},
+			{
+				"texto": "Añadir todavía más detalle.",
+				"porque": "Cada línea es algo más que el modelo tiene que tener en cuenta, y uno pequeño se pierde antes."
+			}
+		]
+	},
+	{
+		"pregunta": "El prompt mínimo, con la mitad de tokens de entrada, es el más lento con diferencia. ¿Por qué?",
+		"opciones": [
+			{
+				"texto": "Porque sin formato el modelo responde con un ensayo largo.",
+				"correcta": true,
+				"porque": "La latencia la decide la salida, no la entrada (\"La latencia la decide la salida\")."
+			},
+			{
+				"texto": "Porque los prompts cortos no se cachean.",
+				"porque": "No es el motivo: genera muchos más tokens de salida."
+			},
+			{
+				"texto": "Porque el servidor tuvo que cargar el modelo.",
+				"porque": "Todas las variantes se midieron igual. La diferencia está en lo largo de la respuesta."
+			}
+		]
+	}
+]}
+/>
 
 ## Para profundizar
 

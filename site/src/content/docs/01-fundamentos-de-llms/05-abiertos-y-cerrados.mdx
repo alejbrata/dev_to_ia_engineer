@@ -3,6 +3,8 @@ title: "Modelos abiertos y cerrados"
 description: "Modelos abiertos frente a cerrados; primer contacto con Hugging Face"
 ---
 
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
 :::note[Revisado: 2026-10]
 Las medidas de esta lección son reales: tres tamaños de la familia Qwen2.5 en Ollama, en un equipo con 31 GB de RAM y sin GPU. Los datos del Hub (licencias, descargas) son los publicados en la fecha de revisión.
 :::
@@ -212,6 +214,67 @@ Cambias el rol `chat_grande` en `config/models.toml` para probar el modelo de 3B
 **Causa.** El modelo no está descargado en Ollama. Configurarlo en `models.toml` no lo descarga: son dos pasos distintos.
 
 **Solución.** `ollama pull qwen2.5:3b` y vuelve a ejecutar. Para saber qué tienes descargado, `ollama list`. Y antes de usar ese modelo en serio, recuerda lo que viste en su ficha: su licencia no es Apache 2.0.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+	{
+		"pregunta": "Vas a usar en un producto comercial un modelo de una familia que conoces, en un tamaño que no has usado. ¿Qué compruebas antes?",
+		"opciones": [
+			{
+				"texto": "Nada: si la familia es Apache 2.0, todos sus tamaños lo son.",
+				"porque": "La licencia puede cambiar dentro de la misma familia: de cuatro tamaños de Qwen2.5, uno tiene licencia propia."
+			},
+			{
+				"texto": "La licencia de ese tamaño concreto, en su ficha.",
+				"correcta": true,
+				"porque": "Léela antes de que el modelo llegue a producción, no después (\"Licencias\")."
+			},
+			{
+				"texto": "Solo el número de descargas.",
+				"porque": "La popularidad no te dice qué puedes hacer con el modelo."
+			}
+		]
+	},
+	{
+		"pregunta": "En tu prueba de cinco preguntas, el modelo pequeño acierta 4 y el grande 5. ¿Qué decides?",
+		"opciones": [
+			{
+				"texto": "Usar el grande: es mejor.",
+				"porque": "Con cinco preguntas, un acierto más o menos cambia la conclusión. Sirven para hacerse una idea, no para decidir."
+			},
+			{
+				"texto": "Medir con muchos más casos de tu tarea antes de decidir.",
+				"correcta": true,
+				"porque": "Para elegir de verdad necesitas decenas o cientos de casos representativos y una forma fiable de puntuarlos: el módulo 4 (\"Cinco preguntas no son una evaluación\")."
+			},
+			{
+				"texto": "Usar el pequeño: la diferencia es mínima.",
+				"porque": "Puede que sí, pero con cinco preguntas no lo sabes. Ni siquiera se repite el resultado entre ejecuciones."
+			}
+		]
+	},
+	{
+		"pregunta": "\"Los modelos abiertos son gratis.\" ¿Qué hay de cierto?",
+		"opciones": [
+			{
+				"texto": "Es cierto: no pagas nada por usarlos.",
+				"porque": "No pagas por token, pero sí el hardware, la energía y el tiempo de operarlo."
+			},
+			{
+				"texto": "No pagas por token, pero sí hardware, energía y operación.",
+				"correcta": true,
+				"porque": "Es un coste fijo con techo de capacidad, y se cuantifica en la lección siguiente (\"Errores frecuentes\")."
+			},
+			{
+				"texto": "Es falso: siempre son más caros que una API.",
+				"porque": "Depende de tu carga. Para tareas acotadas, un modelo abierto pequeño puede salir más barato."
+			}
+		]
+	}
+]}
+/>
 
 ## Para profundizar
 

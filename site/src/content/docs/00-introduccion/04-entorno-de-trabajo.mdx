@@ -3,6 +3,8 @@ title: "Entorno de trabajo"
 description: "Entorno de trabajo: Python, uv, Ollama, claves API, .env, primer \"hola mundo\" con un LLM"
 ---
 
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
 :::note[Revisado: 2026-10]
 Las instrucciones de instalación cambian con las versiones de las herramientas. Si algo no coincide, manda la documentación oficial enlazada al final.
 :::
@@ -356,6 +358,85 @@ except httpx.HTTPStatusError as e:
 ```
 
 Es la misma lección que en cualquier integración backend: el código de estado dice qué categoría de error es; el cuerpo dice qué ha pasado.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+	{
+		"pregunta": "Ejecutas python script.py y falla con ModuleNotFoundError para una librería que está en pyproject.toml. ¿Qué pasa?",
+		"opciones": [
+			{
+				"texto": "La librería no se instaló bien: hay que reinstalarla.",
+				"porque": "Está instalada, pero en el entorno del proyecto. Te falta usarlo."
+			},
+			{
+				"texto": "Estás usando el Python del sistema en lugar del entorno del proyecto.",
+				"correcta": true,
+				"porque": "Usa siempre uv run python script.py: así se ejecuta con el entorno que tiene las dependencias (\"Errores frecuentes\")."
+			},
+			{
+				"texto": "El fichero pyproject.toml está mal escrito.",
+				"porque": "Si lo estuviera, fallaría uv, no el import al ejecutar con el Python del sistema."
+			}
+		]
+	},
+	{
+		"pregunta": "Tu llamada al modelo tarda el doble de lo normal. ¿Qué es lo primero que miras?",
+		"opciones": [
+			{
+				"texto": "Cuántos tokens ha generado el modelo.",
+				"correcta": true,
+				"porque": "La latencia depende sobre todo de cuántos tokens genera, no de cuántos le mandas: el doble de tokens, el doble de tiempo (\"Mide y depura\")."
+			},
+			{
+				"texto": "Cuántos tokens tiene la pregunta.",
+				"porque": "Influye, pero mucho menos que la longitud de la salida."
+			},
+			{
+				"texto": "La versión de Python.",
+				"porque": "No cambia el tiempo que tarda el modelo en generar."
+			}
+		]
+	},
+	{
+		"pregunta": "Has subido por error tu clave de API a un commit público. ¿Qué haces?",
+		"opciones": [
+			{
+				"texto": "Borrar el fichero en otro commit.",
+				"porque": "La clave sigue en el historial de git."
+			},
+			{
+				"texto": "Revocar la clave en el panel del proveedor y generar otra.",
+				"correcta": true,
+				"porque": "Una clave expuesta hay que darla por comprometida (\"Errores frecuentes\"). Cómo limpiar el historial se ve en el módulo 6."
+			},
+			{
+				"texto": "Hacer el repositorio privado.",
+				"porque": "Puede que alguien ya la haya copiado. Hay que revocarla."
+			}
+		]
+	},
+	{
+		"pregunta": "Ollama responde 404 a una llamada a /api/chat. ¿Cuál es la causa más probable?",
+		"opciones": [
+			{
+				"texto": "Ollama no está arrancado.",
+				"porque": "Sin servidor no habría respuesta HTTP: fallaría la conexión."
+			},
+			{
+				"texto": "El modelo pedido no está descargado, o su nombre está mal escrito.",
+				"correcta": true,
+				"porque": "Es lo que dice el cuerpo de la respuesta, por eso conviene registrarlo siempre (anatomía de la lección)."
+			},
+			{
+				"texto": "La ruta /api/chat no existe en Ollama.",
+				"porque": "Existe. El 404 se refiere al modelo, y lo explica el cuerpo de la respuesta."
+			}
+		]
+	}
+]}
+/>
 
 ## Para profundizar
 

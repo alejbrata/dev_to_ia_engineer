@@ -3,6 +3,8 @@ title: "La rotación"
 description: "La rotación: del folio en blanco al TFM"
 ---
 
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
 Esta lección tiene dos capas. La primera es una guía para cualquiera que pase de backend a AI Engineering: qué traes, qué te falta y cómo organizarlo. La segunda, la historia de cómo hizo ese cambio el autor del curso, va en un apartado aparte y opcional, para quien quiera leerla.
 
 ## Objetivos
@@ -149,6 +151,85 @@ backend.segurida
 **Causa.** Son dos fallos, pero producen tres errores. El 4 está fuera del rango 0-3 (`less_than_equal`). La errata genera dos: falta el campo `seguridad` (`missing`) y sobra uno que no existe, `segurida` (`extra_forbidden`).
 
 **Solución.** Corrige el valor y el nombre de la clave. El patrón general: cuando veas un `missing` y un `extra_forbidden` con nombres parecidos, casi siempre es una errata. Vas a leer muchos errores de Pydantic en este curso, porque es lo que valida las respuestas de los modelos.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+	{
+		"pregunta": "Llevas años en backend. ¿Cuál de estas habilidades tendrás que aprender casi desde cero para AI Engineering?",
+		"opciones": [
+			{
+				"texto": "Integrar APIs de terceros con timeouts y reintentos.",
+				"porque": "Es lo que harás en cada llamada a un modelo, y ya lo sabes hacer (ver \"Lo que ya traes\")."
+			},
+			{
+				"texto": "Medir la calidad de algo que no siempre responde igual.",
+				"correcta": true,
+				"porque": "Es de lo nuevo: las evals. En backend, un test que pasa demuestra algo; con un modelo, hay que medir sobre muchos casos (\"Lo que es nuevo\")."
+			},
+			{
+				"texto": "Logging, métricas y trazas.",
+				"porque": "Se transfiere tal cual: las trazas de llamadas y de agentes son lo mismo que tu APM (\"Lo que ya traes\")."
+			}
+		]
+	},
+	{
+		"pregunta": "Tu prototipo con un modelo responde bien a los diez ejemplos que has probado. ¿Qué reflejo de backend conviene desaprender aquí?",
+		"opciones": [
+			{
+				"texto": "Dar por terminado lo que funciona con los ejemplos.",
+				"correcta": true,
+				"porque": "Con un modelo, \"funciona con los ejemplos que probé\" es el punto de partida, no el final (\"Lo que conviene desaprender\")."
+			},
+			{
+				"texto": "Validar las entradas.",
+				"porque": "Validar entradas y salidas sigue siendo clave: es la base de la salida estructurada y de los guardrails."
+			},
+			{
+				"texto": "Usar control de versiones.",
+				"porque": "Eso no se desaprende nunca. Lo que cambia es esperar que un caso probado demuestre el comportamiento general."
+			}
+		]
+	},
+	{
+		"pregunta": "¿Cuál de estas cifras mide mejor tu progreso en la rotación?",
+		"opciones": [
+			{
+				"texto": "Las horas de vídeo que has visto este mes.",
+				"porque": "Las horas vistas y los cursos empezados no son una métrica de progreso (\"Mide y depura\")."
+			},
+			{
+				"texto": "Las prácticas que has ejecutado y modificado, y los errores que has resuelto.",
+				"correcta": true,
+				"porque": "Son resultados que no dependen de cómo te sientas. El autodiagnóstico es una opinión; esto, no (\"Mide y depura\")."
+			},
+			{
+				"texto": "La puntuación media de tu autodiagnóstico.",
+				"porque": "Es tu línea base, pero sigue siendo una autoevaluación. Compleméntala con resultados verificables."
+			}
+		]
+	},
+	{
+		"pregunta": "Al validar el autodiagnóstico, Pydantic muestra un error missing para seguridad y otro extra_forbidden para segurida. ¿Qué ha pasado, casi seguro?",
+		"opciones": [
+			{
+				"texto": "Has puesto un valor fuera de rango en seguridad.",
+				"porque": "Eso daría un error de rango (less_than_equal), no un missing más un extra_forbidden."
+			},
+			{
+				"texto": "Has escrito mal el nombre de la clave.",
+				"correcta": true,
+				"porque": "Una errata produce los dos errores: falta el campo bueno y sobra uno con un nombre parecido (anatomía de la lección)."
+			},
+			{
+				"texto": "El fichero TOML está corrupto.",
+				"porque": "Con un TOML mal formado no se llegaría a validar nada. Aquí Pydantic sí leyó los campos."
+			}
+		]
+	}
+]}
+/>
 
 ## Para profundizar
 

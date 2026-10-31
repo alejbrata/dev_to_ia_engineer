@@ -3,6 +3,8 @@ title: "Tu proyecto en VS Code"
 description: "Tu proyecto en VS Code: terminal integrada, tareas, depuración y tests"
 ---
 
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
 :::note[Revisado: 2026-10]
 Los menús y atajos de VS Code cambian poco, pero cambian. Los atajos son los de Windows y Linux; en macOS, `Ctrl` es `Cmd`.
 :::
@@ -147,6 +149,67 @@ ModuleNotFoundError: No module named 'curso_core'
 **Causa.** `curso_core` sí está instalado, pero en `.venv/`. El intérprete que ejecutó el script era otro, el Python del sistema, que no lo tiene. Es el error más habitual al empezar con Python en un editor, y siempre es el mismo: el editor y el proyecto no están usando el mismo entorno.
 
 **Solución.** Selecciona el intérprete de `.venv` (paso 1 de la práctica) o ejecuta con la tarea **Curso: ejecutar el script abierto**, que usa `uv run`. Para comprobar qué intérprete se está usando en cada momento, la línea de la barra de estado es tu primera pista.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+	{
+		"pregunta": "Pulsas el botón de ejecutar de VS Code y falla con ModuleNotFoundError: No module named 'curso_core'. ¿Qué haces?",
+		"opciones": [
+			{
+				"texto": "Instalar curso_core con pip en el Python del sistema.",
+				"porque": "Ya está instalado en .venv/. Instalarlo en otro sitio solo esconde el problema."
+			},
+			{
+				"texto": "Seleccionar el intérprete de .venv, o ejecutar con la tarea del curso.",
+				"correcta": true,
+				"porque": "El editor estaba usando otro intérprete. La tarea siempre va por uv run (anatomía de la lección)."
+			},
+			{
+				"texto": "Mover el script a la raíz del repositorio.",
+				"porque": "El problema no es dónde está el script, sino qué intérprete lo ejecuta."
+			}
+		]
+	},
+	{
+		"pregunta": "En el depurador ves que una llamada tardó 4,35 s, de los que 3,31 s fueron load_duration. ¿Cómo la aceleras?",
+		"opciones": [
+			{
+				"texto": "Pidiendo respuestas más cortas.",
+				"porque": "La generación fue la parte pequeña. Casi todo el tiempo fue cargar el modelo."
+			},
+			{
+				"texto": "Manteniendo el modelo cargado entre llamadas.",
+				"correcta": true,
+				"porque": "Si el tiempo se va en la carga, mantén el modelo caliente; si se va en la generación, acorta la salida (\"En qué se van los segundos\")."
+			},
+			{
+				"texto": "Usando más tokens de entrada.",
+				"porque": "Eso no reduce la carga del modelo, y hace la llamada más lenta."
+			}
+		]
+	},
+	{
+		"pregunta": "Quieres ver una respuesta del modelo ya interpretada, con sus tokens, su latencia y su coste. ¿Dónde pones el punto de ruptura?",
+		"opciones": [
+			{
+				"texto": "En el método _finalizar de client.py, dentro de curso_core.",
+				"correcta": true,
+				"porque": "Ahí ves cada respuesta ya interpretada (\"Depurar dentro de curso_core\")."
+			},
+			{
+				"texto": "En el print del final del script.",
+				"porque": "En el print solo ves lo que el script decide mostrar, no la respuesta entera."
+			},
+			{
+				"texto": "En ningún sitio: no se puede depurar dentro de una librería.",
+				"porque": "Su código está en packages/curso_core/ y se depura igual que tus scripts."
+			}
+		]
+	}
+]}
+/>
 
 ## Para profundizar
 
