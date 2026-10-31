@@ -1,0 +1,98 @@
+---
+// Autoevaluación al final de una lección: preguntas de aplicar, no de memorizar, con la
+// explicación de por qué cada opción es correcta o no. Sin nota, sin registro, sin servidor:
+// es para quien lee, no para el curso.
+interface Opcion {
+	texto: string;
+	correcta?: boolean;
+	porque: string;
+}
+interface Pregunta {
+	pregunta: string;
+	opciones: Opcion[];
+}
+interface Props {
+	preguntas: Pregunta[];
+}
+
+const { preguntas } = Astro.props;
+---
+
+<div class="laboratorio autoevaluacion not-content">
+	<div class="laboratorio-cabecera">
+		<strong>Comprueba lo que has entendido</strong>
+		<span>{preguntas.length} preguntas · sin nota</span>
+	</div>
+	<div class="laboratorio-cuerpo">
+		{
+			preguntas.map((p, i) => (
+				<fieldset class="pregunta" data-pregunta>
+					<legend>
+						{i + 1}. {p.pregunta}
+					</legend>
+					<div class="opciones">
+						{p.opciones.map((o) => (
+							<button
+								type="button"
+								data-correcta={o.correcta ? 'si' : 'no'}
+								data-porque={o.porque}
+							>
+								{o.texto}
+							</button>
+						))}
+					</div>
+					<p class="nota explicacion" data-explicacion aria-live="polite" />
+				</fieldset>
+			))
+		}
+		<p class="nota">
+			Elige una opción para ver por qué es correcta o no. Si fallas, la explicación te dice qué
+			sección releer. Puedes probar otra opción después.
+		</p>
+	</div>
+</div>
+
+<style>
+	.pregunta {
+		border: 0;
+		padding: 0;
+		margin: 0 0 1.25rem;
+	}
+	.pregunta legend {
+		font-weight: 600;
+		margin-bottom: 0.5rem;
+	}
+	.opciones {
+		display: grid;
+		gap: 0.4rem;
+	}
+	.opciones button {
+		text-align: left;
+		white-space: normal;
+	}
+	.opciones button.acierto {
+		border-color: var(--sl-color-accent);
+		background: var(--sl-color-accent-low);
+		color: var(--sl-color-accent-high);
+	}
+	.opciones button.fallo {
+		border-color: var(--sl-color-red);
+		text-decoration: line-through;
+	}
+	.explicacion:empty {
+		display: none;
+	}
+</style>
+
+<script>
+	document.querySelectorAll<HTMLElement>('.autoevaluacion [data-pregunta]').forEach((pregunta) => {
+		const explicacion = pregunta.querySelector<HTMLElement>('[data-explicacion]')!;
+		pregunta.querySelectorAll<HTMLButtonElement>('button').forEach((boton) => {
+			boton.addEventListener('click', () => {
+				const correcta = boton.dataset.correcta === 'si';
+				boton.classList.add(correcta ? 'acierto' : 'fallo');
+				explicacion.textContent = `${correcta ? 'Correcto.' : 'No.'} ${boton.dataset.porque}`;
+			});
+		});
+	});
+</script>
