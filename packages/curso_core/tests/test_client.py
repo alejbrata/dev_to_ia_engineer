@@ -288,3 +288,14 @@ def test_extraer_lanza_error_formato(tmp_path: Path, texto: str) -> None:
             "hola", Clasificacion
         )
     assert e.value.texto == texto
+
+
+def test_el_proveedor_puede_renombrar_el_limite_de_tokens() -> None:
+    """OpenAI pide `max_completion_tokens`; el resto de servidores, `max_tokens`."""
+    datos = CONFIG.model_dump()
+    datos["providers"]["nube"]["parametro_max_tokens"] = "max_completion_tokens"
+    c = ClienteLLM(cfg.Config.model_validate(datos))
+    llamada = c._preparar("Hola", "remoto", Opciones(max_tokens=50), stream=False)
+    assert llamada.cuerpo["max_completion_tokens"] == 50 and "max_tokens" not in llamada.cuerpo
+    por_defecto = ClienteLLM(CONFIG)._preparar("Hola", "remoto", Opciones(max_tokens=50), False)
+    assert por_defecto.cuerpo["max_tokens"] == 50

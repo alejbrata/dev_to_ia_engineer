@@ -675,6 +675,8 @@ class ClienteLLM:
         dialecto = DIALECTOS[proveedor.tipo]
         opciones = opciones or Opciones()
         ruta, cuerpo = dialecto.peticion(modelo, mensajes, opciones, stream)
+        if "max_tokens" in cuerpo and proveedor.parametro_max_tokens != "max_tokens":
+            cuerpo[proveedor.parametro_max_tokens] = cuerpo.pop("max_tokens")
         traza = dict(
             rol=rol,
             proveedor=nombre,

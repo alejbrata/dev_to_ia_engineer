@@ -21,6 +21,9 @@ class Proveedor(BaseModel):
     tipo: Literal["ollama", "openai"]
     base_url: str
     api_key_env: str | None = None
+    # Nombre del límite de tokens de salida en la API compatible con OpenAI. OpenAI ha
+    # pasado a `max_completion_tokens`; Ollama, llama.cpp o vLLM siguen con `max_tokens`.
+    parametro_max_tokens: str = "max_tokens"
 
 
 class Rol(BaseModel):

@@ -62,6 +62,18 @@ provider = "huggingface"
 model = "Qwen/Qwen3-4B-Instruct-2507"
 hf_repo = "Qwen/Qwen3-4B-Instruct-2507"
 
+[roles.chat_openai]
+# Opcional (anexo G): una API comercial, para quien quiera comparar con el modelo local o
+# necesite más calidad. Necesita OPENAI_API_KEY en .env y saldo en la cuenta. El modelo
+# barato de OpenAI; cualquier práctica lo usa si cambias su rol a este. Revisado: 2026-10.
+provider = "openai"
+model = "gpt-6-luna"
+
+[roles.chat_openai_grande]
+# Opcional (anexo G): el modelo intermedio de OpenAI en coste y capacidad. Revisado: 2026-10.
+provider = "openai"
+model = "gpt-6.1-sol"
+
 [roles.judge]
 # Modelo que hace de juez en las evals (LLM-as-judge): uno más grande que el que
 # genera las respuestas. Revisado: 2026-10.
@@ -132,6 +144,14 @@ tipo = "openai"
 base_url = "https://router.huggingface.co/v1"
 api_key_env = "HF_TOKEN"
 
+[providers.openai]
+# Opcional (anexo G). La API de OpenAI pide `max_completion_tokens` en lugar de
+# `max_tokens`. Revisado: 2026-10.
+tipo = "openai"
+base_url = "https://api.openai.com/v1"
+api_key_env = "OPENAI_API_KEY"
+parametro_max_tokens = "max_completion_tokens"
+
 [precios."ollama/qwen2.5:1.5b"]
 # En local no se paga por token: el coste es tu hardware y tu electricidad.
 entrada = 0.0
@@ -159,6 +179,16 @@ salida = 0.0
 entrada = 0.01
 salida = 0.03
 
+
+[precios."openai/gpt-6-luna"]
+# Precio publicado por OpenAI (developers.openai.com/api/docs/pricing), nivel estándar,
+# USD por millón de tokens. Cambia con el tiempo. Revisado: 2026-10.
+entrada = 0.10
+salida = 0.50
+
+[precios."openai/gpt-6.1-sol"]
+entrada = 2.00
+salida = 10.00
 
 [precios."ollama/bge-m3"]
 entrada = 0.0

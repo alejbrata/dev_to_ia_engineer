@@ -109,3 +109,4 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 - **D. Glosario**
 - **E. Recursos**: papers, blogs y cursos que merecen la pena
 - **F. Herramientas de evals**: Ragas, DeepEval, promptfoo e Inspect frente a lo construido en el módulo 4
+- **G. APIs comerciales**: usar OpenAI, Claude u otro proveedor en lugar del modelo local, como opción, con su coste medido
