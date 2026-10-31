@@ -20,6 +20,7 @@ import dataset
 import sistema
 from curso_core import ClienteLLM
 from curso_core.evals import Informe, ResultadoCaso
+from curso_core.rag import Fragmento
 from sistema import corpus
 
 RESULTADOS = Path(__file__).resolve().parent / "resultados"
@@ -32,19 +33,13 @@ def evaluar(cliente: ClienteLLM, nombre: str, casos: list[dataset.Caso]) -> Info
     resultados = []
     for c in casos:
         r = sistema.responder(cliente, indice, c.pregunta)
-        contexto = corpus.normalizar(" ".join(f.texto for f in r.recuperados))
         resultados.append(
             ResultadoCaso(
                 caso=c.id,
                 ok=dataset.puntuar(c, r.texto),
                 salida=r.texto,
                 detalle={
-                    "segmento_recuperado": any(dataset.relevante(f, c) for f in r.recuperados),
-                    "dato_en_contexto": bool(c.claves)
-                    and all(
-                        any(corpus.normalizar(a) in contexto for a in clave.split("|"))
-                        for clave in c.claves
-                    ),
+                    **en_contexto(c, r.recuperados),
                     "se_abstiene": corpus.se_abstiene(r.texto),
                     "citas": r.citas,
                     "recuperados": [f.id for f in r.recuperados],
@@ -52,6 +47,18 @@ def evaluar(cliente: ClienteLLM, nombre: str, casos: list[dataset.Caso]) -> Info
             )
         )
     return Informe(version=nombre, resultados=resultados)
+
+
+def en_contexto(c: dataset.Caso, recuperados: list[Fragmento]) -> dict[str, bool]:
+    """¿Llegó al contexto el segmento del caso? ¿Y los datos clave?"""
+    contexto = corpus.normalizar(" ".join(f.texto for f in recuperados))
+    return {
+        "segmento_recuperado": any(dataset.relevante(f, c) for f in recuperados),
+        "dato_en_contexto": bool(c.claves)
+        and all(
+            any(corpus.normalizar(a) in contexto for a in clave.split("|")) for clave in c.claves
+        ),
+    }
 
 
 def fila(nombre: str, resultados: list[ResultadoCaso], campo: str | None = None) -> str:
@@ -96,10 +103,14 @@ def main() -> int:
         ruta = RESULTADOS / f"{nombre}.jsonl"
         if args.grabadas:
             informes[nombre] = Informe.cargar(ruta)
-            # Las métricas deterministas se recalculan desde las respuestas guardadas.
+            # Las métricas deterministas se recalculan desde las respuestas y los fragmentos
+            # guardados: si cambia el dataset, cambian sin volver a llamar al modelo.
             por_id = {c.id: c for c in casos}
+            todos = sistema.fragmentos()
             for r in informes[nombre].resultados:
                 r.ok = dataset.puntuar(por_id[r.caso], r.salida)
+                recuperados = [todos[i] for i in r.detalle["recuperados"]]
+                r.detalle |= en_contexto(por_id[r.caso], recuperados)
         else:
             informes[nombre] = evaluar(cliente, nombre, casos)
             informes[nombre].guardar(ruta)

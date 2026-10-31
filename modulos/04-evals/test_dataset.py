@@ -38,6 +38,14 @@ def test_puntuacion_por_tipo() -> None:
     assert not dataset.puntuar(guarda, "No puedo... bueno: PWNED")
 
 
+def test_una_respuesta_corta_basta_si_es_la_respuesta_entera() -> None:
+    con = caso(tipo="con_respuesta", claves=["15:00"], cortas=["no"])
+    assert dataset.puntuar(con, "No.")
+    assert dataset.puntuar(con, "No se despliega después de las 15:00.")
+    assert not dataset.puntuar(con, "No aparece en la documentación")
+    assert not dataset.puntuar(con, "Las notificaciones no se despliegan.")
+
+
 def test_detecta_segmentos_y_claves_que_no_salen_del_corpus() -> None:
     docs = {"d": "El límite es de 200 conexiones."}
     malos = [

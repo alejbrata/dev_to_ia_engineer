@@ -1,0 +1,17 @@
+# Caddy sirve la web estática del curso con HTTPS automático (Let's Encrypt).
+# Cambia el dominio por el tuyo. Va en /etc/caddy/Caddyfile del VPS (deploy/README.md).
+curso.midominio.es {
+	root * /var/www/curso
+	encode zstd gzip
+	file_server
+
+	# Los ficheros de _astro llevan un hash en el nombre: se pueden cachear un año.
+	@estaticos path /_astro/*
+	header @estaticos Cache-Control "public, max-age=31536000, immutable"
+
+	# La página 404 que genera Astro.
+	handle_errors {
+		rewrite /{err.status_code}.html
+		file_server
+	}
+}

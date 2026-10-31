@@ -34,10 +34,15 @@ class Respuesta(BaseModel):
     recuperados: list[Fragmento]
 
 
+def fragmentos() -> dict[str, Fragmento]:
+    """Los fragmentos del corpus por id: los mismos que indexa `indice`."""
+    return {f.id: f for d, t in corpus.documentos().items() for f in trocear_por_secciones(d, t)}
+
+
 def indice(cliente: ClienteLLM, reranker: bool = False) -> IndiceVectorial | IndiceReordenado:
     """El índice denso de las secciones; con `reranker`, reordena 20 candidatos."""
     denso = IndiceVectorial(cliente)
-    denso.añadir([f for d, t in corpus.documentos().items() for f in trocear_por_secciones(d, t)])
+    denso.añadir(list(fragmentos().values()))
     return IndiceReordenado(denso, cliente) if reranker else denso
 
 

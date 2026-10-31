@@ -16,6 +16,7 @@ import sys
 import corpus
 import numpy as np
 from curso_core import ClienteLLM
+from curso_core import config as cfg
 from curso_core.metrics import mrr, recall_at_k
 from curso_core.rag import IndiceVectorial, trocear_por_secciones
 
@@ -39,16 +40,23 @@ def medir(indice: IndiceVectorial, preguntas: list[corpus.Pregunta]) -> tuple[fl
     return recall_at_k(relevantes, K), mrr(relevantes)
 
 
+EMBEDDINGS = ["embeddings", "embeddings_ingles", "embeddings_otro"]
+
+
 def main() -> int:
     cliente = ClienteLLM()
     preguntas = [p for p in corpus.preguntas() if p.respondible]
     trozos = fragmentos()
 
+    # Los nombres salen de config/models.toml: si cambias un modelo, la salida lo dice.
+    roles = cfg.cargar().roles
+    principal, ingles, otro = (roles[r].model for r in EMBEDDINGS)
+
     print("1. Recuperación con secciones, 26 preguntas")
     configuraciones = {
-        "bge-m3": IndiceVectorial(cliente, rol="embeddings"),
-        "nomic-embed-text, sin prefijos": IndiceVectorial(cliente, rol="embeddings_ingles"),
-        "nomic-embed-text, con prefijos": IndiceVectorial(
+        principal: IndiceVectorial(cliente, rol="embeddings"),
+        f"{ingles}, sin prefijos": IndiceVectorial(cliente, rol="embeddings_ingles"),
+        f"{ingles}, con prefijos": IndiceVectorial(
             cliente,
             rol="embeddings_ingles",
             prefijo_documento="search_document: ",
@@ -63,22 +71,24 @@ def main() -> int:
             f"   {nombre:32} recall@3 {recall:4.0%} · MRR {orden:.2f} · {dimensiones} dimensiones"
         )
 
-    print("\n2. Similitud del coseno entre frases (bge-m3)")
+    print(f"\n2. Similitud del coseno entre frases ({principal})")
     vectores = np.array(cliente.embeber(FRASES).vectores)
     vectores /= np.linalg.norm(vectores, axis=1, keepdims=True)
     print(f"   misma idea, otras palabras: {vectores[0] @ vectores[1]:.3f}")
     print(f"   ideas distintas:            {vectores[0] @ vectores[2]:.3f}")
 
-    print("\n3. Índice con bge-m3, consulta con otro modelo (alguien cambia la configuración)")
-    indice = configuraciones["bge-m3"]
+    print(
+        f"\n3. Índice con {principal}, consulta con otro modelo (alguien cambia la configuración)"
+    )
+    indice = configuraciones[principal]
     indice.rol = "embeddings_ingles"  # 768 dimensiones frente a 1024
     try:
         indice.buscar(preguntas[0].pregunta)
     except ValueError as e:
-        print(f"   con nomic-embed-text -> ValueError: {e}")
-    indice.rol = "embeddings_otro"  # qwen3-embedding: también 1024 dimensiones
+        print(f"   con {ingles:20} -> ValueError: {e}")
+    indice.rol = "embeddings_otro"  # mismas dimensiones que el principal
     recall, orden = medir(indice, preguntas)
-    print(f"   con qwen3-embedding  -> sin error · recall@3 {recall:4.0%} · MRR {orden:.2f}")
+    print(f"   con {otro:20} -> sin error · recall@3 {recall:4.0%} · MRR {orden:.2f}")
     return 0
 
 

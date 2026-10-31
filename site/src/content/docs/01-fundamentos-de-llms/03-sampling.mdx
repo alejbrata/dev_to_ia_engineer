@@ -4,6 +4,7 @@ description: "Sampling: temperature, top_p y determinismo (o su ausencia)"
 ---
 
 import Temperatura from '../../../components/Temperatura.astro';
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
 
 
 :::note[Revisado: 2026-10]
@@ -58,6 +59,8 @@ Por eso los proveedores hablan de reproducibilidad "en la medida de lo posible".
 - **Extraer datos, clasificar, responder con un formato fijo:** temperatura 0 o muy baja. Quieres la respuesta más probable, siempre la misma.
 - **Generar variedad (nombres, ideas, reformulaciones):** temperatura media o alta, con top_p para cortar los disparates.
 - **En cualquier caso:** fija los parámetros tú, en el código. No dependas del valor por defecto del servidor, que además cambia entre servidores.
+
+Algunos proveedores no te dejan elegir. Los modelos actuales de OpenAI, por ejemplo, solo aceptan la temperatura por defecto y responden con un error 400 si pides 0 (lo verás en el anexo G). Con ellos, cada llamada es un sorteo, y lo que aprendes en esta lección sobre medir la diversidad y probar propiedades deja de ser opcional.
 
 ## Práctica
 
@@ -200,6 +203,85 @@ FAILED test_nombre_cafeteria.py::test_nombre_de_cafeteria_es_reproducible
 **Causa.** En tu máquina, el modelo ya estaba cargado de ejecuciones anteriores. En CI, o tras reiniciar Ollama, el test hace la primera llamada con el modelo recién cargado, y esa llamada da otra respuesta aunque la semilla sea la misma. Es lo que mediste en la parte 3 de la práctica.
 
 **Solución.** No pruebes el texto exacto de una salida con sampling. Si el comportamiento que quieres probar admite temperatura 0, úsala. Si no, prueba propiedades: que la respuesta no esté vacía, que sea un nombre corto, que no repita el prompt. Y si un test depende de un modelo, ejecútalo también con el modelo recién cargado antes de fiarte de él.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'Extraes el importe de mil facturas con un modelo en Ollama. Al repetir la ejecución, algunas facturas salen con otro importe. ¿Qué miras primero?',
+			opciones: [
+				{
+					texto: 'La temperatura que envías.',
+					correcta: true,
+					porque: 'Si no la fijas, Ollama usa 0,8: cada llamada es un sorteo. Para extraer datos quieres temperatura 0 (ver "Qué ajuste para qué tarea").',
+				},
+				{
+					texto: 'Fijar una semilla y dar el problema por resuelto.',
+					porque: 'Ayuda, pero la semilla hace la salida reproducible a menudo, no siempre (parte 3 de la práctica). Y no arregla que estés sorteando en una tarea que no lo necesita.',
+				},
+				{
+					texto: 'Cambiar a un modelo más grande.',
+					porque: 'Un modelo más grande también sortea si la temperatura es mayor que 0. Primero, quita el sorteo; después, mide si el modelo acierta.',
+				},
+			],
+		},
+		{
+			pregunta: 'Con las probabilidades reales de la práctica ("bl" 54 %, "az" 33 % a T=1), ¿qué temperatura convierte "azul" en el token más probable? Compruébalo con el laboratorio.',
+			opciones: [
+				{
+					texto: 'T=0.',
+					porque: 'Con T=0 todo va al más probable, que es "bl" (blanco).',
+				},
+				{
+					texto: 'T=2.',
+					porque: 'Con T=2 la distribución se aplana y "az" se acerca, pero "bl" sigue por delante.',
+				},
+				{
+					texto: 'Ninguna.',
+					correcta: true,
+					porque: 'La temperatura reparte la probabilidad, pero no cambia el orden de los tokens. No corrige al modelo.',
+				},
+			],
+		},
+		{
+			pregunta: 'Un test con temperatura 0,8 y semilla fija pasa siempre en tu máquina y falla en CI. ¿Cuál es la causa más probable?',
+			opciones: [
+				{
+					texto: 'En CI el modelo está recién cargado, y la primera llamada da otra respuesta.',
+					correcta: true,
+					porque: 'Es lo que mide la parte 3 de la práctica y la anatomía del error: la semilla no garantiza la reproducibilidad.',
+				},
+				{
+					texto: 'CI usa otra versión de Python.',
+					porque: 'El sorteo lo hace el servidor del modelo, no tu Python. Sospecha primero de lo no determinista.',
+				},
+				{
+					texto: 'La semilla solo vale para una ejecución.',
+					porque: 'La semilla no caduca. Lo que cambia son las condiciones del servidor (caché, carga del modelo).',
+				},
+			],
+		},
+		{
+			pregunta: 'Generas nombres de producto con T=1,5 y, de vez en cuando, sale un disparate. ¿Qué cambio mantiene la variedad y corta los disparates?',
+			opciones: [
+				{
+					texto: 'Bajar a T=0.',
+					porque: 'Corta los disparates, pero también la variedad: siempre el mismo nombre.',
+				},
+				{
+					texto: 'Bajar top_p, por ejemplo a 0,3.',
+					correcta: true,
+					porque: 'top_p descarta la cola de tokens raros antes del sorteo. En la práctica, T=1,5 con top_p=0,3 dio 5 nombres distintos y ninguno disparatado.',
+				},
+				{
+					texto: 'Reducir max_tokens.',
+					porque: 'Limita la longitud, no qué tokens se eligen. Un disparate corto sigue siendo un disparate.',
+				},
+			],
+		},
+	]}
+/>
 
 ## Bitácora
 

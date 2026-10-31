@@ -1,5 +1,5 @@
 ---
-title: "Modelos abiertos frente a cerrados; primer contacto con Hugging Face"
+title: "Modelos abiertos y cerrados"
 description: "Modelos abiertos frente a cerrados; primer contacto con Hugging Face"
 ---
 
@@ -177,6 +177,15 @@ Es vaga y repetitiva, ignora el "una frase" y se corta al llegar a los 80 tokens
 ### Cinco preguntas no son una evaluación
 
 Con cinco preguntas, un acierto más o menos cambia la conclusión. Sirven para hacerse una idea, no para decidir. Para elegir un modelo de verdad necesitas decenas o cientos de casos representativos de tu tarea, y una forma fiable de puntuarlos. Es exactamente lo que construirás en el módulo de evals.
+
+Ni siquiera hace falta cambiar de preguntas para que cambie el resultado. Al repasar el curso, ejecutamos esta práctica justo después de la de la lección 02, que deja el modelo de 1.5B cargado con un contexto de 8192 tokens. Esta vez acertó el color:
+
+```text
+[qwen2.5:1.5b]
+  OK      0.2 s  'azul.'
+```
+
+Con 5 de 5, la tabla diría que el de 1.5B empata con el de 7B. Ejecutada otra vez, con el modelo cargado de nuevo, vuelve a decir "blanco." tres de tres veces. Es el no determinismo de la lección 03: con temperatura 0, el resultado también puede depender de cómo está cargado el modelo (es la explicación más probable; no la hemos aislado). Una sola ejecución con cinco preguntas no basta para decidir.
 
 Fíjate también en cómo se mide la columna de tokens por segundo: tokens de salida entre tiempo total, que incluye procesar la pregunta. Con respuestas de una palabra, ese tiempo pesa mucho y la cifra baja. Entender qué mide exactamente una métrica es parte de medir.
 

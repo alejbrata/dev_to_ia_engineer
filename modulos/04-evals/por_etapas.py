@@ -92,14 +92,19 @@ def main() -> int:
     casos = dataset.cargar()
     por_id = {c.id: c for c in casos}
 
+    todos = sistema.fragmentos()
     informes: dict[str, Informe] = {}
     cliente = None if args.grabadas else ClienteLLM()
     for nombre in CONFIGURACIONES:
         ruta = RESULTADOS / f"etapas-{nombre}.jsonl"
         if args.grabadas:
             informes[nombre] = Informe.cargar(ruta)
+            # Puntuación y segmento se recalculan con el dataset actual.
             for r in informes[nombre].resultados:
                 r.ok = dataset.puntuar(por_id[r.caso], r.salida)
+                r.detalle["segmento_recuperado"] = any(
+                    dataset.relevante(todos[i], por_id[r.caso]) for i in r.detalle["recuperados"]
+                )
         else:
             informes[nombre] = ejecutar(cliente, nombre, casos)
             informes[nombre].guardar(ruta)

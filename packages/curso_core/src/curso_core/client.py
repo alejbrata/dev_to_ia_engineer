@@ -382,6 +382,70 @@ def _trozo_openai(linea: str) -> Trozo:
     return Trozo(texto, uso.get("prompt_tokens"), uso.get("completion_tokens"), motivo)
 
 
+def esquema_estricto(esquema: dict) -> dict:
+    """Copia del esquema con cada objeto cerrado: sin propiedades extra y todas obligatorias.
+
+    Es lo que exigen los modos estrictos de OpenAI y Claude. Pydantic no lo genera así.
+    """
+    if isinstance(esquema, list):
+        return [esquema_estricto(e) for e in esquema]
+    if not isinstance(esquema, dict):
+        return esquema
+    copia = {k: esquema_estricto(v) for k, v in esquema.items()}
+    if copia.get("type") == "object" and "properties" in copia:
+        copia["additionalProperties"] = False
+        copia["required"] = list(copia["properties"])
+    return copia
+
+
+# --- Claude (SDK oficial de Anthropic) -----------------------------------------
+# La API de Claude no usa el formato de OpenAI. En lugar de hablarla con httpx, como a los
+# demás, se usa su SDK oficial, que además reintenta los 429 y los 5xx por su cuenta.
+
+# max_tokens es obligatorio en Claude. Si la práctica no lo fija, uno amplio: cortar una
+# respuesta a medias obliga a repetirla.
+CLAUDE_MAX_TOKENS = 16000
+# Modelos que admiten la reserva automática del servidor ante un rechazo: si el modelo
+# declina la petición, la API la repite con otro dentro de la misma llamada.
+CLAUDE_CON_RESERVA = {"claude-fable-5-1", "claude-opus-5-5", "claude-opus-5", "claude-sonnet-5-5"}
+CLAUDE_BETA_RESERVA = "server-side-fallback-2026-07-01"
+
+
+def _peticion_claude(modelo: str, mensajes: list[Mensaje], op: Opciones) -> dict:
+    """Los argumentos de `messages.create`. Temperatura, top_p y semilla no se envían: la
+    versión actual de la API de Claude rechaza los parámetros de muestreo."""
+    if op.herramientas or op.alternativas is not None:
+        raise ErrorLLM("El proveedor 'anthropic' de curso_core no admite herramientas ni logprobs")
+    if any(m.role == "tool" or m.llamadas for m in mensajes):
+        raise ErrorLLM("El proveedor 'anthropic' de curso_core no admite herramientas")
+    sistema = "\n\n".join(m.content for m in mensajes if m.role == "system")
+    cuerpo: dict = {
+        "model": modelo,
+        "max_tokens": op.max_tokens or CLAUDE_MAX_TOKENS,
+        "messages": [
+            {"role": m.role, "content": m.content} for m in mensajes if m.role != "system"
+        ],
+    }
+    if sistema:
+        cuerpo["system"] = sistema
+    if op.formato is not None:
+        formato = {"type": "json_schema", "schema": esquema_estricto(op.formato)}
+        cuerpo["output_config"] = {"format": formato}
+    if modelo in CLAUDE_CON_RESERVA:
+        cuerpo |= {"betas": [CLAUDE_BETA_RESERVA], "fallbacks": "default"}
+    return cuerpo
+
+
+def _respuesta_claude(mensaje) -> Bruto:
+    """La respuesta es una lista de bloques (texto, razonamiento...): se queda con el texto."""
+    texto = "".join(b.text for b in mensaje.content if b.type == "text")
+    motivo = {"end_turn": "stop", "max_tokens": "length"}.get(
+        mensaje.stop_reason, mensaje.stop_reason
+    )
+    uso = mensaje.usage
+    return Bruto(texto, uso.input_tokens, uso.output_tokens, None, motivo)
+
+
 class Dialecto(NamedTuple):
     peticion: Callable[[str, list[Mensaje], Opciones, bool], tuple[str, dict]]
     respuesta: Callable[[dict], Bruto]
@@ -416,7 +480,7 @@ class _Llamada(NamedTuple):
     proveedor: str
     config: cfg.Proveedor
     modelo: str
-    dialecto: Dialecto
+    dialecto: Dialecto | None  # None en Claude, que va por su SDK
     ruta: str
     cuerpo: dict
     traza: dict
@@ -474,6 +538,7 @@ class ClienteLLM:
         # Abrir una conexión nueva en cada llamada cuesta tiempo (DNS, TCP, TLS);
         # se crea un cliente HTTP por proveedor y se reutiliza.
         self._clientes: dict[str, httpx.Client] = {}
+        self._sdk_claude: dict = {}
 
     def descargar_modelo(self, rol: str = "chat") -> None:
         """Pide al servidor que saque el modelo de memoria, para medir desde un estado limpio.
@@ -507,6 +572,14 @@ class ClienteLLM:
     ) -> Respuesta:
         llamada = self._preparar(mensajes, rol, opciones, stream=False)
         inicio = time.perf_counter()
+        if llamada.dialecto is None:
+            try:
+                bruto = self._llamar_claude(llamada)
+            except ErrorLLM as e:
+                self._registrar_fallo(llamada, inicio, e)
+                raise
+            # El SDK reintenta por su cuenta y no dice cuántas veces: se cuenta 1.
+            return self._finalizar(llamada, inicio, 1, bruto)
         try:
             http = self._http(llamada.proveedor, llamada.config)
             r, intentos = self._abrir(http, llamada.ruta, llamada.cuerpo)
@@ -543,6 +616,8 @@ class ClienteLLM:
     def embeber(self, textos: list[str], *, rol: str = "embeddings") -> Embeddings:
         """Convierte textos en vectores con el modelo de embeddings del rol."""
         nombre, proveedor, modelo = self.config.resolver(rol)
+        if proveedor.tipo == "anthropic":
+            raise ValueError(f"El proveedor '{nombre}' no ofrece embeddings")
         if proveedor.tipo == "ollama":
             ruta, cuerpo = "/api/embed", {"model": modelo, "input": textos}
         else:
@@ -672,9 +747,19 @@ class ClienteLLM:
         elif isinstance(mensajes, str):
             mensajes = [Mensaje(role="user", content=mensajes)]
         nombre, proveedor, modelo = self.config.resolver(rol)
-        dialecto = DIALECTOS[proveedor.tipo]
         opciones = opciones or Opciones()
-        ruta, cuerpo = dialecto.peticion(modelo, mensajes, opciones, stream)
+        if proveedor.tipo == "anthropic":
+            dialecto, ruta, cuerpo = None, "", _peticion_claude(modelo, mensajes, opciones)
+        else:
+            dialecto = DIALECTOS[proveedor.tipo]
+            ruta, cuerpo = dialecto.peticion(modelo, mensajes, opciones, stream)
+        if "max_tokens" in cuerpo and proveedor.parametro_max_tokens != "max_tokens":
+            cuerpo[proveedor.parametro_max_tokens] = cuerpo.pop("max_tokens")
+        for parametro in proveedor.omitir:
+            cuerpo.pop(parametro, None)
+        if proveedor.esquema_estricto and "response_format" in cuerpo:
+            formato = cuerpo["response_format"]["json_schema"]
+            formato["schema"] = esquema_estricto(formato["schema"])
         traza = dict(
             rol=rol,
             proveedor=nombre,
@@ -685,6 +770,8 @@ class ClienteLLM:
         return _Llamada(nombre, proveedor, modelo, dialecto, ruta, cuerpo, traza)
 
     def _generar(self, llamada: _Llamada) -> Generator[str, None, Respuesta]:
+        if llamada.dialecto is None:
+            return (yield from self._generar_claude(llamada))
         inicio = time.perf_counter()
         partes: list[str] = []
         entrada = salida = 0
@@ -714,6 +801,68 @@ class ClienteLLM:
             raise
         bruto = Bruto("".join(partes), entrada, salida, None, motivo)
         return self._finalizar(llamada, inicio, intentos, bruto, primer_token)
+
+    def _claude(self, nombre: str, proveedor: cfg.Proveedor):
+        """El cliente del SDK de Anthropic para este proveedor, creado una vez."""
+        if nombre not in self._sdk_claude:
+            import anthropic
+
+            clave = os.environ.get(proveedor.api_key_env or "")
+            if not clave:
+                raise ErrorLLM(f"Falta la variable de entorno {proveedor.api_key_env} en .env")
+            self._sdk_claude[nombre] = anthropic.Anthropic(
+                api_key=clave,
+                base_url=proveedor.base_url,
+                timeout=self.timeout,
+                max_retries=self.reintentos,
+            )
+        return self._sdk_claude[nombre]
+
+    def _llamar_claude(self, llamada: _Llamada) -> Bruto:
+        import anthropic
+
+        sdk = self._claude(llamada.proveedor, llamada.config)
+        api = sdk.beta.messages if "betas" in llamada.cuerpo else sdk.messages
+        try:
+            return _respuesta_claude(api.create(**llamada.cuerpo))
+        except anthropic.APIStatusError as e:
+            raise ErrorLLM(
+                f"{e.status_code} en la API de Claude: {e.message}",
+                status=e.status_code,
+                cuerpo=str(e.body),
+            ) from e
+        except anthropic.APIConnectionError as e:
+            raise ErrorLLM(f"No se pudo conectar con la API de Claude: {e!r}") from e
+
+    def _generar_claude(self, llamada: _Llamada) -> Generator[str, None, Respuesta]:
+        import anthropic
+
+        inicio = time.perf_counter()
+        primer_token = None
+        try:
+            sdk = self._claude(llamada.proveedor, llamada.config)
+            api = sdk.beta.messages if "betas" in llamada.cuerpo else sdk.messages
+            with api.stream(**llamada.cuerpo) as flujo:
+                for texto in flujo.text_stream:
+                    primer_token = primer_token or time.perf_counter() - inicio
+                    yield texto
+                final = flujo.get_final_message()
+        except anthropic.APIStatusError as e:
+            error = ErrorLLM(
+                f"{e.status_code} en la API de Claude: {e.message}",
+                status=e.status_code,
+                cuerpo=str(e.body),
+            )
+            self._registrar_fallo(llamada, inicio, error)
+            raise error from e
+        except anthropic.APIConnectionError as e:
+            error = ErrorLLM(f"No se pudo conectar con la API de Claude: {e!r}")
+            self._registrar_fallo(llamada, inicio, error)
+            raise error from e
+        except ErrorLLM as e:
+            self._registrar_fallo(llamada, inicio, e)
+            raise
+        return self._finalizar(llamada, inicio, 1, _respuesta_claude(final), primer_token)
 
     def _http(self, nombre: str, proveedor: cfg.Proveedor) -> httpx.Client:
         if nombre in self._clientes:

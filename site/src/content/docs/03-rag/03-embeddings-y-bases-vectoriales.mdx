@@ -89,8 +89,8 @@ uv run python modulos/03-rag/embeddings.py
    ideas distintas:            0.534
 
 3. Índice con bge-m3, consulta con otro modelo (alguien cambia la configuración)
-   con nomic-embed-text -> ValueError: matmul: Input operand 1 has a mismatch in its core dimension 0, with gufunc signature (n?,k),(k,m?)->(n?,m?) (size 768 is different from 1024)
-   con qwen3-embedding  -> sin error · recall@3   4% · MRR 0.02
+   con nomic-embed-text     -> ValueError: matmul: Input operand 1 has a mismatch in its core dimension 0, with gufunc signature (n?,k),(k,m?)->(n?,m?) (size 768 is different from 1024)
+   con qwen3-embedding:0.6b -> sin error · recall@3   4% · MRR 0.02
 ```
 
 La parte 3 se explica en la anatomía de errores, más abajo.
@@ -184,8 +184,8 @@ El plan lo confirma por otro lado: con 97 filas, PostgreSQL prefiere recorrer la
 La parte 3 de `embeddings.py` simula algo que pasa en proyectos reales: alguien cambia el modelo de embeddings en la configuración y no reindexa. Hay dos casos:
 
 ```text
-con nomic-embed-text -> ValueError: matmul: Input operand 1 has a mismatch in its core dimension 0, with gufunc signature (n?,k),(k,m?)->(n?,m?) (size 768 is different from 1024)
-con qwen3-embedding  -> sin error · recall@3   4% · MRR 0.02
+con nomic-embed-text     -> ValueError: matmul: Input operand 1 has a mismatch in its core dimension 0, with gufunc signature (n?,k),(k,m?)->(n?,m?) (size 768 is different from 1024)
+con qwen3-embedding:0.6b -> sin error · recall@3   4% · MRR 0.02
 ```
 
 **Cómo leerlo.** El primero es un error de numpy al multiplicar matrices: la matriz del índice tiene vectores de 1024 números y el de la pregunta tiene 768. El mensaje es críptico, pero la última parte lo dice todo: `size 768 is different from 1024`. En pgvector el mismo fallo es más claro: `different vector dimensions 1024 and 768`.

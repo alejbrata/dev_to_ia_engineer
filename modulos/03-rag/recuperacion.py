@@ -14,6 +14,7 @@ import time
 
 import corpus
 from curso_core import ClienteLLM
+from curso_core import config as cfg
 from curso_core.metrics import mrr, precision_at_k, recall_at_k
 from curso_core.rag import (
     IndiceHibrido,
@@ -38,7 +39,8 @@ def main() -> int:
     lexico = IndiceLexico()
     hibrido = IndiceHibrido(denso, lexico)
     hibrido.añadir(trozos)
-    indices = {"densa (bge-m3)": denso, "léxica (BM25)": lexico, "híbrida (RRF)": hibrido}
+    densa_nombre = f"densa ({cfg.cargar().roles['embeddings'].model})"
+    indices = {densa_nombre: denso, "léxica (BM25)": lexico, "híbrida (RRF)": hibrido}
 
     print(f"1. Recuperación, {len(respondibles)} preguntas con respuesta")
     print(f"   {'búsqueda':16} recall@1  recall@3  recall@5  precision@3   MRR  ms/búsqueda")
@@ -57,7 +59,7 @@ def main() -> int:
         print(f"   {nombre:16}{recalls}  {precision:11.0%}  {orden:4.2f}  {ms:11.1f}")
 
     print("\n2. Aciertos en el top 3 que solo consigue una de las dos")
-    densa, lexica = resultados["densa (bge-m3)"], resultados["léxica (BM25)"]
+    densa, lexica = resultados[densa_nombre], resultados["léxica (BM25)"]
     for p in respondibles:
         en_densa = any(corpus.es_relevante(r.fragmento, p) for r in densa[p.id][:3])
         en_lexica = any(corpus.es_relevante(r.fragmento, p) for r in lexica[p.id][:3])

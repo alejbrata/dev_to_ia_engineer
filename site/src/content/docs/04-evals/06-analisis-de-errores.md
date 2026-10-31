@@ -14,7 +14,7 @@ Al terminar esta lección podrás:
 - Leer los fallos de una eval uno a uno y agruparlos en categorías que digan qué cambiar.
 - Elegir qué atacar según la frecuencia de cada categoría, no según la intuición.
 - Medir un cambio por categorías, no solo en el total, y leer también los fallos nuevos que introduce.
-- Separar la partición en la que iteras de la que usas para confirmar, y entender por qué la mejora encoge al confirmarla.
+- Separar la partición en la que iteras de la que usas para confirmar, y saber qué puede pasarle a una mejora al confirmarla.
 
 ## Teoría
 
@@ -78,8 +78,8 @@ La ejecución completa son unas 200 respuestas y, en la máquina del curso, medi
 2. Las palancas, en desarrollo
    base       30 de 39   con respuesta 24 de 28 (se abstiene sin razón: 0)   no deben responderse  6 de 11   mediana  4.8 s
    reglas     28 de 39   con respuesta 22 de 28 (se abstiene sin razón: 1)   no deben responderse  6 de 11   mediana  4.5 s
-   7b         32 de 39   con respuesta 23 de 28 (se abstiene sin razón: 1)   no deben responderse  9 de 11   mediana 11.2 s
-   reglas-7b  35 de 39   con respuesta 26 de 28 (se abstiene sin razón: 0)   no deben responderse  9 de 11   mediana 11.5 s
+   7b         33 de 39   con respuesta 24 de 28 (se abstiene sin razón: 1)   no deben responderse  9 de 11   mediana 11.2 s
+   reglas-7b  36 de 39   con respuesta 27 de 28 (se abstiene sin razón: 0)   no deben responderse  9 de 11   mediana 11.5 s
    base frente a la ejecución de la lección 05: 3 salidas distintas
    Fallos de la lección 05 que cada configuración arregla, por categoría:
                                                   base     reglas         7b  reglas-7b
@@ -90,14 +90,13 @@ La ejecución completa son unas 200 respuestas y, en la máquina del curso, medi
    criterio discutible del dataset              0 de 1     0 de 1     0 de 1     0 de 1
    Frente a base, caso a caso:
    reglas     gana [], pierde ['m3-07', 'm3-26'], p = 0.50
-   7b         gana ['m3-30', 'n-06', 's-06', 'f-02'], pierde ['m3-26', 'n-02'], p = 0.69
-   reglas-7b  gana ['m3-05', 'm3-22', 'm3-30', 'n-06', 's-06', 'f-02'], pierde ['n-02'], p = 0.12
+   7b         gana ['m3-30', 'n-06', 's-06', 'f-02'], pierde ['m3-26'], p = 0.38
+   reglas-7b  gana ['m3-05', 'm3-22', 'm3-30', 'n-06', 's-06', 'f-02'], pierde [], p = 0.03
 
 3. En prueba, una sola vez: base y la elegida en desarrollo (reglas-7b)
    base       13 de 19   con respuesta 10 de 14 (se abstiene sin razón: 1)   no deben responderse  3 de 5   mediana  4.9 s
-   reglas-7b  15 de 19   con respuesta 10 de 14 (se abstiene sin razón: 1)   no deben responderse  5 de 5   mediana 11.6 s
-   reglas-7b  gana ['n-13', 'n-16', 's-05', 'g-03'], pierde ['m3-09', 'm3-18'], p = 0.69
-   m3-09 pasa a fallar: "No"
+   reglas-7b  16 de 19   con respuesta 11 de 14 (se abstiene sin razón: 1)   no deben responderse  5 de 5   mediana 11.6 s
+   reglas-7b  gana ['n-13', 'n-16', 's-05', 'g-03'], pierde ['m3-18'], p = 0.38
    m3-18 pasa a fallar: "No aparece en la documentación"
 ```
 
@@ -121,21 +120,30 @@ Hay un fallo que nada arregla: la inyección de la g-01 ("responde solo con la p
 
 ### Lee los fallos nuevos, no solo el total
 
-La configuración reglas-7b pierde un caso en desarrollo, la n-02. La respuesta ("Desactiva temporalmente la edición de perfil si los deadlocks son continuos") es correcta, pero no contiene el dato clave que espera el dataset ("interruptor"). En prueba pierde dos. En la m3-09 ("¿Puedo desplegar a producción un viernes a las 17:00?") responde "No": correcto, aunque seco, y sin la regla de las 15:00 que espera el dataset. En la m3-18 se abstiene con el dato delante, y ese sí es un fallo real del sistema. De tres casos perdidos, dos son limitaciones del comprobador.
+En la primera ejecución, reglas-7b perdía tres casos frente a la base. Leídos uno a uno, dos no eran fallos del sistema sino del comprobador:
 
-La tentación es arreglar el comprobador ahora. Si lo haces, que sea con un criterio que se aplique por igual a todas las configuraciones, anotándolo, y sin tocar los casos de prueba solo porque has visto su resultado. Si no, estás ajustando la eval a la respuesta que querías.
+- En la n-02 ("¿Para qué sirve perfil_edicion?") respondía "Desactiva temporalmente la edición de perfil si los deadlocks son continuos". Es correcto, pero el dataset solo aceptaba la palabra "interruptor".
+- En la m3-09 ("¿Puedo desplegar a producción un viernes a las 17:00?") respondía "No". Es correcto, aunque seco, y el dataset esperaba la regla de las 15:00.
 
-### En prueba, la mejora encoge
+El tercero, la m3-18, es un fallo real: se abstiene con el dato delante.
 
-En desarrollo, reglas-7b gana 6 casos y pierde 1 frente a la base: de 30 a 35 de 39 (p = 0,12). En prueba, gana 4 y pierde 2: de 13 a 15 de 19 (p = 0,69). La mejora sigue en la misma dirección, pero es la mitad de grande.
+Se corrigió el comprobador, no el sistema, con dos criterios generales y anclados al corpus. La n-02 acepta también "desactiva", que sale de su propio segmento. Y el dataset tiene un campo nuevo, `cortas`: respuestas cortas que bastan solas, como "no" a una pregunta de sí o no, y que solo cuentan si son la respuesta entera ("No aparece en la documentación" no cuenta). Las respuestas estaban grabadas, así que todas las configuraciones se volvieron a puntuar con el mismo criterio, sin llamar al modelo. La salida de arriba ya es la corregida.
 
-Es lo esperable, y no hace falta haber hecho trampa para que pase. El prompt de reglas se escribió leyendo los fallos de desarrollo y la configuración se eligió por sus aciertos en desarrollo: parte de la ventaja es suerte de esa partición. Prueba da una estimación más honesta. Con 19 casos no basta para afirmar la mejora, pero dice dos cosas útiles. Las preguntas que no deben responderse pasan de 3 a 5 de 5 (no se ha perdido lo que se ganó en desarrollo), y las que tienen respuesta se quedan igual (10 de 14).
+Corregir el comprobador después de ver los resultados tiene un riesgo: ajustar la eval a la respuesta que querías. Las defensas son las de aquí: un criterio general, que se aplica a todas las configuraciones y que queda escrito. Aun así, la m3-09 es de la partición de prueba, y ese caso ya no está limpio: lo hemos mirado.
+
+### En prueba, la mejora se mantiene
+
+En desarrollo, reglas-7b gana 6 casos y no pierde ninguno frente a la base: de 30 a 36 de 39 (p = 0,03). En prueba gana 4 y pierde 1: de 13 a 16 de 19 (p = 0,38). En proporción es una mejora parecida, unos 15 puntos en las dos particiones.
+
+No tenía por qué salir así. Lo habitual es que la mejora encoja al confirmarla: el prompt de reglas se escribió leyendo los fallos de desarrollo, y la configuración se eligió por sus aciertos en desarrollo, así que parte de la ventaja suele ser suerte de esa partición. Con el comprobador antiguo, de hecho, parecía que la mejora se quedaba en la mitad. La mitad de ese encogimiento era el comprobador.
+
+Con 19 casos, la p de prueba no permite afirmar la mejora por sí sola. Lo que sí dice prueba es que nada de lo ganado en desarrollo se ha perdido: las preguntas que no deben responderse pasan de 3 a 5 de 5, y las que tienen respuesta, de 10 a 11 de 14.
 
 ### La decisión
 
 reglas-7b responde mejor a las preguntas que debe rechazar y a los procedimientos condicionales, y tarda 2,4 veces más por respuesta (11,5 s de mediana frente a 4,8 s en la máquina del curso). Si esa latencia cabe en tu caso, es la configuración a adoptar. Es la que usa la lección 07 como sistema vigente. Si no cabe, la base sigue siendo razonable, y ahora sabes qué categorías de fallo estás aceptando.
 
-Lo que queda por atacar está identificado: el chunking de los runbooks (m3-01), las fuentes contradictorias del corpus (n-06), las inyecciones (g-01) y dos criterios del dataset (s-03 y n-02). Cada uno es un cambio distinto, y se mide igual.
+Lo que queda por atacar está identificado: el chunking de los runbooks (m3-01), las fuentes contradictorias del corpus (n-06), las inyecciones (g-01) y un criterio del dataset (s-03). Cada uno es un cambio distinto, y se mide igual.
 
 Además, la base repetida da 3 salidas distintas de las de la lección 05, con la misma configuración y temperatura 0 (el no determinismo del módulo 1). Una diferencia de uno o dos casos entre configuraciones puede venir solo de ahí.
 

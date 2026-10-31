@@ -13,8 +13,9 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import sistema
 from curso_core import ClienteLLM, ErrorFormato, Opciones, prompts
-from curso_core.rag import Fragmento, Resultado, trocear_por_secciones
+from curso_core.rag import Fragmento, Resultado
 from pydantic import BaseModel
 from sistema import corpus, generacion
 
@@ -41,7 +42,7 @@ class Veredicto(BaseModel):
 
 
 def fragmentos() -> dict[str, Fragmento]:
-    return {f.id: f for d, t in corpus.documentos().items() for f in trocear_por_secciones(d, t)}
+    return sistema.fragmentos()
 
 
 def cargar() -> list[Etiqueta]:

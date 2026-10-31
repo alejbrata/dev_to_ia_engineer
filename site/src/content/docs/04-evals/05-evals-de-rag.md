@@ -39,11 +39,11 @@ Cruzando las dos primeras, cada pregunta con respuesta cae en una casilla:
 | **El segmento llega al contexto** | correcta | fallo de generación (se abstiene o responde mal con el dato delante) |
 | **El segmento no llega** | correcta sin el segmento: revisa el anclaje o el comprobador | fallo de recuperación (se abstiene o responde sin el dato) |
 
-La casilla "correcta sin el segmento" no debería existir. Si aparece, o el dato está en otro sitio del corpus que el dataset no ancló, o el comprobador acepta algo que no debería.
+La casilla "correcta sin el segmento" no debería existir. Si aparece, o el dato está en otro sitio del corpus que el dataset no ancló, o el comprobador acepta algo que no debería. En la primera ejecución de esta práctica apareció una vez: la n-15 con reranker-k3. El dato ("5 minutos") estaba también en el runbook de la réplica del catálogo ("A partir de 5 minutos salta una alerta."), y el dataset solo anclaba la tabla de alertas. Se añadió ese segundo segmento y la casilla quedó a cero. Para eso sirve: para encontrar anclajes incompletos.
 
 La fidelidad añade otra dimensión. Una respuesta puede ser **fiel e incorrecta**, si el contexto que recibió era el equivocado. Y puede ser **correcta y no fiel**, si acierta el dato pero inventa lo que lo rodea. Por eso se miden las dos.
 
-Las librerías de evals de RAG ponen nombre a estas métricas: *context recall* (el dato llega), *context precision* (cuánto de lo que llega sirve), *faithfulness* (fidelidad) y *answer correctness* o *answer relevancy* (la respuesta responde a lo que se preguntó). Aquí se calculan con el código de las lecciones anteriores; el anexo F (en preparación) comparará cómo lo hacen esas librerías. La *context precision* no se mide en esta lección.
+Las librerías de evals de RAG ponen nombre a estas métricas: *context recall* (el dato llega), *context precision* (cuánto de lo que llega sirve), *faithfulness* (fidelidad) y *answer correctness* o *answer relevancy* (la respuesta responde a lo que se preguntó). Aquí se calculan con el código de las lecciones anteriores; el [anexo F](../../anexos/f-herramientas-de-evals/) compara cómo lo hacen esas librerías. La *context precision* no se mide en esta lección.
 
 ## Práctica
 
@@ -62,9 +62,9 @@ uv run python modulos/04-evals/por_etapas.py
 ```text
 1. Embudo de las 42 preguntas con respuesta
                                                        densa-k3   reranker-k3   reranker-k5
-   el segmento llega al contexto                             37            39            42
-   correcta                                                  28            32            33
-   correcta sin el segmento                                   0             1             0
+   el segmento llega al contexto                             37            40            42
+   correcta                                                  28            33            33
+   correcta sin el segmento                                   0             0             0
    recuperación: se abstiene                                  0             0             0
    recuperación: responde sin el dato                         5             2             0
    generación: se abstiene con el dato delante                2             2             2
@@ -93,7 +93,7 @@ Con la búsqueda densa, el segmento llega al contexto en 37 de las 42 preguntas,
 
 Pero los aciertos se quedan en 33. Con reranker-k5 los 9 fallos que quedan son de generación: el modelo tiene el dato delante y se abstiene (2) o responde otra cosa (7). A partir de aquí, seguir mejorando la recuperación no mejora el sistema. La siguiente palanca es la generación, y es lo que trata la lección 06.
 
-Sin el desglose por etapas, el salto de k3 a k5 parecería simplemente "no sirve". Con él se ve qué pasa: la recuperación mejora (39 → 42) y la generación empeora (5 → 7 respuestas mal con el dato delante). Las dos cosas se compensan.
+Sin el desglose por etapas, el salto de k3 a k5 parecería simplemente "no sirve". Con él se ve qué pasa: la recuperación mejora (40 → 42) y la generación empeora (5 → 7 respuestas mal con el dato delante). Las dos cosas se compensan.
 
 ### Más contexto no es gratis
 
@@ -120,7 +120,7 @@ Según el juez v2, de las respuestas que no se abstienen son fieles 37 de 47 (de
 Lo útil es cruzar la fidelidad con la corrección caso a caso:
 
 - **Fiel e incorrecta.** En la n-06 con la búsqueda densa, el sistema responde que la disponibilidad de notificaciones es "del 99,9 % mensual". El SLA vigente (99,5 %) no llegó al contexto, y el 99,9 % sí está en lo que recibió. La respuesta es fiel a su contexto y falsa. Es un fallo de recuperación, y el juez no lo puede ver.
-- **Correcta y no fiel.** En la n-15 con reranker-k3, la respuesta contiene el dato clave ("5 minutos") y el comprobador la da por buena, pero el segmento anclado no llegó al contexto: el dato vino de otro fragmento, el runbook de la réplica, que también lo menciona. El juez la marca como no fiel, aunque por una razón discutible: la frase sin cita es la introducción ("sigue estos pasos:"), que no afirma nada. Este caso revela dos cosas a revisar: el anclaje de la pregunta y un tipo de falsa alarma del juez.
+- **Correcta y no fiel, según el juez.** En la n-15 con reranker-k3, la respuesta contiene el dato clave ("5 minutos") y el comprobador la da por buena. El juez la marca como no fiel, pero por una razón discutible: la frase sin cita es la introducción ("sigue estos pasos:"), que no afirma nada. Es un tipo de falsa alarma del juez que conviene conocer.
 - **Sin respuesta.** Las preguntas que no deben responderse se quedan en 9 de 16 con las dos primeras configuraciones y bajan a 8 con k5. La recuperación no las arregla: el modelo responde a lo que no está, sigue la inyección del guardarraíl o contesta fuera de ámbito tenga el contexto que tenga. En la s-02, el juez sí detecta la invención (la afirmación de los 3 nodos no tiene cita).
 
 ## Errores frecuentes
