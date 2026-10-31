@@ -2,7 +2,7 @@ name: Web
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
     paths: ["site/**", ".github/workflows/site.yml"]
   pull_request:
     paths: ["site/**", ".github/workflows/site.yml"]

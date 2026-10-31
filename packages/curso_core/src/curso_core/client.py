@@ -382,6 +382,22 @@ def _trozo_openai(linea: str) -> Trozo:
     return Trozo(texto, uso.get("prompt_tokens"), uso.get("completion_tokens"), motivo)
 
 
+def esquema_estricto(esquema: dict) -> dict:
+    """Copia del esquema con cada objeto cerrado: sin propiedades extra y todas obligatorias.
+
+    Es lo que exigen los modos estrictos de OpenAI y Claude. Pydantic no lo genera así.
+    """
+    if isinstance(esquema, list):
+        return [esquema_estricto(e) for e in esquema]
+    if not isinstance(esquema, dict):
+        return esquema
+    copia = {k: esquema_estricto(v) for k, v in esquema.items()}
+    if copia.get("type") == "object" and "properties" in copia:
+        copia["additionalProperties"] = False
+        copia["required"] = list(copia["properties"])
+    return copia
+
+
 class Dialecto(NamedTuple):
     peticion: Callable[[str, list[Mensaje], Opciones, bool], tuple[str, dict]]
     respuesta: Callable[[dict], Bruto]
@@ -677,6 +693,11 @@ class ClienteLLM:
         ruta, cuerpo = dialecto.peticion(modelo, mensajes, opciones, stream)
         if "max_tokens" in cuerpo and proveedor.parametro_max_tokens != "max_tokens":
             cuerpo[proveedor.parametro_max_tokens] = cuerpo.pop("max_tokens")
+        for parametro in proveedor.omitir:
+            cuerpo.pop(parametro, None)
+        if proveedor.esquema_estricto and "response_format" in cuerpo:
+            formato = cuerpo["response_format"]["json_schema"]
+            formato["schema"] = esquema_estricto(formato["schema"])
         traza = dict(
             rol=rol,
             proveedor=nombre,

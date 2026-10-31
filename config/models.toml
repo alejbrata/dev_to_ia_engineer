@@ -146,11 +146,15 @@ api_key_env = "HF_TOKEN"
 
 [providers.openai]
 # Opcional (anexo G). La API de OpenAI pide `max_completion_tokens` en lugar de
-# `max_tokens`. Revisado: 2026-10.
+# `max_tokens`, y sus modelos actuales solo aceptan la temperatura por defecto: con
+# temperature=0 responden 400; y su salida estructurada estricta exige el esquema cerrado.
+# Revisado: 2026-10.
 tipo = "openai"
 base_url = "https://api.openai.com/v1"
 api_key_env = "OPENAI_API_KEY"
 parametro_max_tokens = "max_completion_tokens"
+omitir = ["temperature"]
+esquema_estricto = true
 
 [precios."ollama/qwen2.5:1.5b"]
 # En local no se paga por token: el coste es tu hardware y tu electricidad.

@@ -299,3 +299,28 @@ def test_el_proveedor_puede_renombrar_el_limite_de_tokens() -> None:
     assert llamada.cuerpo["max_completion_tokens"] == 50 and "max_tokens" not in llamada.cuerpo
     por_defecto = ClienteLLM(CONFIG)._preparar("Hola", "remoto", Opciones(max_tokens=50), False)
     assert por_defecto.cuerpo["max_tokens"] == 50
+
+
+def test_el_proveedor_puede_omitir_parametros_que_rechaza() -> None:
+    datos = CONFIG.model_dump()
+    datos["providers"]["nube"]["omitir"] = ["temperature"]
+    c = ClienteLLM(cfg.Config.model_validate(datos))
+    llamada = c._preparar("Hola", "remoto", Opciones(temperatura=0), stream=False)
+    assert "temperature" not in llamada.cuerpo
+
+
+def test_esquema_estricto_cierra_todos_los_objetos() -> None:
+    from curso_core.client import esquema_estricto
+
+    class Cita(BaseModel):
+        texto: str
+
+    class ConCitas(BaseModel):
+        respuesta: str
+        citas: list[Cita] = []
+
+    estricto = esquema_estricto(ConCitas.model_json_schema())
+    assert estricto["additionalProperties"] is False
+    assert estricto["required"] == ["respuesta", "citas"]
+    assert estricto["$defs"]["Cita"]["additionalProperties"] is False
+    assert "additionalProperties" not in ConCitas.model_json_schema()  # no toca el original

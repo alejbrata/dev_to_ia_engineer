@@ -1,0 +1,59 @@
+{"version": "api-chat_openai", "meta": {"rol": "chat_openai", "modelo": "gpt-6-luna", "uso": {"llamadas": 58, "errores": 0, "tasa_error": 0.0, "reintentos": 0, "latencia_p50_s": 1.1131938999751583, "latencia_p95_s": 2.529358699976001, "tokens_entrada": 33509, "tokens_salida": 2768, "coste_usd": 0.0047349, "llamadas_sin_precio": 0}}}
+{"caso":"m3-01","ok":false,"salida":"Usa el runbook cuando pagos devuelva errores 500 y los logs muestren “too many connections”. Primero, abre el panel de PgBouncer y mira las conexiones activas; después, comprueba si hubo un despliegue de pagos en la última hora y revisa si alguna consulta lleva más de 30 segundos ejecutándose.","detalle":{"se_abstiene":false,"citas":[1,3]}}
+{"caso":"m3-02","ok":true,"salida":"El límite actual del pool es de 200 conexiones.","detalle":{"se_abstiene":false,"citas":[2]}}
+{"caso":"m3-03","ok":true,"salida":"El token de la API del banco caduca cada 90 días.","detalle":{"se_abstiene":false,"citas":[1,2]}}
+{"caso":"m3-04","ok":true,"salida":"El error suele indicar que el secreto de cliente de OAuth ha caducado o se ha rotado sin actualizar la configuración del servicio de usuarios. También puede deberse a que el reloj del servidor esté desincronizado más de cinco minutos.","detalle":{"se_abstiene":false,"citas":[1]}}
+{"caso":"m3-05","ok":true,"salida":"Si hubo un despliegue reciente, vuelve a la versión anterior; es la mitigación más rápida. Si no lo hubo, reinicia PgBouncer de forma ordenada, una réplica cada vez. No subas el límite del pool por encima de 200 conexiones sin hablar con el equipo de bases de datos.","detalle":{"se_abstiene":false,"citas":[2]}}
+{"caso":"m3-06","ok":true,"salida":"El servicio de notificaciones envía los emails por el puerto 587.","detalle":{"se_abstiene":false,"citas":[1,3]}}
+{"caso":"m3-07","ok":true,"salida":"La disponibilidad comprometida del servicio de notificaciones es del 99,5 % mensual.","detalle":{"se_abstiene":false,"citas":[2]}}
+{"caso":"m3-08","ok":true,"salida":"Hay que dar la primera respuesta en 15 minutos, a cualquier hora.","detalle":{"se_abstiene":false,"citas":[1]}}
+{"caso":"m3-09","ok":false,"salida":"No, salvo que sea una corrección de un incidente crítico aprobada por el responsable del equipo.","detalle":{"se_abstiene":false,"citas":[1]}}
+{"caso":"m3-10","ok":true,"salida":"Necesita la aprobación de dos personas del equipo y una copia de seguridad verificada justo antes del despliegue.","detalle":{"se_abstiene":false,"citas":[1]}}
+{"caso":"m3-11","ok":true,"salida":"La nueva versión del conector de pasarela abría una conexión a la base de datos por cada reintento y no la devolvía al pool. El pool se agotó en 20 minutos y la base de datos empezó a rechazar conexiones.","detalle":{"se_abstiene":false,"citas":[2]}}
+{"caso":"m3-12","ok":true,"salida":"La caída de pagos duró 47 minutos.","detalle":{"se_abstiene":false,"citas":[1]}}
+{"caso":"m3-13","ok":true,"salida":"La alerta salta a partir del 85 % de uso del disco.","detalle":{"se_abstiene":false,"citas":[1,3]}}
+{"caso":"m3-14","ok":true,"salida":"Los productos que no se indexaron se reindexan solos en el siguiente ciclo nocturno, a las 03:00.","detalle":{"se_abstiene":false,"citas":[1]}}
+{"caso":"m3-15","ok":false,"salida":"Usa el runbook de retraso de la réplica del catálogo. Hasta 30 segundos de retraso es normal; a partir de 5 minutos salta una alerta y, desde 15 minutos, avisa al equipo de atención al cliente porque los precios pueden diferir de los reales.","detalle":{"se_abstiene":false,"citas":[2,3]}}
+{"caso":"m3-16","ok":true,"salida":"Un retraso de hasta 30 segundos se considera normal.","detalle":{"se_abstiene":false,"citas":[1]}}
+{"caso":"m3-17","ok":true,"salida":"Las copias de seguridad diarias se conservan durante 30 días.","detalle":{"se_abstiene":false,"citas":[1]}}
+{"caso":"m3-18","ok":true,"salida":"No, la cola de Redis no tiene copia de seguridad; sus mensajes son temporales.","detalle":{"se_abstiene":false,"citas":[1]}}
+{"caso":"m3-19","ok":true,"salida":"Se puede reconstruir desde el catálogo en unas 6 horas.","detalle":{"se_abstiene":false,"citas":[1]}}
+{"caso":"m3-20","ok":true,"salida":"Revócala inmediatamente en su origen, genera una nueva y guárdala en el gestor de secretos. Avisa al equipo de seguridad aunque creas que nadie la ha usado; borrar la clave del repositorio no basta porque sigue en el historial.","detalle":{"se_abstiene":false,"citas":[1]}}
+{"caso":"m3-21","ok":true,"salida":"Salta cuando la latencia p95 de pagos supera los 800 ms durante 5 minutos.","detalle":{"se_abstiene":false,"citas":[1]}}
+{"caso":"m3-22","ok":true,"salida":"Si la persona de guardia no confirma la alerta crítica en 15 minutos, pasa automáticamente a la persona de guardia secundaria. Si nadie la confirma en 30 minutos, se avisa al responsable del equipo.","detalle":{"se_abstiene":false,"citas":[1]}}
+{"caso":"m3-23","ok":true,"salida":"Cada semana de guardia se compensa con un día libre, que hay que disfrutar en el mes siguiente.","detalle":{"se_abstiene":false,"citas":[1]}}
+{"caso":"m3-24","ok":true,"salida":"Puede que hayan caducado las credenciales de los proveedores de push: caducan una vez al año y, cuando ocurre, todos los envíos fallan con un error de autenticación del proveedor.","detalle":{"se_abstiene":false,"citas":[3]}}
+{"caso":"m3-25","ok":true,"salida":"La búsqueda necesita la variable de entorno OPENSEARCH_URL para arrancar.","detalle":{"se_abstiene":false,"citas":[1]}}
+{"caso":"m3-26","ok":true,"salida":"Sí, si genera consultas.","detalle":{"se_abstiene":false,"citas":[1]}}
+{"caso":"m3-27","ok":true,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"m3-28","ok":true,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"m3-29","ok":true,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"m3-30","ok":true,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"n-01","ok":true,"salida":"Como los deadlocks son continuos, desactiva temporalmente la edición de perfil con el interruptor de funcionalidad `perfil_edicion` y después abre una incidencia al equipo Identidad.","detalle":{"se_abstiene":false,"citas":[3]}}
+{"caso":"n-02","ok":true,"salida":"Sirve para desactivar temporalmente la edición de perfil si los deadlocks son continuos.","detalle":{"se_abstiene":false,"citas":[1]}}
+{"caso":"n-03","ok":true,"salida":"pagos/banco/token","detalle":{"se_abstiene":false,"citas":[1]}}
+{"caso":"n-04","ok":true,"salida":"Primero, comprueba que el puerto 587 está abierto desde los pods de notificaciones hacia el servidor SMTP. Luego, revisa si hubo un cambio de firewall y mira la cola de Redis para ver si se acumulan emails.","detalle":{"se_abstiene":false,"citas":[1]}}
+{"caso":"n-05","ok":true,"salida":"La disponibilidad mensual comprometida para el servicio de búsqueda es del 99,5 %.","detalle":{"se_abstiene":false,"citas":[1]}}
+{"caso":"n-06","ok":false,"salida":"El objetivo es del 99,9 % mensual.","detalle":{"se_abstiene":false,"citas":[1]}}
+{"caso":"n-07","ok":true,"salida":"La restauración tardó 4 horas. Después se añadió la regla de que las migraciones que borran columnas o tablas requieren la aprobación de dos personas del equipo y una copia de seguridad verificada justo antes del despliegue.","detalle":{"se_abstiene":false,"citas":[2,1]}}
+{"caso":"n-08","ok":true,"salida":"La copia de seguridad de la base de datos de pagos se hace cada noche a las 02:00.","detalle":{"se_abstiene":false,"citas":[1]}}
+{"caso":"n-09","ok":true,"salida":"El conector reintenta las llamadas tres veces, con backoff exponencial.","detalle":{"se_abstiene":false,"citas":[1]}}
+{"caso":"n-10","ok":true,"salida":"El canario recibe el 10 % del tráfico durante 30 minutos.","detalle":{"se_abstiene":false,"citas":[1]}}
+{"caso":"n-11","ok":true,"salida":"La persona de guardia puede cambiar la severidad propuesta.","detalle":{"se_abstiene":false,"citas":[1]}}
+{"caso":"n-12","ok":true,"salida":"Ante la duda entre dos severidades, elige la más alta; en este caso, crítica.","detalle":{"se_abstiene":false,"citas":[2]}}
+{"caso":"n-13","ok":true,"salida":"No, las notificaciones push que fallaron durante la caducidad no se reenvían.","detalle":{"se_abstiene":false,"citas":[1]}}
+{"caso":"n-14","ok":true,"salida":"Avisa 14 días antes de la caducidad y el aviso llega al canal del equipo Cobros, no a la persona de guardia.","detalle":{"se_abstiene":false,"citas":[1]}}
+{"caso":"n-15","ok":true,"salida":"El retraso de la réplica del catálogo puede hacer que la tienda muestre datos antiguos. Hasta 30 segundos es normal; a partir de 5 minutos se activa una alerta y, desde 15 minutos, los precios pueden diferir de los reales y conviene avisar al equipo de atención al cliente.","detalle":{"se_abstiene":false,"citas":[1,2,3]}}
+{"caso":"n-16","ok":true,"salida":"El equipo de Descubrimiento.","detalle":{"se_abstiene":false,"citas":[2]}}
+{"caso":"s-01","ok":true,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"s-02","ok":true,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"s-03","ok":true,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"s-04","ok":true,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"s-05","ok":true,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"s-06","ok":true,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"f-01","ok":true,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"f-02","ok":true,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"f-03","ok":false,"salida":"","detalle":{"se_abstiene":false,"citas":[]}}
+{"caso":"g-01","ok":true,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"g-02","ok":true,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"g-03","ok":true,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}

@@ -24,6 +24,12 @@ class Proveedor(BaseModel):
     # Nombre del límite de tokens de salida en la API compatible con OpenAI. OpenAI ha
     # pasado a `max_completion_tokens`; Ollama, llama.cpp o vLLM siguen con `max_tokens`.
     parametro_max_tokens: str = "max_tokens"
+    # Parámetros de la petición que el proveedor rechaza y no se envían (por ejemplo,
+    # `temperature` en modelos que solo aceptan el valor por defecto).
+    omitir: list[str] = []
+    # Si el proveedor exige el JSON Schema "estricto": cada objeto con
+    # additionalProperties=false y todas sus propiedades en `required` (OpenAI, Claude).
+    esquema_estricto: bool = False
 
 
 class Rol(BaseModel):
