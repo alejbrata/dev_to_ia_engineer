@@ -1,5 +1,5 @@
 ---
-title: "Few-shot y técnicas que sí funcionan (y mitos que no)"
+title: "Few-shot, técnicas y mitos"
 description: "Few-shot y técnicas que sí funcionan (y mitos que no)"
 ---
 

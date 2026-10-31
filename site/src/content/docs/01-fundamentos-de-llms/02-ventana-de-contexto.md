@@ -1,5 +1,5 @@
 ---
-title: "Ventana de contexto, límites y qué pasa cuando te pasas"
+title: "Ventana de contexto y sus límites"
 description: "Ventana de contexto, límites y qué pasa cuando te pasas"
 ---
 

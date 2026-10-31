@@ -1,5 +1,5 @@
 ---
-title: "Generación con citas y control de alucinaciones"
+title: "Generación con citas"
 description: "Pedir respuestas con citas, abstenerse cuando no hay respuesta, y medir fidelidad y relevancia: con comprobaciones deterministas y con un modelo juez, que también hay que comprobar"
 ---
 
