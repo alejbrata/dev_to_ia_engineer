@@ -139,6 +139,19 @@ Con el modelo comercial, el agente único cubre 19 de 20. La que le falta, "reti
 
 La conclusión depende del modelo. Un modelo capaz mantiene las cuatro áreas en la cabeza sin ayuda; uno de 8B necesita que el sistema se las reparta. Es lo que se esperaba al plantear el caso, y aquí está medido, aunque con 4 incidentes y una sola ejecución de cada configuración.
 
+### Con un modelo abierto grande
+
+Con `--rol chat_hf`, el mismo sistema con un Qwen3 de 235B servido por Hugging Face, de la familia del modelo local y unas 30 veces mayor (anexo G):
+
+```text
+2. Los 4 incidentes, con cada configuración
+                                 cubiertas  completos  severidad  llamadas  tokens  coste $  s/incid.
+   agente único, chat_hf          19 de 20     3 de 4     3 de 4        30   56259   0.0511        10
+   comité, chat_hf                19 de 20     3 de 4     0 de 4        58   62326   0.0671        43
+```
+
+Lo que le falta al comité es otro falso negativo ("Retirar inmediatamente el acceso público"): contado a mano, 20 de 20. Al agente único le falta de verdad la página de estado en los cobros duplicados. Es el mismo patrón que con OpenAI: con un modelo capaz, el agente único casi basta. El coste es una cota superior, porque Hugging Face elige el proveedor y cada uno cobra distinto.
+
 ### La eval llegó a su techo
 
 Tres de las cuatro configuraciones cubren todas las claves (contando a mano). Con esta eval no se puede decir si el comité comercial es mejor que el local, ni que el agente único comercial: los tres la aprueban. Una eval que todos aprueban ya no compara nada. Para seguir, hace falta una más exigente: más incidentes, penalizar lo que sobra o está mal (el plan del comité local repite en negocio las acciones legales) y una revisión de la calidad por una persona o un juez, como en el módulo 4.
@@ -147,7 +160,7 @@ Tres de las cuatro configuraciones cubren todas las claves (contando a mano). Co
 
 Leyendo los planes apareció lo que la cobertura no medía: ninguna configuración acierta la severidad. Según los criterios del corpus, los cuatro incidentes son `critica` (pérdida de dinero en dos, pérdida de datos en uno, la búsqueda caída para todos en el otro), y todos los planes dicen `alta`, salvo uno del comité local que dice `media`. Por eso la salida tiene ahora una columna de severidad: 0 de 4 en todas las filas.
 
-La causa no es el modelo, porque falla igual el comercial. Ningún agente buscó los criterios y el orquestador no los encargó a nadie. El consolidador decide la severidad sin tenerlos delante. Es el mismo fallo que la skill `severidades` de la lección 14, que no se cargó nunca: lo que hace falta siempre no se deja a que el modelo decida buscarlo. La corrección es darle los criterios a quien decide la severidad, en su prompt. No está hecha: es el primer ejercicio de esta lección.
+Ningún agente buscó los criterios y el orquestador no los encargó a nadie. El consolidador decide la severidad sin tenerlos delante. Con un tercer modelo, el abierto grande de Hugging Face (abajo), el comité volvió a fallar la severidad en los cuatro incidentes, pero su agente único acertó `critica` en tres. Tampoco consultó los criterios: acertó por su propio juicio, no por la política, y eso no se puede garantizar. Es el mismo fallo que la skill `severidades` de la lección 14, que no se cargó nunca: lo que hace falta siempre no se deja a que el modelo decida buscarlo. La corrección es darle los criterios a quien decide la severidad, en su prompt. No está hecha: es el primer ejercicio de esta lección.
 
 ### Coste y tiempo
 

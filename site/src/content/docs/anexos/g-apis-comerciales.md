@@ -106,7 +106,7 @@ uv run python modulos/05-agentes/comite.py --rol chat_hf
 | --- | --- | --- | --- |
 | `chat_openai` | El modelo barato de OpenAI | `OPENAI_API_KEY` | Probado: la lección 15 y `traza.py` |
 | `chat_claude` | Claude, con el SDK oficial | `ANTHROPIC_API_KEY` | Probado con tests, no contra la API real |
-| `chat_hf` | Un Qwen3 de 235B en Hugging Face Inference Providers, de la familia del modelo local y unas 30 veces mayor | `HF_TOKEN` y créditos | Configurado; sin créditos, la API responde 402 |
+| `chat_hf` | Un Qwen3 de 235B en Hugging Face Inference Providers, de la familia del modelo local y unas 30 veces mayor | `HF_TOKEN` y créditos | Probado: `traza.py` y la lección 15 (0,12 $ como mucho, los 4 incidentes con agente único y comité). Sin créditos, la API responde 402 |
 
 Los nombres exactos de los modelos están en `config/models.toml`. Puedes cambiarlos por otros, o añadir roles, siempre que el modelo admita herramientas: en Hugging Face, la API `/v1/models` dice qué proveedores las admiten para cada modelo.
 
