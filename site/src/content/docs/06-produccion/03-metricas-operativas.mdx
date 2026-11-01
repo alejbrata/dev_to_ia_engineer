@@ -1,0 +1,210 @@
+---
+title: "Métricas operativas"
+description: "Métricas operativas: el asistente expone métricas en formato Prometheus; latencia p50/p95 con histogramas, tasa de fallback y de caché, tokens y coste por petición, y objetivos de servicio que detectan la degradación silenciosa"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
+:::note[Revisado: 2026-11]
+`prometheus-client` 0.26 para Python. Las salidas son reales, con el asistente de la lección 01 sobre CPU. Los precios con los que se calcula el coste hipotético son los de `config/models.toml`.
+:::
+
+## Objetivos
+
+Al terminar esta lección podrás:
+
+- Exponer las métricas de un servicio de LLM en el formato de Prometheus: contadores e histogramas, con las etiquetas justas.
+- Calcular la latencia p50 y p95 a partir de un histograma, y saber cuánto se equivoca.
+- Medir lo que es propio de un servicio de LLM: tokens y coste por petición, tasa de caché y tasa de fallback.
+- Definir objetivos de servicio (SLO) que detecten la degradación silenciosa de la lección 01, y no solo los errores.
+
+## Teoría
+
+### Trazas para una petición, métricas para el conjunto
+
+Las trazas de la lección 02 explican qué pasó en una petición concreta. Las métricas resumen todas: cuántas peticiones por minuto, qué latencia tiene el 95 % de ellas, cuántos tokens se gastan, cuántas salen del respaldo. Son baratas de guardar (números, no textos), se consultan en un panel y sobre ellas se ponen las alertas. Si vienes de backend, son los mismos paneles que ya tienes para una API: lo nuevo es qué medir.
+
+### Contadores e histogramas
+
+Prometheus, el estándar de facto para métricas de servicios, lee del servicio un texto con números en `/metrics` cada pocos segundos. Dos tipos bastan para casi todo:
+
+- **Contador**: un número que solo sube. Peticiones, tokens, dólares. Lo interesante es su ritmo (peticiones por segundo) o el cociente entre dos (respaldo entre total).
+- **Histograma**: cuenta cuántas observaciones caen en cada cubeta (menos de 1 s, menos de 5 s...). De ahí se calculan los percentiles sin guardar cada valor. Las cubetas deciden la precisión: con una cubeta de 10 a 20 s, el p95 se interpola dentro de ella.
+
+Cada métrica lleva etiquetas (`resultado="respaldo"`, `rol="chat_grande"`) para poder separarla. Con cuidado: cada combinación de etiquetas es una serie más. Una etiqueta con la pregunta del usuario crearía una serie por pregunta y tumbaría Prometheus.
+
+### Qué medir en un servicio de LLM
+
+Las cuatro señales de siempre (latencia, tráfico, errores y saturación) siguen valiendo, con tres añadidos:
+
+- **Tokens y coste por petición.** En una API comercial, el coste es una métrica operativa: sube con prompts más largos, con más contexto recuperado o con un cambio de modelo, sin que nada falle.
+- **Tasa de caché.** Dice cuánto ahorra la caché y cuándo deja de hacerlo.
+- **Tasa de fallback.** La señal de la degradación silenciosa. Un error 500 se ve; una respuesta del modelo de respaldo, no. Si esta tasa sube sin una caída, el servicio está sobrecargado (lección 01).
+
+### Objetivos de servicio
+
+Un SLO dice qué es "funcionar bien" con un número y un periodo: "el 95 % de las preguntas no cacheadas, en menos de 30 s, en una ventana de 5 minutos". Con LLMs conviene tener también uno de calidad indirecta: "menos del 5 % de respuestas del respaldo". Las alertas se disparan cuando un SLO se incumple, no cuando un valor suelto es raro.
+
+## Práctica
+
+[`metricas_servicio.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/06-produccion/metricas_servicio.py) define las métricas y [`servicio.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/06-produccion/servicio.py) las expone en `GET /metrics`. Hay dos niveles:
+
+```python
+PREGUNTAS = Counter("asistente_preguntas_total", "Preguntas respondidas, por resultado", ["resultado"])
+DURACION = Histogram("asistente_duracion_segundos", "...", ["resultado"], buckets=CUBETAS)
+TOKENS = Counter("llm_tokens_total", "Tokens de las llamadas a modelos", ["rol", "tipo"])
+
+def observar_pregunta(r: Resultado) -> None:            # lo llama el servicio en cada pregunta
+    resultado = resultado_de(r)                          # cache, principal, respaldo o degradada
+    PREGUNTAS.labels(resultado).inc()
+    DURACION.labels(resultado).observe(r.ms / 1000)
+```
+
+Las de cada llamada a un modelo (llamadas, tokens y coste por rol) llegan de `curso_core`: el servicio se suscribe a sus trazas con `tracing.observadores`, igual que en la lección 02 se convertían en spans. Las cubetas del histograma van de 5 ms (la caché) a 120 s (el respaldo cuando el principal se cuelga), más finas donde cae lo normal, entre 5 y 20 s.
+
+[`metricas_operativas.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/06-produccion/metricas_operativas.py) arranca el servicio, simula dos fases de tráfico y lee `/metrics` tras cada una, como haría Prometheus. Cada fase se calcula por diferencia entre dos lecturas, porque los contadores solo suben. El p50 y el p95 se calculan del histograma igual que la función `histogram_quantile` de Prometheus, y la práctica los compara con los exactos. El coste se calcula con los tokens medidos y el precio del modelo barato de OpenAI, como si el asistente usara esa API. Tarda unos 10 minutos; con `--grabadas`, un segundo.
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/06-produccion/metricas_operativas.py
+```
+
+```text
+1-2. Las dos fases, leídas de /metrics
+                                            normal         pico
+   preguntas: caché                             21            0
+   preguntas: modelo principal                   9            4
+   preguntas: respaldo                           0            4
+   preguntas: degradadas                         0            0
+   p50 sin caché (histograma)               13.8 s       60.0 s
+   p50 sin caché (exacto)                   13.3 s       77.0 s
+   p95 sin caché (histograma)               25.5 s       87.0 s
+   p95 sin caché (exacto)                   21.1 s       86.4 s
+   tasa de caché                               70%           0%
+   tasa de respaldo (sin caché)                 0%          50%
+   tokens por pregunta generada             624→38       621→38
+   $/1000 preguntas (openai/gpt-6-luna)        0.025        0.081
+
+3. Objetivos de servicio (SLO)
+   p95 sin caché < 30 s                     cumple    INCUMPLE
+   respaldo < 5%                            cumple    INCUMPLE
+   ninguna degradada                        cumple      cumple
+
+4. La misma pregunta, desde la caché: ¿cuánto tarda? (mediana de 30)
+   según servidor                   < 1 ms
+   según cliente compartido         1.8 ms
+   según cliente por petición     281.6 ms
+```
+
+En Prometheus, los mismos SLO se escriben como reglas de alerta. Por ejemplo, la tasa de respaldo en los últimos 5 minutos:
+
+```text
+sum(rate(asistente_preguntas_total{resultado="respaldo"}[5m]))
+  / sum(rate(asistente_preguntas_total{resultado=~"principal|respaldo"}[5m])) > 0.05
+```
+
+y el p95 de las preguntas que no salen de la caché:
+
+```text
+histogram_quantile(0.95,
+  sum by (le) (rate(asistente_duracion_segundos_bucket{resultado=~"principal|respaldo"}[5m]))) > 30
+```
+
+## Mide y depura
+
+### El pico incumple dos objetivos sin un solo error
+
+En la fase normal, todo cumple: p95 de 25,5 s, ningún respaldo, ninguna respuesta degradada. En el pico, con 8 preguntas a la vez, el servicio no devolvió ni un error, y sin embargo incumple dos objetivos: el p95 sube a 87 s y la mitad de las preguntas (4 de 8) las respondió el modelo de respaldo, que en la lección 01 acertaba 12 preguntas menos de 58. Una alerta por tasa de errores no habría saltado. La de la tasa de respaldo, sí.
+
+Es la degradación silenciosa medida: el servicio sigue respondiendo, más lento y peor. Por eso la tasa de respaldo es la métrica de salud más importante de este servicio, más que la de errores.
+
+### El histograma estima, y a veces se equivoca
+
+El p95 de la fase normal sale 25,5 s del histograma y 21,1 s exacto; el p50 del pico, 60 s frente a 77 s. El histograma solo sabe en qué cubeta cae cada valor, y dentro de ella supone que están repartidos por igual. Con una cubeta ancha (de 60 a 90 s) y pocas observaciones, el error es grande. Con miles de peticiones por minuto, y cubetas finas donde cae lo normal, el error baja mucho.
+
+Para un SLO de "p95 por debajo de 30 s", lo que importa es tener una frontera de cubeta en 30 s: así la pregunta "¿cuántas tardaron más de 30 s?" se responde exacta, sin interpolar.
+
+### Tokens y coste: lo que cuesta cada pregunta
+
+Cada pregunta que llega al modelo gasta unos 620 tokens de entrada (la pregunta, las reglas y los tres fragmentos recuperados) y 38 de salida. Con el modelo barato de OpenAI, la fase normal costaría 0,025 $ por cada mil preguntas y el pico, 0,081 $. La diferencia es la caché: en la fase normal, el 70 % de las preguntas no llega al modelo.
+
+El dato útil no es el coste de hoy, sino lo que lo mueve. Un cambio que añada fragmentos al contexto o alargue las reglas del prompt sube los tokens de entrada, y el coste con ellos, sin que nada falle. Vigilar los tokens por pregunta detecta esos cambios antes de que lleguen en la factura.
+
+### La latencia depende de dónde se mida
+
+La última parte mide la misma respuesta, servida desde la caché, de tres formas: el servidor dice menos de 1 ms; un cliente que reutiliza su conexión ve 1,8 ms; uno que abre una conexión por petición, 282 ms. Las tres son verdad, y miden cosas distintas. Es la anatomía de esta lección.
+
+## Errores frecuentes
+
+**Alertar solo por errores.** En un servicio de LLM con fallback, lo grave rara vez es un 500. Mide y alerta por la tasa de respaldo y por el p95.
+
+**Etiquetas con valores libres.** Una etiqueta con la pregunta, el usuario o el id de la petición crea una serie por valor y satura Prometheus. Eso va en las trazas, no en las métricas.
+
+**Cubetas por defecto.** Las de `prometheus-client` van de 5 ms a 10 s, pensadas para APIs rápidas: todo lo que tarda un LLM caería en la última. Elige las cubetas para tus latencias, con una frontera en cada umbral de SLO.
+
+**Mirar el coste solo en la factura.** Llega tarde y sin detalle. Los tokens por pregunta, en una métrica, avisan del cambio que lo sube el día que se despliega.
+
+**Mezclar la latencia del cliente con la del servidor.** Cada una incluye cosas distintas (la anatomía). Di siempre desde dónde se midió.
+
+### Anatomía de un error: la caché que tardaba 300 ms
+
+La primera versión de la práctica de la lección 01 decía que, con caché, la mediana era de 0,3 s:
+
+```text
+                    p50     p95    total  aciertos de caché
+   sin cache      13.9s   20.3s     577s                  0
+   con cache       0.3s   18.7s     183s                 28
+```
+
+Y la traza de la lección 02 de una pregunta servida por la caché decía que el servidor la había respondido en 2 ms.
+
+**Cómo leerlo.** Dos medidas de lo mismo que no cuadran por un factor de 150. Si las dos son correctas, miden cosas distintas: la de la traza es el tiempo dentro del servidor; la de la práctica, el que ve el cliente, con todo lo que hay por medio.
+
+**Causa.** El cliente de la práctica hacía cada petición con `httpx.post(...)`, que crea un cliente HTTP nuevo cada vez. Crear un cliente (con su configuración de TLS y su pool de conexiones) y abrir la conexión costaba unos 300 ms en esta máquina, mucho más que la respuesta. Medido aparte:
+
+```text
+httpx.get suelto: 305.4 ms
+httpx.Client reutilizado: 1.3 ms
+```
+
+**Solución.** Reutilizar el cliente (`CLIENTE = httpx.Client()`, una vez, y `CLIENTE.post(...)` en cada petición), que es además lo correcto en producción: un servicio que llama a otro debe mantener sus conexiones abiertas. Con eso, la mediana con caché bajó a 3 ms, y la lección 01 se corrigió. La lección general: antes de comparar latencias, pregunta desde dónde se midieron. Y cuando una medida sorprende, mide lo mismo desde dos sitios; si no cuadran, la diferencia es lo que hay entre ellos.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'En un pico de tráfico, tu asistente no devuelve ningún error, pero el 50 % de las respuestas las da el modelo de respaldo. ¿Qué alerta debería haber saltado?',
+			opciones: [
+				{ texto: 'La de tasa de errores.', porque: 'No hubo errores: el fallback convierte cada fallo en una respuesta peor ("El pico incumple dos objetivos sin un solo error").' },
+				{ texto: 'La de tasa de respaldo, con un SLO como "menos del 5 %".', correcta: true, porque: 'Es la señal de la degradación silenciosa. Aquí habría saltado; la de errores, no.' },
+			],
+		},
+		{
+			pregunta: 'Quieres saber qué usuarios hacen las preguntas más lentas. ¿Añades una etiqueta "usuario" al histograma de latencia?',
+			opciones: [
+				{ texto: 'Sí: así puedo filtrar por usuario en el panel.', porque: 'Cada usuario sería una serie más para cada cubeta. Con miles de usuarios, satura Prometheus.' },
+				{ texto: 'No: eso va en las trazas, que sí guardan datos de cada petición.', correcta: true, porque: 'Las métricas llevan etiquetas de valores fijos; lo de cada petición se busca en las trazas (lección 02).' },
+			],
+		},
+		{
+			pregunta: 'Tu SLO es "p95 por debajo de 30 s" y tu histograma tiene cubetas en 20 s y en 60 s. ¿Qué problema hay?',
+			opciones: [
+				{ texto: 'Ninguno: el cuantil se interpola.', porque: 'La interpolación supone valores repartidos por igual dentro de la cubeta, y puede equivocarse mucho: aquí, 60 s frente a 77 s ("El histograma estima, y a veces se equivoca").' },
+				{ texto: 'Sin una frontera en 30 s, saber si se cumple depende de la interpolación; conviene una cubeta que acabe en 30 s.', correcta: true, porque: 'Con esa frontera, el número de peticiones por encima de 30 s se cuenta exacto.' },
+			],
+		},
+		{
+			pregunta: 'El servidor dice que responde en 1 ms y tu prueba de carga mide 300 ms por petición. ¿Qué miras primero?',
+			opciones: [
+				{ texto: 'Si el servidor mide mal su propio tiempo.', porque: 'Las dos medidas pueden ser correctas: miden cosas distintas (la anatomía).' },
+				{ texto: 'Lo que hay entre los dos: cómo abre las conexiones el cliente de la prueba.', correcta: true, porque: 'Aquí, crear un cliente HTTP por petición costaba 300 ms; reutilizándolo, 1,8 ms.' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- Google, [Site Reliability Engineering](https://sre.google/sre-book/monitoring-distributed-systems/), capítulo "Monitoring Distributed Systems": las cuatro señales doradas, y el de [objetivos de servicio](https://sre.google/sre-book/service-level-objectives/).
+- Prometheus: [tipos de métricas](https://prometheus.io/docs/concepts/metric_types/), [histogramas y resúmenes](https://prometheus.io/docs/practices/histograms/) y [buenas prácticas de nombres](https://prometheus.io/docs/practices/naming/).
+- [prometheus-client para Python](https://prometheus.github.io/client_python/).

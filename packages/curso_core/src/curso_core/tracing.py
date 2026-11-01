@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import os
 import threading
+from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
@@ -27,6 +28,9 @@ except ImportError:  # sin OpenTelemetry, las trazas van solo al fichero
 FICHERO_POR_DEFECTO = Path("trazas") / "llamadas.jsonl"
 # Varias llamadas en paralelo (subagentes, módulo 5) no deben mezclar sus líneas.
 _ESCRITURA = threading.Lock()
+# Funciones que reciben cada traza al registrarse: por ejemplo, para actualizar métricas
+# de Prometheus (lección 6.03) sin que curso_core dependa de ninguna librería de métricas.
+observadores: list[Callable[[Traza], None]] = []
 
 
 class Traza(BaseModel):
@@ -64,6 +68,8 @@ def registrar(traza: Traza, ruta: Path | None = None) -> None:
     with _ESCRITURA, ruta.open("a", encoding="utf-8") as f:
         f.write(traza.model_dump_json() + "\n")
     emitir_span(traza)
+    for observador in observadores:
+        observador(traza)
 
 
 def emitir_span(traza: Traza) -> None:

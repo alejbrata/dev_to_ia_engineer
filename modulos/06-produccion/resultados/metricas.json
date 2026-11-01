@@ -1,0 +1,51 @@
+{
+ "referencia": "openai/gpt-6-luna",
+ "slo": {
+  "p95_s": 30.0,
+  "respaldo": 0.05,
+  "degradadas": 0
+ },
+ "normal": {
+  "preguntas": {
+   "cache": 21.0,
+   "principal": 9.0,
+   "respaldo": 0.0,
+   "degradada": 0.0
+  },
+  "p50_s": 13.75,
+  "p95_s": 25.49999999999999,
+  "p50_exacto_s": 13.346,
+  "p95_exacto_s": 21.066,
+  "cache": 0.7,
+  "respaldo": 0.0,
+  "tokens_por_pregunta": [
+   624.4444444444445,
+   38.44444444444444
+  ],
+  "coste_por_mil_usd": 0.0245
+ },
+ "pico": {
+  "preguntas": {
+   "cache": 0.0,
+   "principal": 4.0,
+   "respaldo": 4.0,
+   "degradada": 0.0
+  },
+  "p50_s": 60.0,
+  "p95_s": 87.0,
+  "p50_exacto_s": 76.986,
+  "p95_exacto_s": 86.442,
+  "cache": 0.0,
+  "respaldo": 0.5,
+  "tokens_por_pregunta": [
+   621.375,
+   37.5
+  ],
+  "coste_por_mil_usd": 0.0808875
+ },
+ "latencia_segun_quien": {
+  "servidor": 0.0,
+  "cliente compartido": 1.8137499573640525,
+  "cliente por petición": 281.6455999854952
+ }
+}

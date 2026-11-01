@@ -115,3 +115,16 @@ def test_cada_traza_es_un_span_de_opentelemetry(tmp_path: Path) -> None:
     assert llamada.name == "chat m" and llamada.parent.span_id == peticion.context.span_id
     assert llamada.attributes["gen_ai.usage.input_tokens"] == 10
     assert abs((llamada.end_time - llamada.start_time) / 1e9 - 0.5) < 1e-3
+
+
+def test_los_observadores_reciben_cada_traza(tmp_path: Path) -> None:
+    import curso_core.tracing as tracing
+
+    vistas = []
+    tracing.observadores.append(vistas.append)
+    try:
+        t = Traza(rol="chat", proveedor="p", modelo="m", ok=True, intentos=1, latencia_s=0.1)
+        tracing.registrar(t, tmp_path / "t.jsonl")
+    finally:
+        tracing.observadores.remove(vistas.append)
+    assert vistas == [t]

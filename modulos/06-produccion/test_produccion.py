@@ -40,3 +40,5 @@ def test_la_api_valida_y_responde(monkeypatch):
         assert trabajo.status_code == 202
         assert cliente.get("/trabajos/no-existe").status_code == 404
         assert cliente.get("/salud").json()["estado"] == "ok"
+        metricas = cliente.get("/metrics").text
+        assert 'asistente_preguntas_total{resultado="principal"}' in metricas
