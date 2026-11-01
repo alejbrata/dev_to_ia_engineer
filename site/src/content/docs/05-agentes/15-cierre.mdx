@@ -127,6 +127,8 @@ uv run python modulos/05-agentes/comite.py
 
 Con el modelo local, el comité cubre 20 de 20 claves y el agente único, 11. Las que le faltan al agente único son de las que cuestan caro: en la brecha de datos no menciona el plazo de 72 horas, ni avisar al DPO, ni rotar las credenciales; en la caída de Black Friday decide no compensar a los vendedores, cuando la política lo prevé; y en tres incidentes olvida la página de estado. Tenía la misma documentación que el comité, pero mezclada, y tenía que acordarse de cubrir cuatro áreas a la vez. Cada especialista solo tiene que cubrir la suya, con sus políticas delante.
 
+Un matiz importante: el agente único local buscó en la documentación una sola vez por incidente antes de proponer su plan, y después se quedó atascado en el bucle de la anatomía. El comercial buscó entre 4 y 6 veces. Así que sus huecos mezclan dos cosas que esta medición no separa: no saber repartir la atención entre cuatro áreas y no llegar a buscar lo que le faltaba. El comité evita las dos, porque cada especialista busca lo suyo, pero conviene no atribuirle toda la diferencia a especializar.
+
 Y gastó menos: 61 019 tokens frente a 110 154, y 550 segundos de mediana por incidente frente a 784. Más agentes no significa más coste si cada uno trabaja con un contexto corto. El agente único arrastra en cada paso todo lo que ha leído (y aquí, además, los nueve intentos de la anatomía).
 
 Es lo contrario de lo que pasó en la lección 09. Allí, el segundo agente tenía la misma información que el primero. Aquí, cada especialista tiene un trozo de información y una responsabilidad que el agente único tiene que repartir solo.
@@ -135,7 +137,7 @@ Es lo contrario de lo que pasó en la lección 09. Allí, el segundo agente ten�
 
 Con el modelo comercial, el agente único cubre 19 de 20. La que le falta, "retira el acceso público" en la brecha, es un falso negativo: su plan dice "Retirar de inmediato el acceso público al contenedor", y la comprobación busca la frase sin el "de inmediato". Contada a mano, cubre 20 de 20, igual que el comité. Es el límite que anunciaba "Cómo se evalúa". El plan del agente único local tiene otro igual ("Bloquear el acceso al contenedor"): contado a mano, cubre 12, no 11.
 
-La conclusión depende del modelo. Un modelo capaz mantiene las cuatro áreas en la cabeza sin ayuda; uno de 8B necesita que el sistema se las reparta. Es lo que se esperaba al plantear el caso, y aquí está medido, aunque con 4 incidentes.
+La conclusión depende del modelo. Un modelo capaz mantiene las cuatro áreas en la cabeza sin ayuda; uno de 8B necesita que el sistema se las reparta. Es lo que se esperaba al plantear el caso, y aquí está medido, aunque con 4 incidentes y una sola ejecución de cada configuración.
 
 ### La eval llegó a su techo
 
@@ -201,7 +203,7 @@ Había además un fallo del curso: la herramienta respondía `Error en el plan: 
 
 **Causa.** El modelo local no respetó el esquema de la herramienta y no supo corregirse con el error. Repitió la misma llamada que acababa de fallar, con el campo señalado: el mensaje de error es necesario, pero con este modelo no bastó. El modelo comercial siguió el esquema a la primera en los cuatro incidentes.
 
-**Solución.** En el sistema, no en el prompt. Si el agente termina sin un plan válido, `agente_unico` estructura ahora su respuesta o, si no la hay, su último intento de plan. Lo hace con salida estructurada, que restringe el formato al generar (módulo 2), así que el JSON cumple el esquema. Con ese cambio, el agente único local pasó de 0 a 11 de 20, y la comparación con el comité mide por fin el contenido de los planes y no un fallo de formato. Otras dos opciones, que puedes probar:
+**Solución.** En el sistema, no en el prompt. Si el agente termina sin un plan válido, `agente_unico` estructura ahora su respuesta o, si no la hay, su último intento de plan. Lo hace con salida estructurada, que restringe el formato al generar (módulo 2), así que el JSON cumple el esquema. Con ese cambio, el agente único local pasó de 0 a 11 de 20, y la comparación con el comité mide por fin el contenido de los planes y no un fallo de formato. Solo se repitió esa fila de la tabla: el cambio no afecta a las otras tres, porque el comité no usa `proponer_plan` y el modelo comercial nunca falló la validación. Otras dos opciones, que puedes probar:
 
 - **Aceptar la forma que el modelo genera de forma natural**: `comunicacion` como lista de objetos con canal, destinatarios y mensaje. Si varios modelos tienden a una estructura, a veces el esquema es lo que está mal.
 - **Cortar los bucles de llamadas idénticas**: si el modelo repite la misma llamada que acaba de fallar, no va a mejorar. Pararlo a la segunda ahorra siete llamadas por incidente, que en CPU son minutos.
