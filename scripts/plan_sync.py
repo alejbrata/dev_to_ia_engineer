@@ -38,6 +38,8 @@ MODULO_RE = re.compile(r"^## Módulo (\d+) — (.+?)\s*[⬜🟨✅]?\s*$")
 ANEXOS_RE = re.compile(r"^## Anexos\b")
 LECCION_RE = re.compile(r"^(\d+)\. (.+)$")
 ANEXO_RE = re.compile(r"^- \*\*([A-Z])\. (.+?)\*\*(?::\s*(.+))?$")
+# Un anexo largo puede tener páginas propias: "  - **B.1 Título**: descripción".
+SUBANEXO_RE = re.compile(r"^  - \*\*([A-Z])\.(\d+) (.+?)\*\*(?::\s*(.+))?$")
 
 
 @dataclass
@@ -113,6 +115,12 @@ def parse_plan(texto: str | None = None) -> list[Grupo]:
             title = f"{letra}. {limpiar(nombre)}"
             description = f"{limpiar(nombre)}: {limpiar(resto)}" if resto else limpiar(nombre)
             actual.paginas.append(Pagina(f"{letra.lower()}-{slugify(nombre)}", title, description))
+        elif actual.directory == ANEXOS_DIR and (m := SUBANEXO_RE.match(linea)):
+            letra, numero, nombre, resto = m[1], m[2], m[3], m[4]
+            title = f"{letra}.{numero} {limpiar(nombre)}"
+            description = limpiar(resto) if resto else limpiar(nombre)
+            slug = f"{letra.lower()}{numero}-{slugify(nombre)}"
+            actual.paginas.append(Pagina(slug, title, description))
     return grupos
 
 

@@ -1,0 +1,69 @@
+{
+ "atajo": "RuntimeError: Dataset scripts are no longer supported, but found tweet_sentiment_multilingual.py",
+ "splits": {
+  "train": 1839,
+  "validation": 324,
+  "test": 870
+ },
+ "features": {
+  "text": "Value('string')",
+  "label": "Value('string')"
+ },
+ "transformar": {
+  "features": {
+   "text": "Value('string')",
+   "label": "ClassLabel(names=['negative', 'neutral', 'positive'])",
+   "palabras": "Value('int64')"
+  },
+  "palabras_media": 15.5,
+  "mencionan_usuario": 1020,
+  "particion": {
+   "train": {
+    "negative": 490,
+    "neutral": 490,
+    "positive": 491
+   },
+   "test": {
+    "negative": 123,
+    "neutral": 123,
+    "positive": 122
+   }
+  }
+ },
+ "streaming": {
+  "tipo": "IterableDataset",
+  "primeras": [
+   "@user jajajaja dale, hacete la boluda vos jajaja igual a vos nunca se ",
+   "cada vez que cito un tweet se va la ubicación sin tampoco poder ponerl",
+   "@user MAAAAE RAJADO! Pero lo bueno es q uno se va independizando!y log"
+  ]
+ },
+ "propio": {
+  "splits": {
+   "eval": 10,
+   "ejemplos": 20
+  },
+  "columnas": [
+   "id",
+   "texto",
+   "categoria",
+   "severidad",
+   "servicio"
+  ]
+ },
+ "subida": {
+  "repo": "albrata/tickets-curso-ai-engineering",
+  "privado": true,
+  "commits": [
+   "Upload README.md with huggingface_hub",
+   "Upload dataset",
+   "Upload README.md with huggingface_hub",
+   "Upload dataset",
+   "initial commit"
+  ],
+  "leido_en_revision": {
+   "revision": "bfe47ee",
+   "filas": 10
+  }
+ }
+}

@@ -1,0 +1,196 @@
+---
+title: "B.2 Encoder, decoder y encoder-decoder"
+description: "Las tres arquitecturas de transformer: qué hace cada una, con qué clase de transformers se carga, cuándo usarla y lo que cuesta, medido sobre los mismos textos"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
+:::note[Revisado: 2026-11]
+Salidas reales con `transformers` 5.22 en la CPU de la máquina del curso. Los modelos son pequeños a propósito, para que la práctica corra en cualquier portátil.
+:::
+
+## Objetivos
+
+Al terminar esta página podrás:
+
+- Distinguir encoder, decoder y encoder-decoder por lo que hacen con el texto.
+- Cargar cada uno con su clase de `transformers` y usarlo sin `pipeline`.
+- Elegir arquitectura para una tarea (clasificar, traducir, generar) y justificarla con coste y latencia.
+- Reconocer cuándo un modelo se usa fuera de aquello para lo que se entrenó.
+
+## Teoría
+
+### Tres formas de usar un transformer
+
+Todos los modelos de este curso son *transformers*, pero no todos usan las dos mitades de la arquitectura original:
+
+- **Encoder** (BERT, RoBERTa, ModernBERT). Lee el texto entero de una vez, en las dos direcciones, y lo convierte en una representación: un vector por token y uno para el texto. Encima se pone una capa pequeña que clasifica, extrae entidades o compara textos. No genera texto. Muchos modelos de embeddings son encoders, como `bge-m3`, el del módulo 3 (otros, como `qwen3-embedding`, parten de un decoder).
+- **Decoder** (GPT, Llama, Qwen). Genera texto token a token, y cada token solo ve los anteriores (lección 1.01). Son los LLMs del curso. Hacen casi todo a base de instrucciones, pero cada token de salida es una pasada del modelo entero.
+- **Encoder-decoder** (T5, BART, Marian, Whisper). El encoder lee la entrada completa y el decoder genera la salida mirándola. Es la arquitectura natural para transformar un texto en otro con el mismo significado: traducir, resumir, transcribir audio.
+
+### En `transformers`, una clase para cada una
+
+| Arquitectura | Clase | Devuelve |
+| --- | --- | --- |
+| Encoder con cabeza de clasificación | `AutoModelForSequenceClassification` | Una puntuación (logit) por clase |
+| Encoder-decoder | `AutoModelForSeq2SeqLM` | Texto, con `generate` |
+| Decoder | `AutoModelForCausalLM` | Texto, con `generate` |
+
+Las clases `Auto...` leen el `config.json` del repo y construyen la arquitectura correcta (`RobertaForSequenceClassification`, `MarianMTModel`...). `pipeline` envuelve todo eso para las tareas comunes. En `transformers` 5, varias tareas de texto a texto han salido de `pipeline`: `pipeline("translation")` ya no existe, y el mensaje de error recomienda usar un modelo de chat con `text-generation`. Los modelos encoder-decoder siguen funcionando, pero hay que usarlos con su clase y `generate`, como en la práctica.
+
+### Cuándo usar cada uno
+
+| Necesitas... | Arquitectura | Por qué |
+| --- | --- | --- |
+| Clasificar, extraer entidades, buscar por similitud | Encoder | Una sola pasada por texto: barato y rápido, y fácil de ajustar con tus datos |
+| Transformar un texto en otro equivalente (traducir, resumir) | Encoder-decoder | Pequeño y especializado; se ajusta bien con pares de ejemplo |
+| Seguir instrucciones abiertas, razonar, conversar, usar herramientas | Decoder | Es lo único que generaliza a tareas que no has previsto |
+
+El decoder puede hacer las tres cosas, y por eso es tentador usarlo para todo. La pregunta de ingeniería es lo que cuesta. Si vienes de backend, es como resolverlo todo con un servicio genérico muy capaz cuando para una parte basta un índice: funciona, pero pagas en latencia, en máquinas y en dinero.
+
+## Práctica
+
+[`arquitecturas.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/b-hugging-face/arquitecturas.py) carga tres modelos pequeños, uno de cada tipo, y los usa sobre los cinco primeros tickets del módulo 2:
+
+- **Encoder**: `UMUTeam/roberta-spanish-sentiment-analysis`, un RoBERTa en español ajustado para clasificar el sentimiento (el que gana la B.3).
+- **Encoder-decoder**: `Helsinki-NLP/opus-mt-es-en`, un Marian que traduce del español al inglés.
+- **Decoder**: `Qwen/Qwen2.5-0.5B-Instruct`, de la misma familia que el modelo local del curso, en su tamaño más pequeño.
+
+Cada uno se usa con su clase. El decoder necesita además la plantilla de chat del modelo (lección 1.02), y la salida se corta para quedarse solo con lo generado:
+
+```python
+mensajes = [{"role": "user", "content": f"Resume este ticket en una frase corta.\n\n{texto}"}]
+prompt = tokenizer.apply_chat_template(mensajes, tokenize=False, add_generation_prompt=True)
+ids = tokenizer(prompt, return_tensors="pt")
+salida = modelo.generate(**ids, max_new_tokens=120, do_sample=False)
+resumen = tokenizer.decode(salida[0][ids["input_ids"].shape[1]:], skip_special_tokens=True)
+```
+
+La primera vez descarga unos 1,4 GB; después, menos de un minuto. Con `--grabadas`, un segundo.
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/b-hugging-face/arquitecturas.py
+```
+
+```text
+1. Los tres modelos
+   arquitectura     clase de transformers                parámetros  carga
+   encoder          RobertaForSequenceClassification          125 M   3.9 s
+                    UMUTeam/roberta-spanish-sentiment-analysis
+   encoder-decoder  MarianMTModel                              78 M   2.5 s
+                    Helsinki-NLP/opus-mt-es-en
+   decoder          Qwen2ForCausalLM                          494 M   1.7 s
+                    Qwen/Qwen2.5-0.5B-Instruct
+
+2. Cada uno en lo suyo, en 5 tickets
+   ticket: Desde las 9:40 el servicio de pagos devuelve 500 en todas las peticiones. En los logs sale 'too
+     encoder (tono):           neutral (0.57)
+     encoder-decoder (inglés): Since 9:40 the payment service returns 500 on all requests. In the logs comes 'too many connecti
+     decoder (resumen):        Ticket: Servicio de pagos devuelve 500 en todas las peticiones y Postgres sale 'too many connect
+   ticket: Algunos usuarios dicen que el login con Google les da el error 'invalid_grant'. Con usuario y co
+     encoder (tono):           neutral (0.99)
+     encoder-decoder (inglés): Some users say that the login with Google gives them the 'invalid_grant' error. User and passwor
+     decoder (resumen):        "Error 'invalid_grant' al loguearse con Google, pero usuarios con contraseñas funcionan correcta
+                               s por ticket (media)
+   encoder                                     0.03
+   encoder-decoder                             0.48
+   decoder                                     3.34
+
+3. El decoder traduciendo, frente al encoder-decoder
+   encoder-decoder: Since 9:40 the payment service returns 500 on all requests. In the logs comes 'too many connections'
+   decoder:         Starting at 9:40, the payment service returns 500 for all requests. The logs show "too many connecti
+   encoder-decoder: Some users say that the login with Google gives them the 'invalid_grant' error. User and password en
+   decoder:         Some users claim that logging in with Google results in the "invalid_grant" error. Users enter witho
+   s por ticket: 0.48 frente a 2.84 (5.9 veces más)
+   parámetros:   78 M frente a 494 M (6.3 veces más)
+```
+
+## Mide y depura
+
+### El coste sigue a la arquitectura
+
+Por ticket, el encoder tarda 0,03 s; el encoder-decoder, 0,48 s; el decoder, 3,34 s. Es la arquitectura, más que el tamaño: el encoder hace una sola pasada por texto, mientras que los otros dos hacen una pasada por cada token que generan. Entre ellos dos, el decoder tiene 6,3 veces más parámetros y tarda 5,9 veces más en traducir. Con mil tickets al día, es la diferencia entre medio minuto y una hora de CPU.
+
+### Más caro no siempre es peor
+
+En la parte 3, el decoder traduce con más naturalidad ("The logs show" frente a "In the logs comes"). Un modelo general de 0,5B escribe mejor inglés que un traductor especializado de 78M, porque ha visto mucho más texto. Si la calidad de la traducción importa más que la latencia, el decoder puede ser la mejor opción. Se decide midiendo las dos cosas. Para medir la calidad haría falta una referencia, como en el módulo 4; aquí solo se ve en dos ejemplos.
+
+### Un modelo hace aquello para lo que se entrenó
+
+El encoder dice que "nadie puede pagar" es `neutral`, con poca confianza (0,57). No es un error del modelo: se entrenó para clasificar el tono de tuits, y un ticket técnico no tiene tono emocional, aunque describa algo grave. Para clasificar tickets por severidad (módulo 2) haría falta otro modelo, ajustado con tickets. Mira la puntuación: una confianza baja suele indicar que el texto está fuera de lo que el modelo conoce.
+
+### Los tiempos de carga engañan la primera vez
+
+En la primera ejecución, la carga del decoder tardó 62 s, porque incluía descargar 1 GB. En la segunda, 1,7 s. Si mides la latencia de arranque, hazlo con la caché llena, o separa la descarga de la carga.
+
+## Errores frecuentes
+
+**Usar un LLM para todo.** Para clasificar o extraer, un encoder suele bastar, con una fracción del coste. Mídelo antes de decidir (B.3).
+
+**Cargar un modelo con la clase equivocada.** Un encoder de clasificación cargado con `AutoModelForCausalLM` da error, o peor, un modelo sin la cabeza entrenada. Mira `architectures` en el `config.json`.
+
+**Olvidar la plantilla de chat con un decoder instruido.** Sin `apply_chat_template`, el modelo recibe texto suelto y responde peor, o sigue el texto en lugar de obedecer (lección 1.02).
+
+**Medir la latencia con la primera ejecución.** Incluye descargas e inicializaciones. Calienta antes, como hace la B.3.
+
+### Anatomía de un error: el tokenizador que no reconocía su configuración
+
+Al cargar el traductor por primera vez:
+
+```text
+tokenizers[tipo] = AutoTokenizer.from_pretrained(nombre)
+ValueError: Unrecognized configuration class <class 'transformers.models.marian.configuration_marian.MarianConfig'>
+to build an AutoTokenizer.
+Model type should be one of GPT2Config, Aimv2Config, AlbertConfig, ..., MarianConfig, MarkupLMConfig, ...
+```
+
+**Cómo leerlo.** El mensaje dice que `AutoTokenizer` no reconoce `MarianConfig`, y en la lista de configuraciones válidas, unas líneas más abajo, aparece `MarianConfig`. Se contradice, así que la causa no es la que dice.
+
+**Causa.** El tokenizador de Marian usa la librería `sentencepiece`, y no estaba instalada. `transformers` registra el tokenizador de Marian solo si puede importarlo. Sin `sentencepiece`, la entrada no existe, y `AutoTokenizer` cae en el error genérico de "configuración no reconocida".
+
+**Solución.** Instalar la dependencia (`sentencepiece` está ya en el grupo `hf` del curso) y volver a cargar: `MarianTokenizer`. La lección general: cuando un error se contradice a sí mismo, busca una dependencia opcional que falta. Pasa con otros modelos (`protobuf`, `tiktoken`...), y la página del modelo en el Hub o el error al importar el tokenizador a mano (`from transformers import MarianTokenizer`) suelen decir cuál.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'Tienes que etiquetar 2 millones de reseñas al mes como positivas, neutras o negativas. ¿Qué arquitectura pruebas primero?',
+			opciones: [
+				{ texto: 'Un encoder ajustado para sentimiento.', correcta: true, porque: 'Una pasada por texto: aquí, 0,03 s por ticket en CPU frente a segundos con un decoder. A ese volumen, la diferencia es enorme ("El coste sigue a la arquitectura").' },
+				{ texto: 'Un LLM con un buen prompt.', porque: 'Puede funcionar, pero genera token a token y cuesta mucho más por texto. Mídelo frente al encoder antes de elegirlo (B.3).' },
+				{ texto: 'Un encoder-decoder.', porque: 'Sirve para transformar un texto en otro. Para elegir entre tres clases, genera texto de más.' },
+			],
+		},
+		{
+			pregunta: 'Un clasificador de sentimiento dice "neutral (0.55)" para "el servidor de pagos está caído". ¿Qué concluyes?',
+			opciones: [
+				{ texto: 'Que el modelo es malo.', porque: 'Clasifica el tono emocional, para el que se entrenó. El texto no tiene tono, aunque describa algo grave ("Un modelo hace aquello para lo que se entrenó").' },
+				{ texto: 'Que el texto está fuera de lo que el modelo conoce, y la confianza baja lo avisa.', correcta: true, porque: 'Para severidad de incidencias hace falta otro modelo, ajustado con ese tipo de textos.' },
+			],
+		},
+		{
+			pregunta: 'AutoTokenizer dice que no reconoce la configuración de un modelo que aparece en su propia lista de válidos. ¿Qué miras primero?',
+			opciones: [
+				{ texto: 'Si falta una dependencia opcional del tokenizador, como sentencepiece.', correcta: true, porque: 'Sin ella, transformers no registra ese tokenizador y cae en un error genérico que se contradice (la anatomía).' },
+				{ texto: 'Si el modelo está corrupto y hay que borrar la caché.', porque: 'La caché no tiene nada que ver: el error ocurre antes de leer los pesos.' },
+			],
+		},
+		{
+			pregunta: 'Para traducir manuales técnicos, el decoder de 0,5B traduce con más naturalidad que el Marian de 78M, pero tarda seis veces más. ¿Cómo decides?',
+			opciones: [
+				{ texto: 'El decoder, porque es mejor.', porque: 'Solo lo has visto en dos ejemplos y no has medido el coste a tu volumen ("Más caro no siempre es peor").' },
+				{ texto: 'El Marian, porque es más rápido.', porque: 'Rápido no basta si la traducción no sirve: falta medir la calidad.' },
+				{ texto: 'Midiendo calidad con referencias y coste con tu volumen, y eligiendo con los dos números.', correcta: true, porque: 'Es el método del módulo 4: una eval con referencias, y la latencia y el coste reales.' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- Vaswani et al., [Attention Is All You Need](https://arxiv.org/abs/1706.03762) (2017): el transformer original, con encoder y decoder.
+- Devlin et al., [BERT](https://arxiv.org/abs/1810.04805) (2018): el encoder que popularizó ajustar modelos para clasificar.
+- Raffel et al., [T5](https://arxiv.org/abs/1910.10683) (2019): todo como una tarea de texto a texto, con encoder-decoder.
+- [Curso de LLMs de Hugging Face](https://huggingface.co/learn/llm-course/chapter1/1), capítulo 1: las tres arquitecturas, con ejemplos.
+- [Guía de migración a transformers 5](https://github.com/huggingface/transformers/blob/main/MIGRATION_GUIDE_V5.md): lo que cambió en `pipeline`.

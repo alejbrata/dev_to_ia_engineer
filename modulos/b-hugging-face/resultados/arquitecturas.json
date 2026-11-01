@@ -1,0 +1,95 @@
+{
+ "textos": [
+  "Desde las 9:40 el servicio de pagos devuelve 500 en todas las peticiones. En los logs sale 'too many connections' contra Postgres. Nadie puede pagar.",
+  "Algunos usuarios dicen que el login con Google les da el error 'invalid_grant'. Con usuario y contraseña entran sin problema.",
+  "La búsqueda tarda 8-10 segundos desde el despliegue de ayer; antes era menos de un segundo. Funciona, pero va lenta para todo el mundo.",
+  "Tras desplegar la versión 2.14 del catálogo, las fichas de producto salen sin imágenes. Volver a la 2.13 lo arregla.",
+  "En el email de bienvenida pone 'plataforam' en lugar de 'plataforma'."
+ ],
+ "modelos": {
+  "encoder": {
+   "nombre": "UMUTeam/roberta-spanish-sentiment-analysis",
+   "clase": "RobertaForSequenceClassification",
+   "parametros": 124645635,
+   "carga_s": 3.9
+  },
+  "encoder-decoder": {
+   "nombre": "Helsinki-NLP/opus-mt-es-en",
+   "clase": "MarianMTModel",
+   "parametros": 77943296,
+   "carga_s": 2.5
+  },
+  "decoder": {
+   "nombre": "Qwen/Qwen2.5-0.5B-Instruct",
+   "clase": "Qwen2ForCausalLM",
+   "parametros": 494032768,
+   "carga_s": 1.7
+  }
+ },
+ "tareas": {
+  "encoder": {
+   "salidas": [
+    "neutral (0.57)",
+    "neutral (0.99)",
+    "neutral (0.98)",
+    "neutral (0.99)",
+    "neutral (1.00)"
+   ],
+   "segundos": [
+    0.05,
+    0.04,
+    0.03,
+    0.02,
+    0.02
+   ]
+  },
+  "encoder-decoder": {
+   "salidas": [
+    "Since 9:40 the payment service returns 500 on all requests. In the logs comes 'too many connections' against Postgres. No one can pay.",
+    "Some users say that the login with Google gives them the 'invalid_grant' error. User and password enter without problem.",
+    "The search takes 8-10 seconds since yesterday's deployment; before it was less than a second. It works, but it's slow for everyone.",
+    "After displaying version 2.14 of the catalogue, the product chips come out without images. Back to 2.13 fixes it.",
+    "In the welcome email it puts 'plataforam' instead of 'platform'."
+   ],
+   "segundos": [
+    0.59,
+    0.45,
+    0.55,
+    0.48,
+    0.34
+   ]
+  },
+  "decoder": {
+   "salidas": [
+    "Ticket: Servicio de pagos devuelve 500 en todas las peticiones y Postgres sale 'too many connections'. No se puede pagar.",
+    "\"Error 'invalid_grant' al loguearse con Google, pero usuarios con contraseñas funcionan correctamente.\"",
+    "La búsqueda ha sido prolongada durante aproximadamente 8-10 segundos desde la última actualización del sistema, lo que resultó en un tiempo de descarga más largo para todos los usuarios.",
+    "La versión 2.14 del catálogo no incluye imágenes de las fichas de producto. Esto se resuelve al volver a la versión 2.13.",
+    "\"Error: El nombre de la plataforma no se encuentra correctamente en el email de bienvenida.\""
+   ],
+   "segundos": [
+    2.77,
+    2.78,
+    4.81,
+    4.55,
+    1.77
+   ]
+  },
+  "decoder traduciendo": {
+   "salidas": [
+    "Starting at 9:40, the payment service returns 500 for all requests. The logs show \"too many connections\" against PostgreSQL. No one can pay.",
+    "Some users claim that logging in with Google results in the \"invalid_grant\" error. Users enter without issues.",
+    "The search takes about 8 to 10 seconds from the deployment yesterday; before that it was less than one second. It works well for everyone, but is slow for most people.",
+    "After deploying version 2.14 of the catalog, product cards do not display images. Go back to version 2.13 and fix it.",
+    "In the welcome email, it replaces 'platform' with 'Platfora'."
+   ],
+   "segundos": [
+    3.39,
+    2.43,
+    3.42,
+    3.02,
+    1.94
+   ]
+  }
+ }
+}

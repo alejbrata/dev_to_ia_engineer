@@ -1,0 +1,190 @@
+---
+title: "B.5 El Hub como infraestructura"
+description: "Inference Providers, buckets, Spaces, Inference Endpoints y los planes de empresa: qué ofrece cada uno, cuánto cuesta y cuándo encaja, con un bucket y un Space privados creados desde Python"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
+:::caution[Revisado: 2026-11]
+Esta página caduca rápido: servicios, precios y condiciones de los planes cambian a menudo. Las cifras son las de la documentación y la API de Hugging Face a 1 de noviembre de 2026, con el enlace a cada fuente. Antes de presupuestar nada, mira la página actual.
+:::
+
+## Objetivos
+
+Al terminar esta página podrás:
+
+- Distinguir las formas de ejecutar modelos que ofrece Hugging Face (Inference Providers, Inference Endpoints y Spaces) y cuándo encaja cada una.
+- Usar un bucket como almacenamiento de trabajo y explicar en qué se diferencia de un repo.
+- Desplegar un modelo como Space privado y llamarlo desde Python como una API.
+- Saber qué añaden los planes de empresa (SSO, registros de auditoría, regiones de almacenamiento) y por qué importan en una organización.
+
+## Teoría
+
+### Tres formas de ejecutar un modelo
+
+| Servicio | Qué es | Cómo se paga | Encaja cuando... |
+| --- | --- | --- | --- |
+| **Inference Providers** | Una API única que reparte tus peticiones entre proveedores externos (DeepInfra, Groq, Nscale...) que sirven modelos abiertos populares | Por token, al precio del proveedor y sin recargo; PRO incluye 2 $ al mes | Quieres un modelo grande sin desplegar nada. Es lo que usa el rol `chat_hf` (anexo G) |
+| **Inference Endpoints** | Un despliegue dedicado de cualquier modelo del Hub, en la nube y la región que elijas, con autoescalado | Por tiempo de máquina encendida, desde unos céntimos la hora en CPU; con escalado a cero, no pagas mientras no recibe peticiones | Necesitas un modelo concreto (uno tuyo, uno ajustado), aislamiento o latencia estable |
+| **Spaces** | Una aplicación (Gradio, Streamlit, Docker o HTML estático) que el Hub construye y ejecuta | CPU Basic no cuesta por hora; crear Spaces de Gradio o Docker requiere un plan de pago (PRO); GPU por horas | Quieres enseñar una demo o una herramienta interna, no servir tráfico de producción |
+
+Si vienes de backend: Inference Providers es como una API SaaS, Inference Endpoints como un servicio gestionado con tus propias máquinas y Spaces como un entorno de *preview* para enseñar algo.
+
+### Buckets frente a repos
+
+Los repos del Hub (modelos, datasets, Spaces) tienen historial: cada cambio es un commit y puedes volver a cualquier versión (B.4). Los **buckets** son almacenamiento de objetos sin historial, al estilo de S3: escribir un fichero sobrescribe el anterior. Están pensados para lo que cambia mucho y no necesita versiones (checkpoints de entrenamiento, logs, resultados intermedios), y se leen con rutas `hf://buckets/...` desde `huggingface_hub`, pandas o PyArrow. Cuando algo es definitivo, se pasa a un repo versionado.
+
+### Lo que añaden los planes de empresa
+
+En una organización, lo que más pesa no es el modelo, sino el control. Los planes Team y Enterprise añaden, según la página de planes a noviembre de 2026:
+
+- **SSO**: entrar con la cuenta de la empresa (Okta, Azure AD...).
+- **Registros de auditoría**: quién cambió qué, descargables.
+- **Grupos de recursos**: permisos por equipo sobre conjuntos de repos.
+- **Regiones de almacenamiento**: elegir dónde se guardan los datos (por ejemplo, en la UE), en los planes superiores.
+- **Facturación centralizada** y créditos de inferencia por puesto.
+
+Si trabajas con datos de clientes, las regiones y la auditoría suelen ser requisitos legales, no extras.
+
+## Práctica
+
+[`hub_infra.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/b-hugging-face/hub_infra.py) tiene cuatro partes. Las dos primeras solo leen y funcionan sin cuenta. Las otras dos crean recursos privados en tu cuenta y necesitan un token de escritura:
+
+```python
+api.create_bucket(f"{usuario}/resultados-curso-ai-engineering", private=True, exist_ok=True)
+api.sync_bucket("modulos/b-hugging-face/resultados", f"hf://buckets/{bucket}/resultados")
+
+api.create_repo(space, repo_type="space", space_sdk="gradio", private=True, exist_ok=True)
+api.upload_folder(repo_id=space, repo_type="space", folder_path="modulos/b-hugging-face/space")
+api.wait_for_space(space)
+salida = Client(space).predict("Me encanta, llegó antes de lo previsto", api_name="/clasificar")
+```
+
+El Space es la carpeta [`space/`](https://github.com/alejbrata/dev_to_ia_engineer/tree/main/modulos/b-hugging-face/space): un `app.py` con Gradio que sirve el encoder ganador de la B.3, un `requirements.txt` con torch para CPU y un `README.md` cuya cabecera le dice al Hub cómo ejecutarlo. La primera vez, construirlo y arrancarlo tardó unos dos minutos (instala torch y descarga el modelo). La salida de abajo es de una segunda ejecución, con el Space ya en marcha: por eso «listo en 1 s».
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/b-hugging-face/hub_infra.py --crear
+```
+
+```text
+1. Inference Providers: quién sirve Qwen/Qwen3-235B-A22B-Instruct-2507
+   nscale           live     conversational
+   scaleway         live     conversational
+   deepinfra        live     conversational
+   novita           error    conversational
+
+2. Hardware de los Spaces
+   nombre             CPU                RAM       $/hora
+   cpu-basic          2 vCPU             16 GB       0.00
+   zero-a10g          Dynamic resources  -           0.00
+   cpu-upgrade        8 vCPU             32 GB       0.03
+   t4-small           4 vCPU             15 GB       0.40
+   t4-medium          8 vCPU             30 GB       0.60
+   a10g-small         4 vCPU             15 GB       1.00
+   a10g-large         12 vCPU            46 GB       1.50
+   a10g-largex2       24 vCPU            92 GB       3.00
+
+3. Un bucket privado
+   albrata/resultados-curso-ai-engineering: 8 ficheros, por ejemplo resultados/arquitecturas.json, resultados/candidatos.json
+
+4. Un Space privado con el clasificador
+   albrata/clasificador-sentimiento: RUNNING en cpu-basic, listo en 1 s
+   endpoints: ['/clasificar']
+   'Me encanta, llegó antes de lo previsto' → positive (1.00), 2.41 s
+   'El pedido sigue sin aparecer' → negative (1.00), 2.08 s
+```
+
+## Mide y depura
+
+### El modelo tarda 0,03 s; la llamada, 2
+
+Cada llamada al Space tardó algo más de 2 s, y el encoder que sirve tarda 0,03 s por texto en local (B.2). Casi todo el tiempo es lo de alrededor: la red, la cola de Gradio, que procesa las peticiones de una en una, y la CPU compartida del hardware gratuito. Para una demo da igual. Para un servicio, es la razón de no usar un Space: la latencia la marca la plataforma, no tu modelo.
+
+### Lo que cuesta tenerlo encendido
+
+El hardware básico no cuesta por hora, y el Space se duerme si nadie lo usa (la documentación pone como ejemplo dos días). Con GPU, la cuenta cambia: la T4 más pequeña cuesta 0,40 $ la hora, unos 290 $ al mes si está encendida siempre. Antes de pedir GPU para una demo, mira si la CPU basta, como aquí, o si la puedes dormir (`set_space_sleep_time`).
+
+### Un proveedor en error
+
+De los cuatro proveedores que sirven el modelo del rol `chat_hf`, uno estaba en `error` al consultarlo. Hugging Face elige proveedor por ti y, si dejas que elija, no lo notas. Si fijas uno (por precio o por dónde trata tus datos), comprueba su estado y ten un plan para cuando falle, como con cualquier dependencia externa (módulo 6).
+
+### Repetir crea historial
+
+Al ejecutar dos veces la subida de la B.4, el dataset acumuló los commits de las dos ejecuciones. En un repo, cada cambio queda registrado, y eso es lo que quieres para los datos de evaluación. En el bucket, en cambio, la segunda sincronización solo sustituye ficheros: no queda rastro de la versión anterior.
+
+## Errores frecuentes
+
+**Usar un Space como API de producción.** Un Space se duerme si no se usa, comparte recursos y no promete disponibilidad. Para tráfico real, Inference Endpoints o tu propia infraestructura (módulo 6).
+
+**Elegir Inference Providers sin mirar quién sirve el modelo.** Cada proveedor tiene su precio, su latencia y su política de datos, y puede fallar (la parte 1 muestra uno en `error`). Si importa, fija el proveedor.
+
+**Guardar en un bucket lo que necesita historial.** Un bucket sobrescribe sin avisar. Los datasets de evaluación y los modelos publicados van en repos versionados.
+
+**Dejar un Endpoint encendido.** Se paga por hora, reciba peticiones o no. Activa el escalado a cero o páusalo.
+
+**Poner secretos en el código del Space.** Un `app.py` se puede leer si el Space se hace público. Los secretos van en los ajustes del Space (`add_space_secret`).
+
+### Anatomía de un error: el endpoint que no existía
+
+El Space se construyó y arrancó, y la primera llamada desde Python falló:
+
+```text
+salida = cliente.predict(texto, api_name="/predict")
+ValueError: Cannot find a function with `api_name`: /predict.
+```
+
+**Cómo leerlo.** El cliente llegó a conectarse con el Space (si no, el error sería de conexión o de permisos). Lo que no encuentra es la función a la que llamas. El problema no está en el despliegue, sino en el nombre.
+
+**Causa.** Muchos ejemplos de Gradio llaman a `/predict`, el nombre que solía tener el endpoint de una `Interface`. En la versión del Space (Gradio 6.31), el endpoint se llama como la función que sirve: `/clasificar`. El código copiado de un ejemplo daba por hecho un nombre que esta versión ya no usa.
+
+**Solución.** Preguntarle al Space qué ofrece, en lugar de suponerlo:
+
+```python
+cliente.view_api(return_format="dict", print_info=False)["named_endpoints"]   # ['/clasificar']
+```
+
+`hub_infra.py` lo hace así y usa el primero. Si el Space es tuyo, puedes fijar el nombre en el código (`api_name="clasificar"` en el componente) para que no cambie con las versiones. Es lo mismo que con cualquier API: lee su contrato (aquí, `view_api`) antes de llamarla.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'Tu equipo quiere probar durante una semana si un modelo abierto de 70B resuelve un caso, sin desplegar nada. ¿Qué usas?',
+			opciones: [
+				{ texto: 'Inference Providers.', correcta: true, porque: 'Pagas por token, sin máquinas, y cambias de modelo cambiando el nombre. Es lo que usa chat_hf ("Tres formas de ejecutar un modelo").' },
+				{ texto: 'Un Inference Endpoint con GPU.', porque: 'Funciona, pero pagas por hora la máquina encendida y lo tienes que configurar: es para cuando ya sabes qué quieres servir.' },
+				{ texto: 'Un Space con GPU.', porque: 'Un Space es para demos, no para hacer pruebas de calidad ni servir peticiones.' },
+			],
+		},
+		{
+			pregunta: 'Vas a servir en producción un modelo que habéis ajustado con datos internos, con latencia estable y los datos en la UE. ¿Qué encaja?',
+			opciones: [
+				{ texto: 'Inference Providers.', porque: 'Solo sirve los modelos que los proveedores ya tienen; el tuyo, ajustado, no está.' },
+				{ texto: 'Un Inference Endpoint privado en una región de la UE.', correcta: true, porque: 'Despliega cualquier modelo del Hub (también privado), en la nube y región que elijas, con autoescalado.' },
+			],
+		},
+		{
+			pregunta: 'Un entrenamiento guarda un checkpoint cada hora y solo te interesa el último. ¿Dónde lo guardas?',
+			opciones: [
+				{ texto: 'En un bucket.', correcta: true, porque: 'Se sobrescribe sin historial, que es lo que quieres para algo intermedio ("Buckets frente a repos").' },
+				{ texto: 'En un repo de modelo, con un commit cada hora.', porque: 'Funciona, pero acumula historial de algo que no necesitas versionar. El modelo final sí va en un repo.' },
+			],
+		},
+		{
+			pregunta: 'Un compañero quiere enlazar el Space de la demo desde la web de la empresa para que lo usen los clientes. ¿Qué le dices?',
+			opciones: [
+				{ texto: 'Que adelante: es gratis.', porque: 'Un Space se duerme, comparte recursos y no promete disponibilidad. No es una API de producción.' },
+				{ texto: 'Que para clientes hace falta un servicio con disponibilidad, como un Endpoint o la infraestructura propia.', correcta: true, porque: 'El Space es para enseñar; el tráfico real necesita escalado, monitorización y garantías (módulo 6).' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- [Inference Providers](https://huggingface.co/docs/inference-providers/index) y su [precio](https://huggingface.co/docs/inference-providers/pricing).
+- [Inference Endpoints](https://huggingface.co/docs/inference-endpoints/index).
+- [Spaces](https://huggingface.co/docs/hub/spaces-overview) y [cómo gestionarlos desde Python](https://huggingface.co/docs/huggingface_hub/guides/manage-spaces).
+- [Storage Buckets](https://huggingface.co/docs/hub/storage-buckets).
+- [Planes Team y Enterprise](https://huggingface.co/docs/hub/enterprise-hub).

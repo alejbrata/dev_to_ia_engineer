@@ -38,9 +38,13 @@ def test_carpetas_de_modulos() -> None:
         for p in (ROOT / "modulos").iterdir()
         if p.is_dir() and not p.name.startswith((".", "_"))
     }
-    assert existentes == {g.directory for g in MODULOS}
+    # El código de un anexo con prácticas vive en una carpeta con su nombre (b-hugging-face).
+    anexos = {p.slug for g in GRUPOS if g.directory == plan_sync.ANEXOS_DIR for p in g.paginas}
+    assert existentes - anexos == {g.directory for g in MODULOS}
 
 
 def test_bitacoras_por_modulo() -> None:
     existentes = {p.stem for p in (ROOT / "bitacora").glob("*.md") if p.name != "README.md"}
-    assert existentes == {g.directory for g in MODULOS}
+    # El código de un anexo con prácticas vive en una carpeta con su nombre (b-hugging-face).
+    anexos = {p.slug for g in GRUPOS if g.directory == plan_sync.ANEXOS_DIR for p in g.paginas}
+    assert existentes - anexos == {g.directory for g in MODULOS}

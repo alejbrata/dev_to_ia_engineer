@@ -1,0 +1,191 @@
+---
+title: "B.4 Datasets"
+description: "La librería datasets: cargar del Hub, tipos, map, filter, particiones estratificadas y streaming; subir un dataset propio, privado y versionado"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
+:::note[Revisado: 2026-11]
+Salidas reales con `datasets` 5.1 y `huggingface_hub` 2.4. La parte de subir crea un repo privado en tu cuenta: necesita un token con permiso de escritura.
+:::
+
+## Objetivos
+
+Al terminar esta página podrás:
+
+- Cargar un dataset del Hub por sus ficheros cuando el atajo por nombre no funciona.
+- Transformarlo con `map`, `filter` y `cast_column`, y partirlo manteniendo la proporción de cada clase.
+- Leer un dataset grande en streaming, sin descargarlo entero.
+- Subir un dataset propio a tu cuenta, privado, con su ficha, y cargar una versión concreta.
+
+## Teoría
+
+### Qué resuelve la librería `datasets`
+
+Los datos de las prácticas anteriores eran ficheros JSONL que el curso leía a mano. Funciona con 30 tickets, pero en un proyecto real los datos son grandes, cambian y los comparten varios equipos. `datasets` resuelve tres cosas:
+
+- **Cargar** de muchos sitios (el Hub, ficheros locales, S3) en el mismo formato, con tipos declarados (*features*).
+- **Procesar** sin cargar todo en memoria: guarda los datos en Arrow, un formato en columnas en disco, y cada transformación se cachea.
+- **Versionar y compartir**: un dataset del Hub es un repositorio con historial, así que puedes fijar la versión exacta con la que evaluaste.
+
+Si vienes de backend: es como pasar de leer CSV con un bucle a tener una tabla con esquema, consultas y migraciones versionadas.
+
+### Datasets con script: ya no
+
+Hasta hace unas versiones, un dataset del Hub podía traer un script de Python que lo descargaba y lo preparaba. `datasets` lo ejecutaba al cargar. Era cómodo y era un riesgo: cargar un dataset ejecutaba código de un tercero. Las versiones actuales ya no ejecutan esos scripts. Muchos datasets antiguos siguen teniéndolos, y para usarlos hay que cargar sus ficheros directamente (la anatomía).
+
+### Tipos que importan
+
+Una columna de etiquetas puede ser texto (`"0"`), un entero (`0`) o una `ClassLabel`: un entero con nombre (`0 = negative`). La última es la que deja hacer cosas útiles, como partir en train y test manteniendo la proporción de cada clase (estratificar). Con tres clases equilibradas, una partición al azar puede dejar el test desequilibrado, sobre todo con pocos datos.
+
+## Práctica
+
+[`datasets_practica.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/b-hugging-face/datasets_practica.py) trabaja con los tuits en español de la B.3 y con los tickets del módulo 2. Lo esencial:
+
+```python
+from datasets import ClassLabel, load_dataset
+
+base = "hf://datasets/cardiffnlp/tweet_sentiment_multilingual/data/spanish/"
+ds = load_dataset("json", data_files=f"{base}train.jsonl", split="train")
+ds = ds.map(lambda f: {"label": int(f["label"])})                    # "0" → 0
+ds = ds.cast_column("label", ClassLabel(names=["negative", "neutral", "positive"]))
+partes = ds.train_test_split(test_size=0.2, seed=0, stratify_by_column="label")
+
+flujo = load_dataset("json", data_files=f"{base}test.jsonl", split="train", streaming=True)
+primeras = list(flujo.take(3))                                        # sin descargar todo
+```
+
+Y para subir un dataset propio, privado:
+
+```python
+from datasets import Dataset, DatasetDict
+
+tickets = DatasetDict({"eval": Dataset.from_list(eval_), "ejemplos": Dataset.from_list(ejemplos)})
+tickets.push_to_hub("tu-usuario/tickets-curso-ai-engineering", private=True)
+version = load_dataset("tu-usuario/tickets-curso-ai-engineering", split="eval", revision=commit)
+```
+
+Sin opciones, el script hace todo menos subir. Con `--subir`, crea el repo privado en tu cuenta, le pone una ficha y lo vuelve a leer en la versión de los datos, sin la ficha. Tarda unos segundos. La salida es de una segunda ejecución: cada subida añade sus commits al historial, y por eso aparecen dos veces.
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/b-hugging-face/datasets_practica.py --subir
+```
+
+```text
+1. Cargar un dataset del Hub
+   con su nombre:      RuntimeError: Dataset scripts are no longer supported, but found tweet_sentiment_multilingual.py
+   con sus ficheros:   {'train': 1839, 'validation': 324, 'test': 870}
+   tipos:              {'text': "Value('string')", 'label': "Value('string')"}
+
+2. Explorar y transformar (train)
+   tipos, tras cast_column: {'text': "Value('string')", 'label': "ClassLabel(names=['negative', 'neutral', 'positive'])", 'palabras': "Value('int64')"}
+   palabras por tuit (media): 15.5
+   tuits que mencionan a un usuario: 1020
+   partición estratificada 80/20: {'train': {'negative': 490, 'neutral': 490, 'positive': 491}, 'test': {'negative': 123, 'neutral': 123, 'positive': 122}}
+
+3. Streaming
+   tipo: IterableDataset
+   @user jajajaja dale, hacete la boluda vos jajaja igual a vos nunca se
+   cada vez que cito un tweet se va la ubicación sin tampoco poder ponerl
+   @user MAAAAE RAJADO! Pero lo bueno es q uno se va independizando!y log
+
+4. Un dataset propio: los tickets del módulo 2
+   splits: {'eval': 10, 'ejemplos': 20} · columnas: ['id', 'texto', 'categoria', 'severidad', 'servicio']
+   subido a albrata/tickets-curso-ai-engineering (privado: True)
+   commits: ['Upload README.md with huggingface_hub', 'Upload dataset', 'Upload README.md with huggingface_hub', 'Upload dataset', 'initial commit']
+   leído en la revisión bfe47ee: 10 filas
+```
+
+## Mide y depura
+
+### Mira los tipos al cargar
+
+La parte 1 enseña que la etiqueta llega como texto (`Value('string')`), no como número ni como clase. Si la comparas con un entero, `"0" == 0` es `False` en Python y el acierto sale cero sin ningún error. Por eso el laboratorio de la B.3 convierte a nombres de clase al cargar (`datos.py`), y esta práctica la convierte en `ClassLabel`. Mira `features` cada vez que cargues un dataset nuevo.
+
+### Comprueba la partición
+
+Tras partir estratificando, el test queda con 123, 123 y 122 de cada clase: la misma proporción que el original. Mide siempre la distribución de clases de cada partición. Un test desequilibrado cambia lo que significa el acierto: con el 60 % de una clase, un clasificador que siempre dice esa clase acierta el 60 %.
+
+### Fija la versión con la que evaluaste
+
+El dataset que subes tiene historial, como un repo de código. Leer con `revision=` devuelve los datos exactamente como estaban en ese commit, aunque después alguien los cambie. Es lo que hace reproducible una eval del módulo 4 con datos compartidos: guarda junto a los resultados el commit del dataset, igual que la huella de `evaluar.py`.
+
+### Streaming para mirar antes de descargar
+
+Con `streaming=True`, `take(3)` lee las tres primeras filas sin descargar el resto. Con 870 tuits no importa, pero con datasets de cientos de gigas es la forma de ver qué hay dentro antes de decidir si te sirve.
+
+## Errores frecuentes
+
+**Cargar por nombre un dataset con script.** Las versiones actuales no lo ejecutan. Carga sus ficheros con `hf://` (la anatomía).
+
+**No mirar los tipos.** Una etiqueta en texto, comparada con números, da cero aciertos sin avisar.
+
+**Partir sin estratificar con pocos datos.** El test puede quedar desequilibrado. Usa `stratify_by_column` con una `ClassLabel`.
+
+**Evaluar contra "la última versión" de un dataset compartido.** Si cambia, tus cifras dejan de ser comparables. Fija la revisión.
+
+**Subir datos sin ficha o sin revisar qué contienen.** Una ficha dice qué es, de dónde sale y con qué licencia se puede usar. Y repasa que no haya datos personales antes de subir nada, aunque sea privado.
+
+### Anatomía de un error: el dataset que ya no se puede cargar por su nombre
+
+El primer intento de cargar los tuits, como dicen muchos tutoriales:
+
+```text
+load_dataset("cardiffnlp/tweet_sentiment_multilingual", "spanish")
+
+RuntimeError: Dataset scripts are no longer supported, but found tweet_sentiment_multilingual.py
+```
+
+**Cómo leerlo.** El error dice qué encontró: un fichero `.py` en el repo. No dice que el dataset no exista ni que no tengas acceso, así que los datos están ahí.
+
+**Causa.** El repo trae un script de carga de la época en que `datasets` los ejecutaba. Las versiones actuales dejaron de hacerlo, porque ejecutar código al cargar datos es un riesgo de seguridad.
+
+**Solución.** Mirar qué ficheros tiene el repo (en la web o con `HfApi().dataset_info(...).siblings`) y cargarlos directamente:
+
+```python
+load_dataset("json", data_files="hf://datasets/cardiffnlp/tweet_sentiment_multilingual/data/spanish/test.jsonl")
+```
+
+Muchos repos antiguos tienen además una conversión a Parquet que hace el Hub; si existe, también sirve. Y si eres tú quien publica, sube los datos en ficheros (Parquet o JSONL) y nunca un script, como hace `push_to_hub`.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'Cargas un dataset de reseñas y tu clasificador acierta 0 de 1000. Las predicciones parecen razonables al leerlas. ¿Qué miras primero?',
+			opciones: [
+				{ texto: 'Los tipos de la columna de etiquetas.', correcta: true, porque: 'Si llegan como texto ("1") y comparas con enteros (1), nada coincide y no hay error ("Mira los tipos al cargar").' },
+				{ texto: 'Si el modelo está mal entrenado.', porque: 'Las predicciones parecen razonables: un cero exacto apunta a la comparación, no al modelo.' },
+			],
+		},
+		{
+			pregunta: 'Tienes 300 ejemplos de tres clases y quieres un test de 60. ¿Cómo partes?',
+			opciones: [
+				{ texto: 'Al azar: con 300 ya sale equilibrado.', porque: 'Con pocos datos, el azar puede dejar el test desequilibrado, y eso cambia lo que significa el acierto.' },
+				{ texto: 'Estratificando por la etiqueta, con la columna como ClassLabel.', correcta: true, porque: 'Mantiene la proporción de cada clase en train y en test.' },
+			],
+		},
+		{
+			pregunta: 'Tu equipo evalúa contra un dataset del Hub que otro equipo actualiza a veces. ¿Cómo haces comparables tus resultados de este mes y del siguiente?',
+			opciones: [
+				{ texto: 'Guardando, junto a los resultados, la revisión (commit) del dataset y cargando siempre esa.', correcta: true, porque: 'Con revision= lees los datos exactamente como estaban; si quieres los nuevos, es un cambio explícito ("Fija la versión con la que evaluaste").' },
+				{ texto: 'Descargando siempre la última versión.', porque: 'Si los datos cambian, la diferencia de cifras puede venir de los datos y no de tu sistema.' },
+			],
+		},
+		{
+			pregunta: 'load_dataset("org/dataset") falla con "Dataset scripts are no longer supported". ¿Qué haces?',
+			opciones: [
+				{ texto: 'Instalar una versión antigua de datasets.', porque: 'Funcionaría, pero ejecutarías código de un tercero al cargar datos y te quedarías sin las versiones nuevas.' },
+				{ texto: 'Mirar los ficheros del repo y cargarlos directamente con data_files.', correcta: true, porque: 'Los datos suelen estar ahí en JSONL, CSV o Parquet; el script solo los preparaba (la anatomía).' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- [Documentación de `datasets`](https://huggingface.co/docs/datasets/index): cargar, procesar y streaming.
+- [Subir un dataset](https://huggingface.co/docs/datasets/upload_dataset) y [fichas de dataset](https://huggingface.co/docs/hub/datasets-cards).
+- [Cargar desde el Hub con rutas `hf://`](https://huggingface.co/docs/huggingface_hub/guides/hf_file_system).
+- Gebru et al., [Datasheets for Datasets](https://arxiv.org/abs/1803.09010) (2018): qué debería contar la documentación de un dataset.

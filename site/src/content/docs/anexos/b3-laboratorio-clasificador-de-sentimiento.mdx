@@ -1,0 +1,189 @@
+---
+title: "B.3 Laboratorio: clasificador de sentimiento"
+description: "Tres formas de clasificar texto, medidas sobre el mismo test: encoders ajustados del Hub, un LLM sin ejemplos y embeddings con una regresión logística; acierto, F1, tiempo y coste"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
+:::note[Revisado: 2026-11]
+Salidas reales, en la CPU de la máquina del curso: los encoders con `transformers` 5.22, el LLM local con Qwen3 8B sin razonamiento (rol `agente`) en Ollama, los embeddings con bge-m3, y el LLM grande con el rol `chat_hf` (Qwen3 235B en Hugging Face Inference Providers). Puedes repetirlo con los modelos que quieras.
+:::
+
+## Objetivos
+
+Al terminar esta página podrás:
+
+- Montar tres clasificadores para la misma tarea: un encoder ajustado del Hub, un LLM sin ejemplos y embeddings con un clasificador clásico.
+- Medirlos con las métricas adecuadas para clasificación (acierto con su intervalo, F1 macro, matriz de confusión) y con su tiempo y coste por cada mil textos.
+- Decidir con esos números qué usar, y saber cuándo la diferencia es real.
+- Evitar el error más caro y silencioso con clasificadores del Hub: las etiquetas cambiadas.
+
+## Teoría
+
+### La tarea y los datos
+
+Clasificar el sentimiento de un texto (negativo, neutro o positivo) es la tarea de clasificación más común en empresa: reseñas, encuestas, correos de clientes, menciones en redes. Los datos son los tuits en español del dataset multilingüe de Cardiff NLP (B.4): 1839 para entrenar y 870 para evaluar, un tercio de cada clase. Con clases equilibradas, el azar acierta un 33 %.
+
+### Tres formas de resolverla
+
+- **Un encoder ya ajustado** para sentimiento, del Hub (B.1 y B.2). Se descarga y se usa. Ha aprendido la tarea con miles de ejemplos etiquetados, quizá de otro dominio.
+- **Un LLM sin ejemplos** (*zero-shot*): se le describe la tarea en el prompt y responde con salida estructurada (módulo 2). No necesita datos de entrenamiento, pero genera texto en cada llamada.
+- **Embeddings más un clasificador clásico**: cada texto se convierte en un vector con un modelo de embeddings (módulo 3) y una regresión logística aprende a separar las clases con tus ejemplos etiquetados. Es la opción intermedia: necesita algunos datos, pero no ajustar ningún modelo grande.
+
+### Cómo se mide
+
+- **Acierto**, con su intervalo de confianza de Wilson (módulo 4): con 870 casos, unos ±3 puntos.
+- **F1 macro**: la media del F1 de cada clase. Con clases equilibradas se parece al acierto; con clases desequilibradas, evita que una clase fácil tape a una difícil.
+- **Matriz de confusión**: qué clase se confunde con cuál. Dice más que cualquier cifra suelta.
+- **Tiempo y coste por cada mil textos**: lo que decide si un sistema se puede usar a tu volumen.
+- **McNemar**, caso a caso, para saber si la diferencia entre dos sistemas es real (módulo 4).
+
+## Práctica
+
+[`sentimiento.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/b-hugging-face/sentimiento.py) ejecuta los sistemas sobre los 870 tuits y guarda las predicciones caso a caso. Los tres encoders son los candidatos con licencia permisiva de la B.1:
+
+```python
+from transformers import pipeline
+
+clasificador = pipeline("text-classification", model="UMUTeam/roberta-spanish-sentiment-analysis")
+salidas = clasificador(textos, batch_size=32, truncation=True)
+predichas = [s["label"].lower() for s in salidas]      # por nombre de clase, nunca por número
+```
+
+El LLM usa el prompt [`prompts/hf/sentimiento.md`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/prompts/hf/sentimiento.md) y `extraer` de `curso_core` con un esquema de tres valores. Los embeddings, el `embeber` de `curso_core` y una `LogisticRegression` de scikit-learn entrenada con los tuits de train.
+
+Los encoders tardan unos minutos; el LLM local, cerca de 40 minutos; el grande, por la API, unos 10 (y costó 0,09 $ como mucho). Con `--solo` ejecutas un sistema; con `--llm chat_hf`, añades el LLM grande (necesita créditos en Hugging Face). Con `--grabadas`, un segundo.
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/b-hugging-face/sentimiento.py --llm chat_hf
+```
+
+```text
+1. Sentimiento en 870 tuits en español (un tercio de cada clase; el azar acierta un 33 %)
+   sistema                               acierto       IC 95 %  F1 macro  s/1000  $/1000
+   roberta-spanish-sentiment-analysis      79.4%       77%-82%      0.80      23   0.000
+   modernBERT-base-multilingual-senti      78.6%       76%-81%      0.78     280   0.000
+   distilbert-base-multilingual-cased      51.7%       48%-55%      0.45      13   0.000
+   llm:agente                              66.4%       63%-69%      0.67    2400   0.000
+   llm:chat_hf                             67.9%       65%-71%      0.68     706   0.099
+   embeddings+regresion                    70.6%       67%-74%      0.70     103   0.000
+
+2. Dónde falla: roberta-spanish-sentiment-analysis
+   esperada → predicha     negative   neutral  positive
+   negative                     231        53         6
+   neutral                       33       234        23
+   positive                       7        57       226
+   y el LLM local (qwen3:8b):
+   esperada → predicha     negative   neutral  positive
+   negative                     204        77         9
+   neutral                       43       196        51
+   positive                      10       102       178
+   respuestas que no cumplieron el esquema: 0
+
+3. ¿Es real la diferencia? (McNemar, caso a caso)
+   roberta-spanish-sentiment-analysis frente a modernBERT-base-multilingual-senti: gana 127, pierde 120, p = 0.703
+   roberta-spanish-sentiment-analysis frente a distilbert-base-multilingual-cased: gana 309, pierde 68, p = 0.000
+   roberta-spanish-sentiment-analysis frente a llm:agente: gana 184, pierde 71, p = 0.000
+   roberta-spanish-sentiment-analysis frente a llm:chat_hf: gana 181, pierde 81, p = 0.000
+   roberta-spanish-sentiment-analysis frente a embeddings+regresion: gana 164, pierde 87, p = 0.000
+
+4. La trampa de las etiquetas: distilbert-base-multilingual-cased
+   el modelo:  {'0': 'positive', '1': 'neutral', '2': 'negative'}
+   el dataset: {0: 'negative', 1: 'neutral', 2: 'positive'}
+   comparando por nombre: 51.7%
+   comparando por número: 16.0%
+```
+
+## Mide y depura
+
+### El modelo pequeño gana
+
+El mejor sistema es el encoder más modesto: `UMUTeam/roberta-spanish-sentiment-analysis`, 125 millones de parámetros, 79,4 % de acierto, 23 segundos por cada mil tuits en una CPU de portátil y sin coste por llamada. Los dos LLMs se quedan unos 12 puntos por debajo: el local, con el 66,4 %, y el Qwen3 de 235B, casi 2000 veces más grande que el encoder, con el 67,9 %. McNemar dice que la diferencia es real (p < 0,001 en los dos casos).
+
+Y la diferencia de coste es enorme. El LLM local tarda 2400 segundos por cada mil tuits, unas cien veces más que el encoder. El grande, por la API, 706 segundos y unos 0,10 $ por cada mil, como mucho (el precio es la cota superior del anexo G). A un millón de textos al mes, el encoder son unas 6 horas de una CPU; el LLM local, casi un mes entero de máquina, y el grande, unos 100 $.
+
+### Por qué gana: las etiquetas son una convención
+
+Las matrices de confusión dicen dónde falla cada uno. El LLM local manda a `neutral` 102 tuits positivos y 77 negativos: es conservador, y en cuanto un tuit es irónico o ambiguo, lo considera neutro. Quien etiquetó el dataset tenía otro criterio. Un encoder ajustado con tuits etiquetados aprende ese criterio. El LLM sin ejemplos solo tiene el suyo.
+
+Lo confirma la regresión con embeddings: con los 1839 tuits de train, un clasificador lineal sobre los vectores de bge-m3 llega al 70,6 % y supera a los dos LLMs, sin ajustar ningún modelo grande. Cuando tienes datos etiquetados de tu tarea, aprender de ellos suele ganar a describir la tarea en un prompt. El LLM sin ejemplos compensa cuando no tienes datos, cuando la tarea cambia a menudo o cuando necesitas explicar la decisión.
+
+### Un aviso sobre el ganador
+
+`UMUTeam/...` no declara con qué datos se entrenó (era un aviso en la B.1). Si se ajustó con estos mismos tuits, o con parte de ellos, su cifra estaría inflada y no sería comparable. No lo sabemos, y es justo el riesgo de usar modelos sin documentar. Con la regresión no hay duda: solo vio train. Antes de elegirlo para producción, lo mediría con datos propios que no pueda haber visto.
+
+### Empates que no lo son tanto
+
+RoBERTa y ModernBERT empatan (79,4 % frente a 78,6 %, p = 0,70), pero no aciertan los mismos tuits: discrepan en 247. Y ModernBERT, de tamaño parecido, tarda 12 veces más en esta CPU; no hemos investigado por qué. Con dos sistemas empatados en acierto, decide lo demás: el coste, la latencia, la licencia, quién lo mantiene.
+
+## Errores frecuentes
+
+**Usar un LLM para clasificar sin compararlo con un encoder.** Aquí el encoder acertó más, cien veces más rápido y gratis. Mide los dos antes de decidir.
+
+**Elegir el clasificador por la ficha o por las descargas.** El más descargado acertó el 51,7 %. Solo tus datos dicen cuál sirve.
+
+**Medir solo el acierto.** El tiempo y el coste por cada mil textos deciden si un sistema se puede usar a tu volumen. Y la matriz de confusión dice qué arreglar.
+
+**Comparar sistemas sin mirar si la diferencia es real.** Con 870 casos, 79,4 % frente a 78,6 % es un empate. Usa McNemar o el intervalo.
+
+**Confiar en un modelo que no declara sus datos.** Puede haber visto tu test, y su cifra no valdría nada. Mídelo con datos que no pueda conocer.
+
+### Anatomía de un error: el clasificador que acertaba menos que el azar
+
+¿Qué pasa si comparas el número de clase que devuelve el modelo con el del dataset, en lugar del nombre? La parte 4 del laboratorio lo mide con `lxyuan/distilbert-base-multilingual-cased-sentiments-student`:
+
+```text
+4. La trampa de las etiquetas: distilbert-base-multilingual-cased
+   el modelo:  {'0': 'positive', '1': 'neutral', '2': 'negative'}
+   el dataset: {0: 'negative', 1: 'neutral', 2: 'positive'}
+   comparando por nombre: 51.7%
+   comparando por número: 16.0%
+```
+
+**Cómo leerlo.** Con tres clases equilibradas, responder al azar acierta un 33 %. Un 16 % es mucho peor que el azar, y eso no lo consigue un modelo malo: un modelo que no ha aprendido nada se queda cerca del 33 %. Para quedarse por debajo hay que acertar sistemáticamente al revés.
+
+**Causa.** El modelo numera las clases al revés que el dataset: su 0 es `positive` y el del dataset, `negative`. Comparando números, cada positivo y cada negativo bien clasificados cuentan como fallo; como acierto solo cuentan los neutros, que coinciden en el 1, y los errores cruzados (decir positivo de un tuit negativo coincide en el 0). No salta ningún error: son enteros en los dos lados.
+
+**Solución.** Comparar siempre por nombre de clase. `pipeline` devuelve el nombre (`s["label"]`), y el laboratorio convierte también las etiquetas del dataset a nombres al cargarlas (`datos.py`). Y como regla: un resultado peor que el azar casi siempre es un error de etiquetas o de comparación, no un modelo malo. Mira `id2label` en el `config.json` del modelo (B.1) antes de usarlo.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'Tienes que clasificar el tono de 500 000 correos de clientes al mes y tienes 3000 correos ya etiquetados. ¿Por dónde empiezas?',
+			opciones: [
+				{ texto: 'Por un LLM sin ejemplos: es lo más fácil de montar.', porque: 'Aquí acertó unos 12 puntos menos que un encoder y cuesta cien veces más tiempo por texto. Con datos etiquetados, tienes opciones mejores ("El modelo pequeño gana").' },
+				{ texto: 'Midiendo un encoder del Hub y embeddings con un clasificador entrenado con tus 3000 correos, y un LLM como referencia.', correcta: true, porque: 'Con datos propios, aprender de ellos suele ganar a describir la tarea. Y a ese volumen, el coste por texto decide.' },
+				{ texto: 'Entrenando un LLM con los 3000 correos.', porque: 'Ajustar un LLM es lo más caro de montar y de servir. Antes, mide lo barato.' },
+			],
+		},
+		{
+			pregunta: 'Tu clasificador de tres clases equilibradas acierta el 12 %. ¿Qué miras primero?',
+			opciones: [
+				{ texto: 'Si el modelo es malo para tu dominio.', porque: 'Un modelo que no sabe nada acierta cerca del 33 %. Por debajo del azar hay que acertar al revés (la anatomía).' },
+				{ texto: 'Cómo se comparan las etiquetas: el orden de las clases del modelo frente al del dataset.', correcta: true, porque: 'Un resultado peor que el azar casi siempre es un error de etiquetas o de comparación.' },
+			],
+		},
+		{
+			pregunta: 'Dos encoders aciertan el 79 % y el 78 % sobre 870 casos. ¿Cuál eliges?',
+			opciones: [
+				{ texto: 'El del 79 %, porque acierta más.', porque: 'Con 870 casos, un punto es ruido: McNemar da p = 0,70 ("Empates que no lo son tanto").' },
+				{ texto: 'Son un empate en acierto: decido por coste, latencia, licencia y mantenimiento.', correcta: true, porque: 'Aquí uno tarda 12 veces más que el otro en CPU. Con el acierto empatado, eso decide.' },
+			],
+		},
+		{
+			pregunta: 'El LLM manda a "neutral" muchos tuits que el dataset etiqueta como positivos o negativos. ¿Qué te dice?',
+			opciones: [
+				{ texto: 'Que el LLM no entiende el español informal.', porque: 'Los entiende, pero aplica su criterio de neutro, y el dataset tiene el de quien lo etiquetó ("Las etiquetas son una convención").' },
+				{ texto: 'Que su criterio no coincide con el de quien etiquetó; con ejemplos etiquetados, un clasificador aprende ese criterio.', correcta: true, porque: 'Por eso la regresión con embeddings, que aprende de 1839 tuits, supera a los dos LLMs.' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- Barbieri et al., [XLM-T: Multilingual Language Models in Twitter for Sentiment Analysis and Beyond](https://arxiv.org/abs/2104.12250) (2022): el dataset multilingüe de tuits que usa el laboratorio.
+- La documentación de [`pipeline`](https://huggingface.co/docs/transformers/main_classes/pipelines) y de [clasificación de texto](https://huggingface.co/docs/transformers/tasks/sequence_classification) en `transformers`, que incluye cómo ajustar tu propio encoder.
+- [Regresión logística en scikit-learn](https://scikit-learn.org/stable/modules/linear_model.html#logistic-regression).

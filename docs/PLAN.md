@@ -95,7 +95,7 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 ## Módulo 7 — Modelos propios ⬜
 
 1. Prompting, RAG o fine-tuning: cómo decidir
-2. Modelos abiertos en Hugging Face: elegir, descargar, licencias
+2. Modelos abiertos: descargar y preparar para servir (elegir modelo en el Hub está en el anexo B.1)
 3. Inferencia local (Ollama, llama.cpp, vLLM)
 4. Cuantización
 5. Fine-tuning con LoRA/QLoRA
@@ -114,7 +114,13 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 ## Anexos ⬜
 
 - **A. Claude y Claude Code**: consejos prácticos desde el uso real (sin copiar documentación oficial)
-- **B. Hugging Face**: Hub, transformers, datasets y Spaces
+- **B. Hugging Face**: el ecosistema más usado en empresa, como laboratorio: elegir modelo, arquitecturas, clasificación, datasets e infraestructura del Hub
+  - **B.1 El Hub y elegir modelo**: fichas, licencias, datos de entrenamiento, búsqueda con `huggingface_hub`
+  - **B.2 Encoder, decoder y encoder-decoder**: qué hace cada uno y cuándo usarlo
+  - **B.3 Laboratorio: clasificador de sentimiento**: encoders del Hub, LLM sin ejemplos y embeddings con regresión, medidos
+  - **B.4 Datasets**: cargar, transformar, streaming y subir uno propio, privado y versionado
+  - **B.5 El Hub como infraestructura**: Inference Providers, buckets, Spaces, Inference Endpoints y planes de empresa
+  - **Decisiones** (Alex, 2026-11-01): varias páginas; dependencias en un grupo opcional (`uv sync --group hf`, torch para CPU); repos de ejemplo privados en la cuenta de Alex; elegir modelo vive aquí y la lección 7.2 lo enlaza
 - **C. Herramientas y estrategias de desarrollo con IA**: agentes de código, graph prompting, flujos de trabajo y repos útiles
 - **D. Glosario**
 - **E. Recursos**: papers, blogs y cursos que merecen la pena

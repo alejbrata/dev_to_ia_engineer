@@ -1,0 +1,215 @@
+{
+ "proveedores": [
+  {
+   "proveedor": "nscale",
+   "estado": "live",
+   "tarea": "conversational"
+  },
+  {
+   "proveedor": "scaleway",
+   "estado": "live",
+   "tarea": "conversational"
+  },
+  {
+   "proveedor": "deepinfra",
+   "estado": "live",
+   "tarea": "conversational"
+  },
+  {
+   "proveedor": "novita",
+   "estado": "error",
+   "tarea": "conversational"
+  }
+ ],
+ "hardware": [
+  {
+   "nombre": "cpu-basic",
+   "cpu": "2 vCPU",
+   "ram": "16 GB",
+   "usd_hora": 0
+  },
+  {
+   "nombre": "zero-a10g",
+   "cpu": "Dynamic resources",
+   "ram": "-",
+   "usd_hora": 0
+  },
+  {
+   "nombre": "cpu-upgrade",
+   "cpu": "8 vCPU",
+   "ram": "32 GB",
+   "usd_hora": 0.03
+  },
+  {
+   "nombre": "t4-small",
+   "cpu": "4 vCPU",
+   "ram": "15 GB",
+   "usd_hora": 0.4
+  },
+  {
+   "nombre": "t4-medium",
+   "cpu": "8 vCPU",
+   "ram": "30 GB",
+   "usd_hora": 0.6
+  },
+  {
+   "nombre": "a10g-small",
+   "cpu": "4 vCPU",
+   "ram": "15 GB",
+   "usd_hora": 1.0
+  },
+  {
+   "nombre": "a10g-large",
+   "cpu": "12 vCPU",
+   "ram": "46 GB",
+   "usd_hora": 1.5
+  },
+  {
+   "nombre": "a10g-largex2",
+   "cpu": "24 vCPU",
+   "ram": "92 GB",
+   "usd_hora": 3.0
+  },
+  {
+   "nombre": "a10g-largex4",
+   "cpu": "48 vCPU",
+   "ram": "184 GB",
+   "usd_hora": 5.0
+  },
+  {
+   "nombre": "a100-large",
+   "cpu": "12 vCPU",
+   "ram": "142 GB",
+   "usd_hora": 2.5
+  },
+  {
+   "nombre": "a100x4",
+   "cpu": "48 vCPU",
+   "ram": "568 GB",
+   "usd_hora": 10.0
+  },
+  {
+   "nombre": "a100x8",
+   "cpu": "96 vCPU",
+   "ram": "1136 GB",
+   "usd_hora": 20.0
+  },
+  {
+   "nombre": "rtx-pro-6000",
+   "cpu": "23 vCPU",
+   "ram": "256 GB",
+   "usd_hora": 2.75
+  },
+  {
+   "nombre": "rtx-pro-6000x2",
+   "cpu": "46 vCPU",
+   "ram": "512 GB",
+   "usd_hora": 5.5
+  },
+  {
+   "nombre": "rtx-pro-6000x4",
+   "cpu": "92 vCPU",
+   "ram": "1024 GB",
+   "usd_hora": 11.0
+  },
+  {
+   "nombre": "rtx-pro-6000x8",
+   "cpu": "184 vCPU",
+   "ram": "2048 GB",
+   "usd_hora": 22.0
+  },
+  {
+   "nombre": "l4x1",
+   "cpu": "8 vCPU",
+   "ram": "30 GB",
+   "usd_hora": 0.8
+  },
+  {
+   "nombre": "l4x4",
+   "cpu": "48 vCPU",
+   "ram": "186 GB",
+   "usd_hora": 3.8
+  },
+  {
+   "nombre": "l40sx1",
+   "cpu": "8 vCPU",
+   "ram": "62 GB",
+   "usd_hora": 1.8
+  },
+  {
+   "nombre": "l40sx4",
+   "cpu": "48 vCPU",
+   "ram": "382 GB",
+   "usd_hora": 8.3
+  },
+  {
+   "nombre": "l40sx8",
+   "cpu": "192 vCPU",
+   "ram": "1534 GB",
+   "usd_hora": 23.5
+  }
+ ],
+ "bucket": {
+  "bucket": "albrata/resultados-curso-ai-engineering",
+  "ficheros": 8,
+  "ejemplos": [
+   "resultados/arquitecturas.json",
+   "resultados/candidatos.json",
+   "resultados/datasets.json",
+   "resultados/hub.json"
+  ]
+ },
+ "space": {
+  "space": "albrata/clasificador-sentimiento",
+  "estado": "RUNNING",
+  "hardware": "cpu-basic",
+  "arranque_s": 1,
+  "endpoints": [
+   "/clasificar"
+  ],
+  "llamadas": [
+   {
+    "texto": "Me encanta, llegó antes de lo previsto",
+    "salida": {
+     "label": "positive",
+     "confidences": [
+      {
+       "label": "positive",
+       "confidence": 0.9969438910484314
+      },
+      {
+       "label": "negative",
+       "confidence": 0.0019429250387474895
+      },
+      {
+       "label": "neutral",
+       "confidence": 0.0011131362989544868
+      }
+     ]
+    },
+    "s": 2.41
+   },
+   {
+    "texto": "El pedido sigue sin aparecer",
+    "salida": {
+     "label": "negative",
+     "confidences": [
+      {
+       "label": "negative",
+       "confidence": 0.9962081909179688
+      },
+      {
+       "label": "neutral",
+       "confidence": 0.0026281489990651608
+      },
+      {
+       "label": "positive",
+       "confidence": 0.001163655542768538
+      }
+     ]
+    },
+    "s": 2.08
+   }
+  ]
+ }
+}

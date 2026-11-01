@@ -1,0 +1,155 @@
+{
+ "tarea": "text-classification",
+ "idioma": "es",
+ "texto": "sentiment",
+ "candidatos": [
+  {
+   "id": "lxyuan/distilbert-base-multilingual-cased-sentiments-student",
+   "descargas": 702404,
+   "parametros": 135326979,
+   "licencia": "apache-2.0",
+   "datasets": [
+    "tyqiangz/multilingual-sentiments"
+   ],
+   "actualizado": "2025-03-03",
+   "libreria": "transformers",
+   "etiquetas": {
+    "0": "positive",
+    "1": "neutral",
+    "2": "negative"
+   }
+  },
+  {
+   "id": "nlptown/bert-base-multilingual-uncased-sentiment",
+   "descargas": 613514,
+   "parametros": 167360261,
+   "licencia": "mit",
+   "datasets": [],
+   "actualizado": "2025-01-02",
+   "libreria": "transformers",
+   "etiquetas": {
+    "0": "1 star",
+    "1": "2 stars",
+    "2": "3 stars",
+    "3": "4 stars",
+    "4": "5 stars"
+   }
+  },
+  {
+   "id": "pysentimiento/robertuito-sentiment-analysis",
+   "descargas": 421457,
+   "parametros": 108791173,
+   "licencia": null,
+   "datasets": [],
+   "actualizado": "2024-07-08",
+   "libreria": "pysentimiento",
+   "etiquetas": {
+    "0": "NEG",
+    "1": "NEU",
+    "2": "POS"
+   }
+  },
+  {
+   "id": "tabularisai/multilingual-sentiment-analysis",
+   "descargas": 118211,
+   "parametros": 135328517,
+   "licencia": "cc-by-nc-4.0",
+   "datasets": [
+    "tabularisai/swahili_sentiment_dataset"
+   ],
+   "actualizado": "2026-07-31",
+   "libreria": "transformers",
+   "etiquetas": {
+    "0": "Very Negative",
+    "1": "Negative",
+    "2": "Neutral",
+    "3": "Positive",
+    "4": "Very Positive"
+   }
+  },
+  {
+   "id": "finiteautomata/beto-sentiment-analysis",
+   "descargas": 33323,
+   "parametros": null,
+   "licencia": null,
+   "datasets": [],
+   "actualizado": "2023-02-25",
+   "libreria": "transformers",
+   "etiquetas": {
+    "0": "NEG",
+    "1": "NEU",
+    "2": "POS"
+   }
+  },
+  {
+   "id": "citizenlab/twitter-xlm-roberta-base-sentiment-finetunned",
+   "descargas": 10123,
+   "parametros": null,
+   "licencia": null,
+   "datasets": [
+    "jigsaw_toxicity_pred"
+   ],
+   "actualizado": "2022-12-02",
+   "libreria": "transformers",
+   "etiquetas": {
+    "0": "Negative",
+    "1": "Neutral",
+    "2": "Positive"
+   }
+  },
+  {
+   "id": "UMUTeam/roberta-spanish-sentiment-analysis",
+   "descargas": 7082,
+   "parametros": 124645635,
+   "licencia": "apache-2.0",
+   "datasets": [],
+   "actualizado": "2024-11-13",
+   "libreria": "transformers",
+   "etiquetas": {
+    "0": "negative",
+    "1": "neutral",
+    "2": "positive"
+   }
+  },
+  {
+   "id": "clapAI/modernBERT-base-multilingual-sentiment",
+   "descargas": 1795,
+   "parametros": 149607171,
+   "licencia": "apache-2.0",
+   "datasets": [
+    "clapAI/MultiLingualSentiment"
+   ],
+   "actualizado": "2025-01-08",
+   "libreria": "transformers",
+   "etiquetas": {
+    "0": "negative",
+    "1": "neutral",
+    "2": "positive"
+   }
+  },
+  {
+   "id": "erickdp/gliner2-multi-sentiment-mixed-c42",
+   "descargas": 1142,
+   "parametros": 307098645,
+   "licencia": "apache-2.0",
+   "datasets": [],
+   "actualizado": "2026-08-13",
+   "libreria": "gliner2",
+   "etiquetas": {}
+  },
+  {
+   "id": "agentlans/multilingual-e5-small-aligned-sentiment",
+   "descargas": 768,
+   "parametros": 117654145,
+   "licencia": "mit",
+   "datasets": [
+    "agentlans/en-translations"
+   ],
+   "actualizado": "2024-12-15",
+   "libreria": null,
+   "etiquetas": {
+    "0": "LABEL_0"
+   }
+  }
+ ]
+}

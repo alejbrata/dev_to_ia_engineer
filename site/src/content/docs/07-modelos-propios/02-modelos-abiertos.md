@@ -1,6 +1,6 @@
 ---
-title: "Modelos abiertos en Hugging Face"
-description: "Modelos abiertos en Hugging Face: elegir, descargar, licencias"
+title: "Modelos abiertos"
+description: "Modelos abiertos: descargar y preparar para servir (elegir modelo en el Hub está en el anexo B.1)"
 ---
 
 :::note[En preparación]

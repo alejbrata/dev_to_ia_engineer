@@ -1,0 +1,199 @@
+---
+title: "B.1 El Hub y elegir modelo"
+description: "El Hub de Hugging Face: fichas de modelo, tareas, licencias y datos de entrenamiento; buscar candidatos con huggingface_hub y qué revisar antes de usar uno"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
+:::note[Revisado: 2026-11]
+Las búsquedas cambian cada día: descargas, modelos nuevos, fichas que se actualizan. La salida de la práctica es la del 1 de noviembre de 2026; con `--grabadas` la reproduces, y sin la opción ves la de hoy.
+:::
+
+## Objetivos
+
+Al terminar esta página podrás:
+
+- Explicar qué hay en el Hub (modelos, datasets y Spaces) y qué cuenta la ficha de un modelo.
+- Buscar candidatos para una tarea con `huggingface_hub`, filtrando por tarea, idioma y texto.
+- Revisar antes de usar un modelo lo que puede impedirlo: licencia, datos de entrenamiento y formato de los pesos.
+- Explicar por qué las descargas no sirven para elegir y qué hay que medir en su lugar.
+
+## Teoría
+
+### Qué hay en el Hub
+
+El Hub es un registro de repositorios. Cada repositorio es de uno de tres tipos:
+
+- **Modelos**: los pesos, el tokenizador, la configuración (`config.json`) y una ficha (`README.md`).
+- **Datasets**: los datos, en ficheros (Parquet, JSONL, CSV...), con su ficha.
+- **Spaces**: aplicaciones de demostración (Gradio, Streamlit, Docker) que el Hub ejecuta por ti (B.5).
+
+Si vienes de backend, piensa en Maven Central o en un registro de Docker: un sitio público, con versiones, del que tus programas descargan lo que necesitan. Y con la misma pregunta de siempre antes de añadir una dependencia: ¿quién la mantiene, con qué licencia y qué trae dentro?
+
+### La ficha de un modelo
+
+La ficha (*model card*) es el `README.md` del repositorio. Arriba lleva unos metadatos en YAML que el Hub usa para buscar y filtrar:
+
+- **`pipeline_tag`**: la tarea (`text-classification`, `text-generation`, `translation`...).
+- **`language`**: los idiomas. En la búsqueda aparece como una etiqueta suelta (`es`).
+- **`license`**: la licencia de los pesos.
+- **`datasets`**: con qué datos se entrenó o ajustó.
+
+Debajo, en prosa, deberían estar el uso previsto, los límites y cómo se evaluó. Muchas fichas no lo cuentan, y eso también es información.
+
+### Qué mirar antes de usar un modelo
+
+- **La licencia.** "Abierto" no significa "úsalo como quieras" (lección 1.05). `apache-2.0` o `mit` permiten el uso comercial; `cc-by-nc-4.0` lo prohíbe; `other` obliga a leer la licencia concreta. Sin licencia en la ficha, legalmente no tienes permiso para usarlo, aunque puedas descargarlo.
+- **Los datos de entrenamiento.** Te dicen para qué sirve de verdad el modelo: uno ajustado con tuits clasificará bien tuits, y quizá no tan bien correos de clientes. Si no los declara, no lo sabes.
+- **El formato de los pesos.** Los ficheros `.bin` y `.pt` son *pickle* de Python, y cargar un pickle puede ejecutar código. `safetensors` es un formato que solo contiene tensores. En una empresa, conviene preferirlo.
+- **El tamaño**: decide la memoria, la latencia y el coste de servirlo.
+- **El mantenimiento**: cuándo se actualizó por última vez y quién lo publica.
+
+Nada de esto dice si el modelo es bueno para tu caso. Eso solo se sabe midiéndolo con tus datos, que es la B.3.
+
+## Práctica
+
+[`elegir_modelo.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/b-hugging-face/elegir_modelo.py) busca con `huggingface_hub` los modelos más descargados para una tarea y un idioma, lee la ficha y el `config.json` de cada uno y señala lo que hay que revisar. La búsqueda es esta:
+
+```python
+from huggingface_hub import HfApi
+
+api = HfApi()
+modelos = api.list_models(
+    pipeline_tag="text-classification", filter=["es"], search="sentiment",
+    sort="downloads", limit=10,
+)
+for m in modelos:
+    info = api.model_info(m.id, expand=["safetensors", "cardData", "downloads", "lastModified"])
+    ficha = info.card_data or {}   # los metadatos de la ficha: licencia, datasets...
+```
+
+Las clases que devuelve un clasificador no están en la ficha, sino en su `config.json` (`id2label`), y el script lo descarga. Tarda unos segundos; con `--grabadas`, nada. Con `--tarea`, `--idioma` y `--texto` puedes buscar otra cosa.
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/b-hugging-face/elegir_modelo.py
+```
+
+```text
+1. Los 10 más descargados (text-classification, idioma es, texto 'sentiment')
+   modelo                                                         descargas tamaño  licencia
+   lxyuan/distilbert-base-multilingual-cased-sentiments-student      702404  135 M  apache-2.0
+   nlptown/bert-base-multilingual-uncased-sentiment                  613514  167 M  mit
+   pysentimiento/robertuito-sentiment-analysis                       421457  109 M  -
+   tabularisai/multilingual-sentiment-analysis                       118211  135 M  cc-by-nc-4.0
+   finiteautomata/beto-sentiment-analysis                             33323      ?  -
+   citizenlab/twitter-xlm-roberta-base-sentiment-finetunned           10123      ?  -
+   UMUTeam/roberta-spanish-sentiment-analysis                          7082  125 M  apache-2.0
+   clapAI/modernBERT-base-multilingual-sentiment                       1795  150 M  apache-2.0
+   erickdp/gliner2-multi-sentiment-mixed-c42                           1142  307 M  apache-2.0
+   agentlans/multilingual-e5-small-aligned-sentiment                    768  118 M  mit
+
+2. Lo que hay que revisar antes de usarlos
+   ok  lxyuan/distilbert-base-multilingual-cased-sentiments-student
+   ojo nlptown/bert-base-multilingual-uncased-sentiment               datos de entrenamiento sin declarar
+   ojo pysentimiento/robertuito-sentiment-analysis                    sin licencia en la ficha; datos de entrenamiento sin declarar
+   ojo tabularisai/multilingual-sentiment-analysis                    no comercial (cc-by-nc-4.0)
+   ojo finiteautomata/beto-sentiment-analysis                         sin licencia en la ficha; datos de entrenamiento sin declarar; sin safetensors
+   ojo citizenlab/twitter-xlm-roberta-base-sentiment-finetunned       sin licencia en la ficha; sin safetensors
+   ojo UMUTeam/roberta-spanish-sentiment-analysis                     datos de entrenamiento sin declarar
+   ok  clapAI/modernBERT-base-multilingual-sentiment
+   ojo erickdp/gliner2-multi-sentiment-mixed-c42                      datos de entrenamiento sin declarar
+   ok  agentlans/multilingual-e5-small-aligned-sentiment
+
+3. lxyuan/distilbert-base-multilingual-cased-sentiments-student
+   librería: transformers · actualizado: 2025-03-03
+   entrenado con: tyqiangz/multilingual-sentiments
+   etiquetas que devuelve: {'0': 'positive', '1': 'neutral', '2': 'negative'}
+```
+
+## Mide y depura
+
+### Siete de diez, con algo que revisar
+
+De los diez modelos más descargados para sentimiento en español, solo tres pasan la revisión sin avisos. Tres no tienen licencia en la ficha, uno es no comercial, cinco no dicen con qué datos se entrenaron y dos no publican sus pesos en `safetensors`. Es lo normal en el Hub: subir un modelo es fácil, y documentarlo bien, no tanto. Una alerta no descarta un modelo, pero te obliga a averiguar algo antes de usarlo: leer la licencia concreta, preguntar al autor o buscar el paper.
+
+### Las descargas no miden la calidad
+
+`lxyuan/...` es el más descargado y el único de los cuatro primeros sin avisos. En la B.3, sobre 870 tuits en español, acierta el 51,7 %. `UMUTeam/...`, con cien veces menos descargas, acierta el 79,4 %. Las descargas dicen qué se usa, que depende de lo antiguo que sea el modelo, de dónde se enlaza y de los scripts que lo descargan solos. No dicen si funciona en tu caso. Para eso hay que medir con tus datos.
+
+### Lee las etiquetas antes de usar un clasificador
+
+La parte 3 enseña algo que cuesta caro si no lo miras: este modelo devuelve la clase 0 para `positive` y la 2 para `negative`. El dataset de la B.3 las tiene al revés. Si comparas números en lugar de nombres, el resultado no tiene sentido y no da ningún error. La B.3 mide cuánto cuesta.
+
+## Errores frecuentes
+
+**Elegir por descargas o por "me gusta".** Miden popularidad. Usa la búsqueda para encontrar candidatos y mide con tus datos para elegir.
+
+**Ignorar la licencia.** Un modelo sin licencia o con `nc` no se puede usar en un producto, por bien que funcione. Revísala al principio, no cuando ya está integrado.
+
+**No mirar con qué datos se entrenó.** Un clasificador de tuits aplicado a correos de clientes o a tickets puede fallar sin que lo notes. La B.2 tiene un ejemplo.
+
+**Cargar pesos en pickle de cualquiera.** Un `.bin` de un autor desconocido puede ejecutar código al cargarlo. Prefiere `safetensors`.
+
+**Dar por buena una búsqueda vacía.** Si una búsqueda no devuelve nada, comprueba los filtros antes de concluir que no hay modelos (la anatomía).
+
+### Anatomía de un error: la búsqueda que no encontró nada
+
+El primer intento de la práctica filtraba el idioma con el parámetro que tenían las versiones antiguas de la librería:
+
+```text
+api.list_models(pipeline_tag="text-classification", language="es", sort="downloads", limit=15)
+
+TypeError: HfApi.list_models() got an unexpected keyword argument 'language'
+```
+
+Ese error es claro: `huggingface_hub` 2.x quitó el parámetro. El segundo intento, más peligroso, fue filtrar con la etiqueta de idioma que usan los datasets:
+
+```text
+api.list_models(pipeline_tag="text-classification", filter=["language:es"], ...)  →  0 modelos
+api.list_models(pipeline_tag="text-classification", filter=["es"], ...)           → 10 modelos
+```
+
+**Cómo leerlo.** Cero resultados, sin error ni aviso. Si no lo compruebas, concluyes que no hay clasificadores en español en el Hub, cuando hay cientos.
+
+**Causa.** En el Hub, los datasets etiquetan el idioma como `language:es` y los modelos, como `es` a secas. Un filtro con una etiqueta que no existe no es un error para la API: es una búsqueda legítima que no encuentra nada.
+
+**Solución.** Antes de fiarte de una búsqueda vacía, prueba sin el filtro sospechoso o mira las etiquetas de un modelo que sepas que existe (`api.model_info(...).tags`). Y deja el filtro correcto en el código, con un comentario, como en `elegir_modelo.py`. Es la misma lección que con una consulta SQL que devuelve cero filas: el problema puede estar en el `WHERE`.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'Necesitas clasificar el tono de los correos de tus clientes, en un producto de pago. ¿Cuál de estos candidatos descartas primero?',
+			opciones: [
+				{ texto: 'Uno con licencia cc-by-nc-4.0 que funciona muy bien.', correcta: true, porque: 'La licencia prohíbe el uso comercial: por bien que funcione, no puede ir en tu producto ("Qué mirar antes de usar un modelo").' },
+				{ texto: 'Uno con licencia apache-2.0 y pocas descargas.', porque: 'Las descargas no miden la calidad; la licencia permite usarlo. Merece medirlo.' },
+				{ texto: 'Uno con licencia mit que no declara sus datos de entrenamiento.', porque: 'Es un aviso, no un veto: mídelo con tus correos para saber si sirve.' },
+			],
+		},
+		{
+			pregunta: 'Tu búsqueda de modelos de resumen en catalán devuelve cero resultados. ¿Qué haces?',
+			opciones: [
+				{ texto: 'Concluir que no hay y entrenar uno.', porque: 'Una búsqueda vacía puede deberse a un filtro mal escrito, sin ningún error (la anatomía).' },
+				{ texto: 'Revisar los filtros: probar sin el del idioma y mirar las etiquetas de un modelo que sepas que existe.', correcta: true, porque: 'En los modelos, el idioma es una etiqueta suelta ("ca"); con "language:ca" la API devuelve cero sin avisar.' },
+			],
+		},
+		{
+			pregunta: 'Dos clasificadores parecen equivalentes. Uno publica safetensors y el otro solo un pytorch_model.bin de un autor que no conoces. ¿Por qué importa?',
+			opciones: [
+				{ texto: 'Porque el .bin es más lento.', porque: 'La diferencia no es de velocidad, sino de seguridad.' },
+				{ texto: 'Porque el .bin es un pickle y cargarlo puede ejecutar código.', correcta: true, porque: 'safetensors solo contiene tensores. Con un autor desconocido, el pickle es un riesgo de seguridad.' },
+			],
+		},
+		{
+			pregunta: 'Un clasificador devuelve {0: "positive", 1: "neutral", 2: "negative"} y tu dataset usa 0 = negativo. ¿Qué pasa si comparas los números?',
+			opciones: [
+				{ texto: 'Da un error de tipos.', porque: 'Son enteros en los dos lados: la comparación funciona y no avisa.' },
+				{ texto: 'Las cifras salen mal y nada lo avisa: compara por nombre de clase.', correcta: true, porque: 'Positivo y negativo quedan intercambiados. La B.3 mide cuánto cambia el acierto.' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- Documentación del Hub: [fichas de modelo](https://huggingface.co/docs/hub/model-cards) y [licencias](https://huggingface.co/docs/hub/repositories-licenses).
+- [Buscar en el Hub con `huggingface_hub`](https://huggingface.co/docs/huggingface_hub/guides/search).
+- [safetensors](https://huggingface.co/docs/safetensors/index): el formato y por qué es seguro.
+- Mitchell et al., [Model Cards for Model Reporting](https://arxiv.org/abs/1810.03993) (2019): el origen de las fichas de modelo.
