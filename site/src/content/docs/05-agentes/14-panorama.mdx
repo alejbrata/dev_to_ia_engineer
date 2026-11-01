@@ -166,7 +166,7 @@ Registra en cada ejecución qué skills cargó, y compáralas con las que espera
 
 ### Anatomía de un error: la skill que no se cargó
 
-Escenario `pagos-pool-sin-despliegue`: el pool de PgBouncer de pagos está saturado y los cobros fallan. Lo esperado es una incidencia crítica con la mitigación del runbook `runbook-pagos-conexiones`. Repetido para ver las llamadas (con el mismo resultado que en la ejecución grabada), el agente hizo esto:
+Escenario `pagos-pool-sin-despliegue`: el pool de PgBouncer de pagos está saturado y los cobros fallan. Lo esperado es una incidencia crítica con la mitigación del runbook `runbook-pagos-conexiones`. La ejecución grabada guarda qué skills cargó, pero no las llamadas. Repetido con `traza.py pagos-pool-sin-despliegue --skills` (que ejecuta el agente con skills, como `con_skills.py`), con el mismo resultado que en la ejecución grabada, el agente hizo esto:
 
 ```text
 estado_servicio({'servicio': 'pagos'})

@@ -4,7 +4,8 @@ Cada paso es una llamada al modelo: lo que pidió (herramientas y argumentos), l
 devolvió el código y, al final, su respuesta. Debajo, lo que hay de verdad en la plataforma.
 Es lo primero que hay que mirar cuando un agente falla.
 
-Uso: `uv run python modulos/05-agentes/traza.py ESCENARIO [--herramientas v1|v2] [--razonar]`
+Uso: `uv run python modulos/05-agentes/traza.py ESCENARIO [--herramientas v1|v2] [--razonar]
+[--skills]`
 """
 
 from __future__ import annotations
@@ -15,6 +16,7 @@ import textwrap
 
 import agente
 import plataforma
+import skills
 from curso_core import ClienteLLM
 
 ANCHO = 72  # lo que cabe sin desplazamiento en un bloque de código de la web
@@ -35,18 +37,32 @@ def main() -> int:
     parser.add_argument("escenario")
     parser.add_argument("--herramientas", choices=["v1", "v2"], default="v2")
     parser.add_argument("--razonar", action="store_true")
+    parser.add_argument(
+        "--skills", action="store_true", help="la documentación como skills (lección 14)"
+    )
     args = parser.parse_args()
     escenario = {e.id: e for e in plataforma.cargar()}[args.escenario]
     versiones = {"v1": plataforma.HERRAMIENTAS_V1, "v2": plataforma.HERRAMIENTAS}
-    herramientas = versiones[args.herramientas]
 
     cliente = ClienteLLM()
     p = plataforma.Plataforma(escenario, plataforma.indice_documentacion(cliente))
     opciones = agente.OPCIONES.model_copy(update={"razonar": args.razonar})
-    ej = agente.ejecutar(cliente, p, rol="agente", opciones=opciones, herramientas=herramientas)
+    if args.skills:
+        lista = skills.desde_corpus()
+        extra = {
+            "prompt": "agentes/guardia-skills",
+            "variables": {"alerta": escenario.alerta, "catalogo": skills.catalogo(lista)},
+            "herramientas": [*skills.SIN_BUSQUEDA, skills.CARGAR_SKILL],
+        }
+        opciones = opciones.model_copy(update={"contexto": 8192})  # como en con_skills.py
+        ejecuta, version = skills.PlataformaSkills(p, lista), "skills"
+    else:
+        extra = {"herramientas": versiones[args.herramientas]}
+        ejecuta, version = p, args.herramientas
+    ej = agente.ejecutar(cliente, ejecuta, rol="agente", opciones=opciones, **extra)
     _, _, modelo = cliente.config.resolver("agente")
 
-    print(f"Escenario {escenario.id} · {modelo} · herramientas {args.herramientas}")
+    print(f"Escenario {escenario.id} · {modelo} · herramientas {version}")
     print(f"Alerta: {escenario.alerta}\n")
     for paso in ej.pasos:
         tokens = f"{paso.tokens_entrada} tokens de entrada, {paso.tokens_salida} de salida"

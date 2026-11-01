@@ -67,14 +67,14 @@ class Pizarra(BaseModel):
 
 ### Medir el aporte de cada agente
 
-Para saber qué aporta el revisor, no basta con comparar el sistema con el agente único: el agente cambia de una ejecución a otra (lección 02) y esa variación taparía el efecto. Por eso [`colaborar.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/colaborar.py) investiga **una sola vez** por escenario y evalúa tres decisiones sobre esa misma investigación:
+Para saber qué aporta el revisor, no basta con comparar el sistema con el agente único: el agente cambia de una ejecución a otra (lección 02) y esa variación taparía el efecto. Por eso [`colaborar.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/colaborar.py) investiga **una sola vez** por escenario y evalúa cuatro decisiones sobre esa misma investigación:
 
 - **investigador solo**: la propuesta tal cual;
 - **con revisor**: la propuesta corregida por el revisor, que ve las evidencias;
 - **revisor sin evidencias**: la misma revisión, pero el revisor solo ve la propuesta y los criterios. Es un control: dice cuánto aporta que el revisor vea los datos.
 - **revisor a ciegas**: el revisor ve las evidencias y los criterios, pero no la propuesta, y decide él si abrir y con qué severidad ([`prompts/agentes/revisor-ciego.md`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/prompts/agentes/revisor-ciego.md)). Se añadió después de ver los resultados de los otros dos, como experimento; lo explica "Mide y depura".
 
-Usa los 14 escenarios (9 de desarrollo y 5 de prueba): el prompt del revisor se escribió una vez y no se ajustó mirando los resultados. Tarda algo más de una hora en la máquina del curso; con `--grabadas`, un segundo.
+Usa los 14 escenarios (9 de desarrollo y 5 de prueba): el prompt del revisor se escribió una vez y no se ajustó mirando los resultados. Para comparar, la tabla incluye también el agente único de la lección 07 (sin memoria), grabado en otra ejecución. Las celdas vacías son a propósito: el tiempo se mide para el sistema entero (la fila con revisor suma investigación y revisión), y las revisiones sin evidencias y a ciegas son experimentos sobre la misma investigación, sin un coste que se pueda separar. Tarda algo más de una hora en la máquina del curso; con `--grabadas`, un segundo.
 
 ```sh title="Terminal de VS Code · raíz del repo"
 uv run python modulos/05-agentes/colaborar.py

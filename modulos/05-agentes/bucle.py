@@ -10,6 +10,7 @@ Usa el rol `agente`. Uso: `uv run python modulos/05-agentes/bucle.py`
 
 from __future__ import annotations
 
+import argparse
 import sys
 
 import agente
@@ -56,6 +57,8 @@ def pasos(ej: agente.Ejecucion) -> None:
 
 
 def main() -> int:
+    # Sin opciones: son cuatro ejecuciones que hay que ver en vivo, no hay --grabadas.
+    argparse.ArgumentParser(description=__doc__.splitlines()[0]).parse_args()
     cliente = ClienteLLM()
     indice = plataforma.indice_documentacion(cliente)
     escenario = {e.id: e for e in plataforma.cargar()}[ESCENARIO]

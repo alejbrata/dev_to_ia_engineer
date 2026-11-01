@@ -7,8 +7,9 @@
 4. Lo que se queda sin cubrir.
 
 El rol comercial solo se ejecuta si hay OPENAI_API_KEY en .env (cuesta dinero: unos céntimos).
-Con --humano, apruebas tú cada plan. Con --grabadas no llama a ningún modelo.
-Uso: `uv run python modulos/05-agentes/comite.py [--grabadas | --humano]`
+Con --humano, apruebas tú cada plan. Con --grabadas no llama a ningún modelo. Con
+--incidente ID, ejecuta solo ese incidente (unos 20 minutos en local) y no guarda nada.
+Uso: `uv run python modulos/05-agentes/comite.py [--grabadas | --humano] [--incidente ID]`
 """
 
 from __future__ import annotations
@@ -98,15 +99,25 @@ def main() -> int:
     modo = parser.add_mutually_exclusive_group()
     modo.add_argument("--grabadas", action="store_true", help="no llama a ningún modelo")
     modo.add_argument("--humano", action="store_true", help="apruebas tú cada plan")
-    args = parser.parse_args()
     casos = crisis.cargar()
+    parser.add_argument(
+        "--incidente",
+        choices=[c.id for c in casos],
+        help="solo ese incidente, para probar en minutos (no guarda los resultados)",
+    )
+    args = parser.parse_args()
+    if args.incidente and args.grabadas:
+        parser.error("--incidente es para ejecutar; con --grabadas se muestran los cuatro")
+    if args.incidente:
+        casos = [c for c in casos if c.id == args.incidente]
     ruta = RESULTADOS / "comite.jsonl"
 
     if args.grabadas:
         informe = Informe.cargar(ruta)
     else:
         aprobar = aprobar_en_terminal if args.humano else (lambda _: {"aprobada": True})
-        informe = ejecutar_todo(casos, aprobar, None if args.humano else ruta)
+        guardar = not (args.humano or args.incidente)
+        informe = ejecutar_todo(casos, aprobar, ruta if guardar else None)
 
     por_caso = informe.por_caso()
     configs = list(dict.fromkeys("|".join(r.caso.split("|")[:2]) for r in informe.resultados))

@@ -89,6 +89,15 @@ Para leer un caso entero, [`traza.py`](https://github.com/alejbrata/dev_to_ia_en
 uv run python modulos/05-agentes/traza.py pagos-pool-sin-despliegue --herramientas v1
 ```
 
+`traza.py` vuelve a ejecutar el caso, así que el resultado puede no ser el mismo de la tabla. Para ver lo que pasó en la ejecución grabada, sin llamar al modelo, usa [`ver_caso.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/ver_caso.py). Sirve para los resultados de cualquier práctica del módulo, en `resultados/`. Sin caso, lista los casos del fichero y por qué falló cada uno. Con un caso, muestra las herramientas que pidió el agente, su respuesta y el resto del detalle que guardó la práctica:
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/05-agentes/ver_caso.py herramientas-v2-qwen3-8b
+uv run python modulos/05-agentes/ver_caso.py herramientas-v2-qwen3-8b pagos-pool-sin-despliegue
+```
+
+Las de esta lección guardan también lo que devolvió cada herramienta; las siguientes guardan solo qué pidió el agente y con qué argumentos.
+
 ### 3. Las mismas herramientas, mejor descritas
 
 La versión 2 cambia solo lo que el modelo lee. El prompt del agente y los modelos son los mismos, para medir solo el efecto de las herramientas:

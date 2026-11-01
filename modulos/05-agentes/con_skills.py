@@ -65,6 +65,7 @@ def ejecutar_todos(cliente, indice, escenarios, version: str, lista) -> Informe:
                     "entrada_por_paso": [x.tokens_entrada for x in ej.pasos],
                     "segundos": round(ej.segundos, 1),
                     "cargadas": getattr(envoltorio, "cargadas", []),
+                    "usos": [f"{u.nombre}({u.argumentos})" for u in ej.usos],
                     "runbook_esperado": e.esperado.runbook,
                 },
             )
