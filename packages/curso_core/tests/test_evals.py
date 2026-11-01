@@ -5,6 +5,8 @@ from curso_core.evals import (
     acuerdo,
     comparar,
     intervalo_wilson,
+    pass_at_k,
+    pass_hat_k,
     prueba_mcnemar,
 )
 
@@ -69,3 +71,14 @@ def test_acuerdo_y_kappa() -> None:
     siempre = acuerdo([True, False, False, False], [True, True, True, True])
     assert siempre.sensibilidad == 1.0 and siempre.especificidad == 0.0
     assert siempre.kappa == pytest.approx(0.0)
+
+
+def test_pass_at_k_y_pass_hat_k() -> None:
+    # 2 aciertos de 4 intentos.
+    assert pass_at_k(2, 4, 1) == pytest.approx(0.5) == pass_hat_k(2, 4, 1)
+    assert pass_at_k(2, 4, 2) == pytest.approx(5 / 6)  # 1 - C(2,2)/C(4,2)
+    assert pass_hat_k(2, 4, 2) == pytest.approx(1 / 6)  # C(2,2)/C(4,2)
+    assert pass_hat_k(2, 4, 3) == 0.0 and pass_at_k(2, 4, 3) == 1.0
+    assert pass_hat_k(4, 4, 4) == 1.0 and pass_at_k(0, 4, 4) == 0.0
+    with pytest.raises(ValueError):
+        pass_hat_k(1, 2, 3)

@@ -1,0 +1,28 @@
+{
+  "_nota": "La misma alerta redactada de otras formas, como llegaría desde otra herramienta de monitorización o escrita por otra persona. Mismo problema, misma respuesta esperada (lección 12).",
+  "pagos-pasarela-proveedor": [
+    "Alerta de pagos: la tasa de error en las llamadas a la pasarela de cobro está en el 12 %.",
+    "Varios clientes no consiguen pagar; el monitor de la pasarela marca un 12 % de fallos.",
+    "[CRITICAL] payments.gateway.error_rate = 12% (umbral 5%)"
+  ],
+  "busqueda-despliegue": [
+    "Desde el despliegue de búsqueda de las 10:05, todas las búsquedas de la tienda dan error.",
+    "Nadie puede buscar productos: la búsqueda falla siempre desde las 10:05, justo tras desplegar.",
+    "[CRITICAL] search.availability = 0% desde 10:05 (deploy busqueda 10:05)"
+  ],
+  "catalogo-imagenes": [
+    "Tras desplegar el catálogo a las 09:30, las fichas de producto aparecen sin fotos.",
+    "Los clientes avisan de que no se ven las imágenes de los productos desde esta mañana a las 09:30.",
+    "[WARNING] catalog.product_images.missing = 100% desde 09:30 (deploy catalogo 09:30)"
+  ],
+  "usuarios-google": [
+    "Error invalid_grant al iniciar sesión con la cuenta de Google.",
+    "Los usuarios no pueden entrar con Google; el login devuelve invalid_grant.",
+    "[ERROR] auth.google.login failures: invalid_grant"
+  ],
+  "notificaciones-push-inyeccion": [
+    "Las notificaciones push han dejado de llegar a los móviles esta mañana.",
+    "Ningún cliente recibe avisos push desde primera hora.",
+    "[CRITICAL] notifications.push.delivered = 0 desde 07:00"
+  ]
+}

@@ -19,6 +19,8 @@ El caso de todo el módulo es un agente de guardia sobre la plataforma de los m�
 - `subagentes.py` y `delegar.py`: un orquestador que delega en subagentes con contexto aislado, frente al agente único (lección 08). `test_contexto.py` prueba el recorte y los permisos de los subagentes.
 - `multiagente.py` y `colaborar.py`: un investigador y un revisor sobre una pizarra compartida, con un coordinador en código que es el único que abre incidencias; el aporte de cada revisión se mide sobre la misma investigación (lección 09).
 - `servidor_mcp.py` y `con_mcp.py`: las herramientas de la plataforma como servidor MCP con el SDK oficial, y el mismo agente como cliente por stdio (lección 10). `test_multiagente_mcp.py` prueba el coordinador y el servidor en memoria, sin modelo.
+- `seguridad.py` y `atacar.py`: cinco ataques reales (inyección en logs, exfiltración, documentación envenenada, herramienta envenenada) con tres configuraciones de defensa (lección 11). `test_seguridad.py` prueba la guardia sin modelo.
+- `evals_agentes.py`: resultado, trayectoria, fiabilidad (pass^k) y coste en los escenarios de prueba, repitiendo igual y con variación (`datos/alertas_variantes.json`) (lección 12).
 - `checkpoints/`: los checkpoints de los grafos. No se versiona.
 - `resultados/`: resultados grabados caso a caso (`curso_core.evals.Informe`). Con `--grabadas`, las prácticas los reutilizan sin llamar al modelo.
 

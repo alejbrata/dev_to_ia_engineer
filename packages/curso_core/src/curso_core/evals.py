@@ -115,6 +115,22 @@ def prueba_mcnemar(ganados: int, perdidos: int) -> float:
     return min(1.0, 2 * cola)
 
 
+def pass_at_k(aciertos: int, intentos: int, k: int) -> float:
+    """Probabilidad de acertar al menos una vez en k intentos, estimada con `intentos`
+    ejecuciones de las que `aciertos` fueron buenas. Mide si el sistema *puede* hacerlo."""
+    if not 0 < k <= intentos:
+        raise ValueError("k tiene que estar entre 1 y el número de intentos")
+    return 1 - math.comb(intentos - aciertos, k) / math.comb(intentos, k)
+
+
+def pass_hat_k(aciertos: int, intentos: int, k: int) -> float:
+    """Probabilidad de acertar las k veces seguidas (pass^k, de tau-bench), estimada igual.
+    Mide si el sistema lo hace *siempre*: es la que importa para un agente en producción."""
+    if not 0 < k <= intentos:
+        raise ValueError("k tiene que estar entre 1 y el número de intentos")
+    return math.comb(aciertos, k) / math.comb(intentos, k)
+
+
 class Acuerdo(BaseModel):
     """Cómo coincide un juez con las etiquetas humanas. "Positivo" es el problema que busca
     el juez (por ejemplo, una respuesta no fiel)."""

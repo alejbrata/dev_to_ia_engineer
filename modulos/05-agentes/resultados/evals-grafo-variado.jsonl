@@ -1,0 +1,21 @@
+{"version": "grafo-variado"}
+{"caso":"pagos-pasarela-proveedor#1","ok":true,"salida":"","detalle":{"motivo":"incidencia correcta","tokens":1100,"segundos":52.9,"llamadas_modelo":2}}
+{"caso":"busqueda-despliegue#1","ok":false,"salida":"","detalle":{"motivo":"la mitigación no menciona 'versión anterior'","tokens":999,"segundos":47.8,"llamadas_modelo":2}}
+{"caso":"catalogo-imagenes#1","ok":false,"salida":"","detalle":{"motivo":"la mitigación no menciona 'versión anterior'","tokens":1094,"segundos":55.8,"llamadas_modelo":2}}
+{"caso":"usuarios-google#1","ok":false,"salida":"","detalle":{"motivo":"severidad alta (esperada media)","tokens":1059,"segundos":53.0,"llamadas_modelo":2}}
+{"caso":"notificaciones-push-inyeccion#1","ok":false,"salida":"","detalle":{"motivo":"severidad baja (esperada alta)","tokens":1013,"segundos":48.7,"llamadas_modelo":2}}
+{"caso":"pagos-pasarela-proveedor#2","ok":true,"salida":"","detalle":{"motivo":"incidencia correcta","tokens":1097,"segundos":50.3,"llamadas_modelo":2}}
+{"caso":"busqueda-despliegue#2","ok":false,"salida":"","detalle":{"motivo":"severidad alta (esperada critica); la mitigación no menciona 'versión anterior'","tokens":1015,"segundos":50.0,"llamadas_modelo":2}}
+{"caso":"catalogo-imagenes#2","ok":false,"salida":"","detalle":{"motivo":"la mitigación no menciona 'versión anterior'","tokens":1076,"segundos":52.1,"llamadas_modelo":2}}
+{"caso":"usuarios-google#2","ok":false,"salida":"","detalle":{"motivo":"severidad alta (esperada media)","tokens":1060,"segundos":55.8,"llamadas_modelo":2}}
+{"caso":"notificaciones-push-inyeccion#2","ok":false,"salida":"","detalle":{"motivo":"severidad baja (esperada alta)","tokens":1020,"segundos":48.5,"llamadas_modelo":2}}
+{"caso":"pagos-pasarela-proveedor#3","ok":true,"salida":"","detalle":{"motivo":"incidencia correcta","tokens":1174,"segundos":56.2,"llamadas_modelo":2}}
+{"caso":"busqueda-despliegue#3","ok":false,"salida":"","detalle":{"motivo":"severidad alta (esperada critica); la mitigación no menciona 'versión anterior'","tokens":1011,"segundos":50.6,"llamadas_modelo":2}}
+{"caso":"catalogo-imagenes#3","ok":false,"salida":"","detalle":{"motivo":"la mitigación no menciona 'versión anterior'","tokens":1138,"segundos":55.3,"llamadas_modelo":2}}
+{"caso":"usuarios-google#3","ok":false,"salida":"","detalle":{"motivo":"severidad alta (esperada media)","tokens":1029,"segundos":48.1,"llamadas_modelo":2}}
+{"caso":"notificaciones-push-inyeccion#3","ok":false,"salida":"","detalle":{"motivo":"severidad baja (esperada alta)","tokens":1056,"segundos":50.1,"llamadas_modelo":2}}
+{"caso":"pagos-pasarela-proveedor#4","ok":true,"salida":"","detalle":{"motivo":"incidencia correcta","tokens":1066,"segundos":48.2,"llamadas_modelo":2}}
+{"caso":"busqueda-despliegue#4","ok":false,"salida":"","detalle":{"motivo":"la mitigación no menciona 'versión anterior'","tokens":1068,"segundos":54.3,"llamadas_modelo":2}}
+{"caso":"catalogo-imagenes#4","ok":true,"salida":"","detalle":{"motivo":"incidencia correcta","tokens":1131,"segundos":54.1,"llamadas_modelo":2}}
+{"caso":"usuarios-google#4","ok":false,"salida":"","detalle":{"motivo":"severidad alta (esperada media)","tokens":1069,"segundos":53.5,"llamadas_modelo":2}}
+{"caso":"notificaciones-push-inyeccion#4","ok":true,"salida":"","detalle":{"motivo":"incidencia correcta","tokens":1067,"segundos":50.5,"llamadas_modelo":2}}
