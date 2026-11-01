@@ -165,9 +165,11 @@ async def medir(escenarios) -> tuple[dict, Informe]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--grabadas", action="store_true", help="no llama al modelo")
+    agente.argumento_rol(parser)
     args = parser.parse_args()
+    resultados = agente.usar_rol(args.rol, RESULTADOS)
     escenarios = [e for e in plataforma.cargar() if e.particion == "desarrollo"]
-    ruta, ruta_datos = RESULTADOS / "mcp.jsonl", RESULTADOS / "mcp-conexion.json"
+    ruta, ruta_datos = resultados / "mcp.jsonl", resultados / "mcp-conexion.json"
 
     if args.grabadas:
         informe = Informe.cargar(ruta)
@@ -197,7 +199,7 @@ def main() -> int:
 
     n = len(escenarios)
     rs = informe.resultados
-    completo = Informe.cargar(RESULTADOS / "memoria-completo.jsonl")
+    completo = Informe.cargar(resultados / "memoria-completo.jsonl")
     ids = {e.id for e in escenarios}
     local = Informe(version="local", resultados=[r for r in completo.resultados if r.caso in ids])
     print(f"\n3. El agente en los {n} escenarios de desarrollo")

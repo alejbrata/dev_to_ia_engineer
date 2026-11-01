@@ -25,6 +25,7 @@ El caso de todo el módulo es un agente de guardia sobre la plataforma de los m�
 - `aguante.py` y `aguantar.py`: herramientas que fallan y reintentos en código, presupuestos de tokens y reanudación tras una caída con clave de idempotencia (lección 13). `test_aguante.py` lo prueba sin modelo.
 - `skills.py` y `con_skills.py`: los runbooks como skills que el agente carga cuando las necesita, frente a toda la documentación en el prompt y frente al RAG (lección 14).
 - `crisis.py` y `comite.py`: el cierre del módulo. Un comité de crisis multiagente (orquestador, especialistas técnico, legal, de negocio y de comunicación, y aprobación humana) frente a un agente único, con el modelo local y, si hay clave, con uno comercial. Los incidentes están en `datos/crisis.jsonl` y las políticas de cada área en `datos/crisis/` (lección 15). `test_crisis.py` prueba el anclaje, la puntuación y el plan de encargos sin modelo.
+- **Con otro modelo:** las prácticas aceptan `--rol` (por ejemplo `chat_openai`, `chat_claude` o `chat_hf`) para repetirlas con un modelo comercial o uno grande de Hugging Face, con los resultados en `resultados/<rol>/`. Ver el anexo G.
 - `checkpoints/`: los checkpoints de los grafos. No se versiona.
 - `resultados/`: resultados grabados caso a caso (`curso_core.evals.Informe`). Con `--grabadas`, las prácticas los reutilizan sin llamar al modelo.
 

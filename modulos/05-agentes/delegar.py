@@ -19,6 +19,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from statistics import median
 
+import agente
 import plataforma
 import subagentes
 from curso_core import ClienteLLM, Opciones
@@ -76,9 +77,11 @@ def medir_paralelo(cliente: ClienteLLM, n: int = 3) -> dict:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--grabadas", action="store_true", help="no llama al modelo")
+    agente.argumento_rol(parser)
     args = parser.parse_args()
+    resultados = agente.usar_rol(args.rol, RESULTADOS)
     escenarios = [e for e in plataforma.cargar() if e.particion == "desarrollo"]
-    ruta, ruta_paralelo = RESULTADOS / "subagentes.jsonl", RESULTADOS / "subagentes-paralelo.json"
+    ruta, ruta_paralelo = resultados / "subagentes.jsonl", resultados / "subagentes-paralelo.json"
 
     if args.grabadas:
         sub = Informe.cargar(ruta)
@@ -93,7 +96,7 @@ def main() -> int:
         ruta_paralelo.write_text(json.dumps(paralelo), encoding="utf-8")
 
     ids = {e.id for e in escenarios}
-    completo = Informe.cargar(RESULTADOS / "memoria-completo.jsonl")
+    completo = Informe.cargar(resultados / "memoria-completo.jsonl")
     unico = Informe(version="agente", resultados=[r for r in completo.resultados if r.caso in ids])
 
     d = sub.por_caso()[EJEMPLO].detalle

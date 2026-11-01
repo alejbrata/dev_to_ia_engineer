@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 
 import agente
 import plataforma
@@ -57,8 +58,10 @@ def pasos(ej: agente.Ejecucion) -> None:
 
 
 def main() -> int:
-    # Sin opciones: son cuatro ejecuciones que hay que ver en vivo, no hay --grabadas.
-    argparse.ArgumentParser(description=__doc__.splitlines()[0]).parse_args()
+    # Son cuatro ejecuciones que hay que ver en vivo: no hay --grabadas ni se guarda nada.
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    agente.argumento_rol(parser)
+    agente.usar_rol(parser.parse_args().rol, Path())
     cliente = ClienteLLM()
     indice = plataforma.indice_documentacion(cliente)
     escenario = {e.id: e for e in plataforma.cargar()}[ESCENARIO]

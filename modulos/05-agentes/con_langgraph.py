@@ -20,6 +20,7 @@ import time
 from pathlib import Path
 from statistics import median
 
+import agente
 import grafo_langgraph
 import plataforma
 from curso_core import ClienteLLM
@@ -166,9 +167,11 @@ def coste_por_paso() -> dict[str, float]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--grabadas", action="store_true", help="no llama al modelo")
+    agente.argumento_rol(parser)
     args = parser.parse_args()
+    resultados = agente.usar_rol(args.rol, RESULTADOS)
     escenarios = [e for e in plataforma.cargar() if e.particion == "desarrollo"]
-    ruta, ruta_caida = RESULTADOS / "langgraph.jsonl", RESULTADOS / "langgraph-caida.json"
+    ruta, ruta_caida = resultados / "langgraph.jsonl", resultados / "langgraph-caida.json"
 
     if args.grabadas:
         informe = Informe.cargar(ruta)
@@ -217,7 +220,7 @@ def main() -> int:
     print(f"   llamadas al modelo en total: {caida['llamadas_modelo']}; estado ok: {caida['ok']}")
 
     n = len(escenarios)
-    propio = Informe.cargar(RESULTADOS / "grafo.jsonl")
+    propio = Informe.cargar(resultados / "grafo.jsonl")
     print(f"\n4. Los {n} escenarios de desarrollo, aprobando todo")
     print(
         f"   {'':12} {'estado ok':>9} {'llamadas al modelo':>19} {'tokens':>8} {'s/escenario':>11}"

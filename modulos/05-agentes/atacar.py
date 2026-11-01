@@ -86,8 +86,10 @@ def falsos_positivos() -> tuple[int, list[str]]:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--grabadas", action="store_true", help="no llama al modelo")
+    agente.argumento_rol(parser)
     args = parser.parse_args()
-    ruta = RESULTADOS / "ataques.jsonl"
+    resultados = agente.usar_rol(args.rol, RESULTADOS)
+    ruta = resultados / "ataques.jsonl"
 
     if args.grabadas:
         informe = Informe.cargar(ruta)

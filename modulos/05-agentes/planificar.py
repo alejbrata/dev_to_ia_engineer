@@ -15,6 +15,7 @@ import sys
 from pathlib import Path
 from statistics import median
 
+import agente
 import planificador
 import plataforma
 from curso_core import ClienteLLM
@@ -56,17 +57,19 @@ def ejecutar_todos(cliente: ClienteLLM, escenarios) -> Informe:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--grabadas", action="store_true", help="no llama al modelo")
+    agente.argumento_rol(parser)
     args = parser.parse_args()
+    resultados = agente.usar_rol(args.rol, RESULTADOS)
     escenarios = [e for e in plataforma.cargar() if e.particion == "desarrollo"]
-    ruta = RESULTADOS / "comparacion-planificador.jsonl"
+    ruta = resultados / "comparacion-planificador.jsonl"
     if args.grabadas:
         plan = Informe.cargar(ruta)
     else:
         plan = ejecutar_todos(ClienteLLM(), escenarios)
         plan.guardar(ruta)
     informes = {
-        "workflow": Informe.cargar(RESULTADOS / "comparacion-workflow.jsonl"),
-        "agente": Informe.cargar(RESULTADOS / "comparacion-agente.jsonl"),
+        "workflow": Informe.cargar(resultados / "comparacion-workflow.jsonl"),
+        "agente": Informe.cargar(resultados / "comparacion-agente.jsonl"),
         "planificador": plan,
     }
 

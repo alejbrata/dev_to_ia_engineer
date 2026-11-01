@@ -86,11 +86,37 @@ Cómo leerla:
 
 ## Claude
 
-Anthropic no usa el formato de OpenAI: tiene su propia API. `curso_core` la habla con su SDK oficial (proveedor de tipo `anthropic`), así que se usa igual, con el rol `chat_claude`: `con_api.py --rol chat_claude`. Los detalles, y lo que el cliente hace distinto con Claude, están en el [anexo A](../a-claude-y-claude-code/). Esa integración aún no se ha probado contra la API real.
+Anthropic no usa el formato de OpenAI: tiene su propia API. `curso_core` la habla con su SDK oficial (proveedor de tipo `anthropic`), así que se usa igual, con el rol `chat_claude`: `con_api.py --rol chat_claude`. Los detalles, y lo que el cliente hace distinto con Claude, están en el [anexo A](../a-claude-y-claude-code/). Esa integración, herramientas incluidas, está probada con tests, pero aún no contra la API real.
 
 ## Otros proveedores
 
 Cualquier proveedor con API compatible con OpenAI (Hugging Face Inference Providers, que ya usa el rol `remoto` del módulo 1, vLLM en tu propio servidor, y muchos otros) se configura igual: una sección en `[providers]` con `tipo = "openai"`, su `base_url`, el nombre de la variable de su clave y, si lo pide, `parametro_max_tokens`. Y un rol que lo use.
+
+## Agentes con un modelo comercial
+
+Las prácticas del módulo 5 usan el modelo local del rol `agente`. Todas aceptan `--rol` para repetirlas con otro modelo, sin tocar el código:
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/05-agentes/traza.py busqueda-disco --rol chat_openai
+uv run python modulos/05-agentes/memoria_y_contexto.py --rol chat_claude
+uv run python modulos/05-agentes/comite.py --rol chat_hf
+```
+
+| Rol | Modelo y proveedor | Clave en `.env` | Estado (2026-11) |
+| --- | --- | --- | --- |
+| `chat_openai` | El modelo barato de OpenAI | `OPENAI_API_KEY` | Probado: la lección 15 y `traza.py` |
+| `chat_claude` | Claude, con el SDK oficial | `ANTHROPIC_API_KEY` | Probado con tests, no contra la API real |
+| `chat_hf` | Un Qwen3 de 235B en Hugging Face Inference Providers, de la familia del modelo local y unas 30 veces mayor | `HF_TOKEN` y créditos | Configurado; sin créditos, la API responde 402 |
+
+Los nombres exactos de los modelos están en `config/models.toml`. Puedes cambiarlos por otros, o añadir roles, siempre que el modelo admita herramientas: en Hugging Face, la API `/v1/models` dice qué proveedores las admiten para cada modelo.
+
+Cómo funciona y qué tener en cuenta:
+
+- **Solo cambia el agente.** `--rol` redirige el rol `agente` durante la ejecución (con la variable de entorno `CURSO_ROLES`, que también puedes fijar a mano: `CURSO_ROLES=agente=chat_claude`). Los embeddings y la búsqueda siguen siendo locales. Las trazas registran el proveedor y el modelo reales.
+- **Tus resultados no pisan los de las lecciones**: se guardan en `resultados/<rol>/`. Con `--grabadas --rol chat_openai` vuelves a ver los tuyos, y con `ver_caso.py chat_openai/memoria-completo` lees un caso. Si una práctica compara con otra anterior (la 09 con la 07, por ejemplo), ejecuta antes esa con el mismo `--rol`.
+- **Cuesta dinero, y las prácticas largas llaman mucho al modelo.** Como referencia, con `chat_openai` la lección 15 entera costó 0,015 $, y una traza de un escenario, menos de un céntimo. Con `chat_claude` (Opus) el precio por token es bastante mayor; en `config/models.toml` tienes alternativas más baratas. Mira la columna de coste de cada práctica o `trazas/llamadas.jsonl`.
+- **Sin razonamiento.** Los agentes del curso desactivan el razonamiento, y en OpenAI eso es obligatorio: sus modelos actuales rechazan las herramientas en modo razonamiento con un 400 (`curso_core` envía `reasoning_effort="none"`). La parte 4 de `bucle.py`, que mide razonar en cada paso, solo funciona con el modelo local.
+- **Los resultados no son comparables con los de las lecciones** sin más: otro modelo, otros fallos. Es justo lo interesante. La lección 15 lo mide: con el modelo local, el comité compensa; con el comercial, casi basta un agente.
 
 ## Errores frecuentes
 

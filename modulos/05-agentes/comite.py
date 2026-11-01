@@ -8,8 +8,10 @@
 
 El rol comercial solo se ejecuta si hay OPENAI_API_KEY en .env (cuesta dinero: unos céntimos).
 Con --humano, apruebas tú cada plan. Con --grabadas no llama a ningún modelo. Con
---incidente ID, ejecuta solo ese incidente (una media hora en local) y no guarda nada.
-Uso: `uv run python modulos/05-agentes/comite.py [--grabadas | --humano] [--incidente ID]`
+--incidente ID, ejecuta solo ese incidente (una media hora en local) y no guarda nada. Con
+--rol, solo ese modelo (por ejemplo chat_claude o chat_hf), guardado en resultados/<rol>/.
+Uso: `uv run python modulos/05-agentes/comite.py [--grabadas | --humano] [--incidente ID]
+[--rol ROL]`
 """
 
 from __future__ import annotations
@@ -47,22 +49,25 @@ def severidad_ok(r: ResultadoCaso, esperada: dict[str, str]) -> bool:
     return bool(r.salida) and json.loads(r.salida)["severidad"] == esperada[r.caso.split("|")[2]]
 
 
-def configuraciones() -> list[tuple[str, str]]:
-    roles = [LOCAL]
-    ClienteLLM()  # carga .env en el entorno
-    if os.environ.get("OPENAI_API_KEY"):
-        roles.append(COMERCIAL)
-    return [(sistema, rol) for rol in roles for sistema in ("agente único", "comité")]
+def configuraciones(rol: str | None) -> list[tuple[str, str]]:
+    """Sin rol, el local y el comercial (si hay clave); con rol, solo ese modelo."""
+    cliente = ClienteLLM()  # carga .env en el entorno
+    if rol:
+        roles = [rol]
+    else:
+        clave = cliente.config.resolver(COMERCIAL)[1].api_key_env
+        roles = [LOCAL] + ([COMERCIAL] if clave and os.environ.get(clave) else [])
+    return [(sistema, r) for r in roles for sistema in ("agente único", "comité")]
 
 
-def ejecutar_todo(casos, aprobar, ruta: Path | None) -> Informe:
+def ejecutar_todo(casos, aprobar, ruta: Path | None, solo: str | None = None) -> Informe:
     """Guarda en `ruta` al terminar cada configuración: si falla la siguiente (sin saldo,
     un 400 del proveedor), no se pierde la hora de la parte local."""
     cliente = ClienteLLM()
     indices = {area: crisis.indice(cliente, area) for area in crisis.AREAS}
     indice_todo = crisis.indice(cliente, None)
     resultados = []
-    for sistema, rol in configuraciones():
+    for sistema, rol in configuraciones(solo):
         cliente.descargar_modelo(LOCAL)
         for c in casos:
             if sistema == "agente único":
@@ -105,19 +110,24 @@ def main() -> int:
         choices=[c.id for c in casos],
         help="solo ese incidente, para probar antes (no guarda los resultados)",
     )
+    parser.add_argument(
+        "--rol",
+        help="solo ese modelo (un rol de config/models.toml, como chat_claude o chat_hf), "
+        "con los resultados en resultados/<rol>/",
+    )
     args = parser.parse_args()
     if args.incidente and args.grabadas:
         parser.error("--incidente es para ejecutar; con --grabadas se muestran los cuatro")
     if args.incidente:
         casos = [c for c in casos if c.id == args.incidente]
-    ruta = RESULTADOS / "comite.jsonl"
+    ruta = (RESULTADOS / args.rol if args.rol else RESULTADOS) / "comite.jsonl"
 
     if args.grabadas:
         informe = Informe.cargar(ruta)
     else:
         aprobar = aprobar_en_terminal if args.humano else (lambda _: {"aprobada": True})
         guardar = not (args.humano or args.incidente)
-        informe = ejecutar_todo(casos, aprobar, ruta if guardar else None)
+        informe = ejecutar_todo(casos, aprobar, ruta if guardar else None, args.rol)
 
     por_caso = informe.por_caso()
     configs = list(dict.fromkeys("|".join(r.caso.split("|")[:2]) for r in informe.resultados))

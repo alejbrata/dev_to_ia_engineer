@@ -18,6 +18,7 @@ import sys
 from pathlib import Path
 from statistics import median
 
+import agente
 import multiagente
 import plataforma
 from curso_core import ClienteLLM
@@ -90,10 +91,12 @@ def main() -> int:
         action="store_true",
         help="añade la revisión a ciegas a los resultados grabados, sin repetir la investigación",
     )
+    agente.argumento_rol(parser)
     args = parser.parse_args()
+    resultados = agente.usar_rol(args.rol, RESULTADOS)
     escenarios = plataforma.cargar()
     por_id = {e.id: e for e in escenarios}
-    ruta = RESULTADOS / "multiagente.jsonl"
+    ruta = resultados / "multiagente.jsonl"
 
     if args.completar:
         sistema, cliente = Informe.cargar(ruta), ClienteLLM()
@@ -128,7 +131,7 @@ def main() -> int:
             rs.append(ResultadoCaso(caso=r.caso, ok=c.ok, salida="", detalle={"motivo": c.motivo}))
         informes[v] = Informe(version=v, resultados=rs)
         motivos[v] = {r.caso: r.detalle["motivo"] for r in rs}
-    unico = Informe.cargar(RESULTADOS / "memoria-completo.jsonl")
+    unico = Informe.cargar(resultados / "memoria-completo.jsonl")
 
     d = sistema.por_caso()[EJEMPLO].detalle
     print(f"1. {EJEMPLO} en la pizarra")

@@ -46,7 +46,8 @@ Lo que el cliente hace distinto con Claude, y por qué:
 - **Pone siempre `max_tokens`**, porque en Claude es obligatorio: el de la práctica o, si no lo fija, 16000.
 - **Pide el esquema JSON estricto** en la salida estructurada (`extraer`), con los objetos cerrados, igual que en OpenAI.
 - **Activa la reserva automática ante rechazos** en los modelos que la admiten: si el modelo declina una petición por sus filtros de seguridad, la API la repite con otro modelo dentro de la misma llamada.
-- **No admite herramientas ni logprobs** en esta versión de `curso_core`: las prácticas que los usan (módulos 1 y 2) siguen necesitando otro proveedor.
+- **Traduce las herramientas a bloques.** La API de Claude no usa el formato de OpenAI para las herramientas: cada llamada que pide el modelo llega como un bloque `tool_use`, y cada resultado vuelve como un bloque `tool_result` en un mensaje del usuario, todos los seguidos en el mismo mensaje. `curso_core` hace esa traducción, así que los agentes del módulo 5 funcionan con Claude sin cambios (`--rol chat_claude`, ver el [anexo G](../g-apis-comerciales/#agentes-con-un-modelo-comercial)).
+- **No admite logprobs**: la práctica de la lección 1.03 que los usa sigue necesitando otro proveedor.
 
 ### Llamar al SDK directamente
 

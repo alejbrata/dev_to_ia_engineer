@@ -114,13 +114,15 @@ def caida(cliente, indice, escenario, idempotente: bool) -> dict:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--grabadas", action="store_true", help="no llama al modelo")
+    agente.argumento_rol(parser)
     args = parser.parse_args()
+    resultados = agente.usar_rol(args.rol, RESULTADOS)
     escenarios = [e for e in plataforma.cargar() if e.particion == "desarrollo"]
     rutas = {
-        r: RESULTADOS / f"aguante-{'reintentos' if r else 'sin-reintentos'}.jsonl"
+        r: resultados / f"aguante-{'reintentos' if r else 'sin-reintentos'}.jsonl"
         for r in (False, True)
     }
-    ruta_caida = RESULTADOS / "aguante-caida.json"
+    ruta_caida = resultados / "aguante-caida.json"
 
     if args.grabadas:
         informes = {r: Informe.cargar(ruta) for r, ruta in rutas.items()}
@@ -138,7 +140,7 @@ def main() -> int:
         ruta_caida.write_text(json.dumps(caidas, ensure_ascii=False, indent=2), encoding="utf-8")
 
     n = len(escenarios)
-    normal = Informe.cargar(RESULTADOS / "memoria-completo.jsonl")
+    normal = Informe.cargar(resultados / "memoria-completo.jsonl")
     ids = {e.id for e in escenarios}
     sin_fallos = [r for r in normal.resultados if r.caso in ids]
     print(f"1. Las lecturas fallan el {PROB_FALLO:.0%} de las veces, en los {n} escenarios")

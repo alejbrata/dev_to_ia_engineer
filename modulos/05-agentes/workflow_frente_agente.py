@@ -81,14 +81,16 @@ def con_agente(cliente: ClienteLLM, indice, escenarios) -> Informe:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--grabadas", action="store_true", help="no llama al modelo")
+    agente.argumento_rol(parser)
     args = parser.parse_args()
+    resultados = agente.usar_rol(args.rol, RESULTADOS)
     escenarios = [e for e in plataforma.cargar() if e.particion == "desarrollo"]
     cliente = None if args.grabadas else ClienteLLM()
     indice = None if args.grabadas else plataforma.indice_documentacion(cliente)
 
     informes = {}
     for nombre, funcion in [("workflow", con_workflow), ("agente", con_agente)]:
-        ruta = RESULTADOS / f"comparacion-{nombre}.jsonl"
+        ruta = resultados / f"comparacion-{nombre}.jsonl"
         if args.grabadas:
             informes[nombre] = Informe.cargar(ruta)
         else:

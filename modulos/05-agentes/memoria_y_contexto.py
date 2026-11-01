@@ -81,10 +81,12 @@ def fila(nombre: str, inf: Informe, n: int) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--grabadas", action="store_true", help="no llama al modelo")
+    agente.argumento_rol(parser)
     args = parser.parse_args()
+    resultados = agente.usar_rol(args.rol, RESULTADOS)
     todos = plataforma.cargar()
     desarrollo = [e for e in todos if e.particion == "desarrollo"]
-    rutas = {v: RESULTADOS / f"memoria-{v}.jsonl" for v in ["completo", "recortado", "memoria"]}
+    rutas = {v: resultados / f"memoria-{v}.jsonl" for v in ["completo", "recortado", "memoria"]}
 
     if args.grabadas:
         informes = {v: Informe.cargar(r) for v, r in rutas.items()}

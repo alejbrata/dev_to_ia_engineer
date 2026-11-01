@@ -107,10 +107,12 @@ def main() -> int:
     parser.add_argument(
         "--solo-variado", action="store_true", help="repite solo la medición variada"
     )
+    agente.argumento_rol(parser)
     args = parser.parse_args()
+    resultados = agente.usar_rol(args.rol, RESULTADOS)
     escenarios = [e for e in plataforma.cargar() if e.particion == "prueba"]
     variantes = json.loads((DATOS / "alertas_variantes.json").read_text(encoding="utf-8"))
-    rutas = {(s, m): RESULTADOS / f"evals-{s}{SUFIJO[m]}.jsonl" for s in SISTEMAS for m in MODOS}
+    rutas = {(s, m): resultados / f"evals-{s}{SUFIJO[m]}.jsonl" for s in SISTEMAS for m in MODOS}
 
     if args.grabadas:
         informes = {clave: Informe.cargar(r) for clave, r in rutas.items()}

@@ -8,9 +8,12 @@ infinitos. Cada paso queda registrado (herramientas, tokens, tiempo) para poder 
 
 from __future__ import annotations
 
+import argparse
+import os
 import time
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 from typing import Literal
 
 from curso_core import ClienteLLM, Herramienta, Mensaje, Opciones, PromptRenderizado, prompts
@@ -19,6 +22,27 @@ from pydantic import BaseModel
 
 OPCIONES = Opciones(temperatura=0, max_tokens=800)
 MAX_PASOS = 10
+ROL = "agente"  # el modelo local del módulo, elegido midiendo en la lección 02
+
+
+def argumento_rol(parser: argparse.ArgumentParser) -> None:
+    """La opción --rol de las prácticas: repetirlas con otro modelo, sin tocar el código."""
+    parser.add_argument(
+        "--rol",
+        default=ROL,
+        help="el modelo, como rol de config/models.toml: por defecto el local; por ejemplo "
+        "chat_openai, chat_claude o chat_hf (necesitan su clave en .env y cuestan dinero)",
+    )
+
+
+def usar_rol(rol: str, resultados: Path) -> Path:
+    """Hace que el rol `agente` sea `rol` en todo el proceso (CURSO_ROLES, en curso_core) y
+    devuelve dónde guardar: con otro modelo, en `resultados/<rol>/`, para no pisar los
+    resultados de las lecciones."""
+    if rol == ROL:
+        return resultados
+    os.environ["CURSO_ROLES"] = f"{ROL}={rol}"
+    return resultados / rol
 
 
 class Uso(BaseModel):

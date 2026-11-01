@@ -18,6 +18,7 @@ import sys
 from pathlib import Path
 from statistics import median
 
+import agente
 import plataforma
 from curso_core import ClienteLLM
 from curso_core.evals import Informe, ResultadoCaso, comparar, prueba_mcnemar
@@ -126,9 +127,11 @@ def main() -> int:
     modo = parser.add_mutually_exclusive_group()
     modo.add_argument("--grabadas", action="store_true", help="no llama al modelo")
     modo.add_argument("--humano", action="store_true", help="apruebas tú cada incidencia")
+    agente.argumento_rol(parser)
     args = parser.parse_args()
+    resultados = agente.usar_rol(args.rol, RESULTADOS)
     escenarios = [e for e in plataforma.cargar() if e.particion == "desarrollo"]
-    ruta, ruta_caida = RESULTADOS / "grafo.jsonl", RESULTADOS / "grafo-caida.json"
+    ruta, ruta_caida = resultados / "grafo.jsonl", resultados / "grafo-caida.json"
 
     if args.grabadas:
         informe = Informe.cargar(ruta)
@@ -180,7 +183,7 @@ def main() -> int:
 
     n = len(escenarios)
     rs = informe.resultados
-    workflow = Informe.cargar(RESULTADOS / "comparacion-workflow.jsonl")
+    workflow = Informe.cargar(resultados / "comparacion-workflow.jsonl")
     print(f"\n4. Los {n} escenarios de desarrollo, aprobando todo")
     print(
         f"   {'':9} {'estado ok':>9} {'llamadas al modelo':>19} {'tokens':>8} {'s/escenario':>11}"

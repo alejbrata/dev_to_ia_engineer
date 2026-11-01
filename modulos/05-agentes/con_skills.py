@@ -76,10 +76,12 @@ def ejecutar_todos(cliente, indice, escenarios, version: str, lista) -> Informe:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--grabadas", action="store_true", help="no llama al modelo")
+    agente.argumento_rol(parser)
     args = parser.parse_args()
+    resultados = agente.usar_rol(args.rol, RESULTADOS)
     escenarios = [e for e in plataforma.cargar() if e.particion == "desarrollo"]
     lista = skills.desde_corpus()
-    rutas = {v: RESULTADOS / f"skills-{v}.jsonl" for v in ("todo", "skills")}
+    rutas = {v: resultados / f"skills-{v}.jsonl" for v in ("todo", "skills")}
 
     if args.grabadas:
         informes = {v: Informe.cargar(r) for v, r in rutas.items()}
@@ -106,7 +108,7 @@ def main() -> int:
         version="rag",
         resultados=[
             r
-            for r in Informe.cargar(RESULTADOS / "memoria-completo.jsonl").resultados
+            for r in Informe.cargar(resultados / "memoria-completo.jsonl").resultados
             if r.caso in ids
         ],
     )

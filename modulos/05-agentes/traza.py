@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import sys
 import textwrap
+from pathlib import Path
 
 import agente
 import plataforma
@@ -40,7 +41,9 @@ def main() -> int:
     parser.add_argument(
         "--skills", action="store_true", help="la documentación como skills (lección 14)"
     )
+    agente.argumento_rol(parser)
     args = parser.parse_args()
+    agente.usar_rol(args.rol, Path())  # traza.py no guarda resultados
     escenario = {e.id: e for e in plataforma.cargar()}[args.escenario]
     versiones = {"v1": plataforma.HERRAMIENTAS_V1, "v2": plataforma.HERRAMIENTAS}
 
