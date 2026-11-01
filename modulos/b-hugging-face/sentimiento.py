@@ -155,7 +155,10 @@ def main() -> int:
     sistemas = [*ENCODERS, "llm:agente", *[f"llm:{r}" for r in args.llm], "embeddings+regresion"]
 
     def ruta(nombre: str) -> Path:
-        return RESULTADOS / f"sentimiento-{nombre.replace('/', '__').replace(':', '-')}.jsonl"
+        # Nombres cortos: con el id completo del modelo, la ruta puede pasar de los 260
+        # caracteres que admite Windows y el clon del repo falla.
+        corto = nombre.split("/")[-1].split("-")[0] if "/" in nombre else nombre
+        return RESULTADOS / f"sentimiento-{corto.replace(':', '-').lower()}.jsonl"
 
     if not args.grabadas:
         textos, esperadas = datos.cargar("test")
