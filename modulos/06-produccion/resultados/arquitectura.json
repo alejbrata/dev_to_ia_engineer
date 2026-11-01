@@ -15,17 +15,17 @@
   "cache": false,
   "fallback": false,
   "errores": [],
-  "ms": 16188,
-  "ms_cliente": 17169
+  "ms": 14292,
+  "ms_cliente": 14296
  },
  "cache": {
   "peticiones": 40,
   "distintas": 12,
   "sin cache": {
    "n": 40,
-   "p50_s": 13.8595,
-   "p95_s": 20.34,
-   "total_s": 576.923,
+   "p50_s": 13.3785,
+   "p95_s": 19.812,
+   "total_s": 539.042,
    "aciertos_cache": 0
   },
   "salud": {
@@ -42,32 +42,32 @@
   },
   "con cache": {
    "n": 40,
-   "p50_s": 0.316,
-   "p95_s": 18.67,
-   "total_s": 183.473,
+   "p50_s": 0.003,
+   "p95_s": 18.064,
+   "total_s": 164.989,
    "aciertos_cache": 28
   }
  },
  "concurrencia": {
   "en serie": {
    "n": 6,
-   "p50_s": 12.835,
-   "p95_s": 20.418,
-   "total_s": 84.543,
-   "pared_s": 84.54297169996426,
+   "p50_s": 13.026,
+   "p95_s": 18.899,
+   "total_s": 80.731,
+   "pared_s": 80.73154959990643,
    "respaldo": 0
   },
   "a la vez": {
    "n": 6,
-   "p50_s": 39.003,
-   "p95_s": 77.549,
-   "total_s": 268.079,
-   "pared_s": 77.5547804000089,
+   "p50_s": 41.517,
+   "p95_s": 76.15,
+   "total_s": 267.384,
+   "pared_s": 76.1572285000002,
    "respaldo": 2
   },
   "por la cola": {
-   "respuesta_al_encolar_ms": 260.5,
-   "pared_s": 85.90703969995957,
+   "respuesta_al_encolar_ms": 4.5,
+   "pared_s": 83.04699780000374,
    "respaldo": 0
   }
  },

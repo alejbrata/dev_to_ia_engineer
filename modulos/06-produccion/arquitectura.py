@@ -32,6 +32,9 @@ import httpx
 AQUI = Path(__file__).resolve().parent
 RESULTADOS = AQUI / "resultados"
 URL = "http://127.0.0.1:8100"
+# Un cliente HTTP para todas las peticiones: crear uno por petición cuesta unos 300 ms
+# en Windows, más que lo que tarda el servicio en responder desde la caché (lección 6.03).
+CLIENTE = httpx.Client(timeout=600)
 sys.path.insert(0, str(AQUI.parent / "04-evals"))
 
 
@@ -73,7 +76,7 @@ class Servidor:
         )
         for _ in range(300):
             try:
-                httpx.get(f"{URL}/salud", timeout=2)
+                CLIENTE.get(f"{URL}/salud", timeout=2)
                 return self
             except httpx.HTTPError:
                 time.sleep(1)
@@ -86,7 +89,7 @@ class Servidor:
 
 def preguntar(pregunta: str) -> dict:
     inicio = time.perf_counter()
-    r = httpx.post(f"{URL}/preguntas", json={"pregunta": pregunta}, timeout=600).json()
+    r = CLIENTE.post(f"{URL}/preguntas", json={"pregunta": pregunta}, timeout=600).json()
     return r | {"ms_cliente": round((time.perf_counter() - inicio) * 1000)}
 
 
@@ -108,7 +111,7 @@ def parte_cache(preguntas: list[str]) -> dict:
         with Servidor(cache):
             preguntar(preguntas[20])  # calentar: carga el modelo en memoria
             rs = [preguntar(p) for p in peticiones]
-            salud = httpx.get(f"{URL}/salud").json()
+            salud = CLIENTE.get(f"{URL}/salud").json()
         salida["con cache" if cache else "sin cache"] = resumen([r["ms_cliente"] for r in rs]) | {
             "aciertos_cache": sum(r["cache"] for r in rs)
         }
@@ -142,7 +145,7 @@ def parte_concurrencia(preguntas: list[str]) -> dict:
             t0 = time.perf_counter()
             encolar.append(
                 (
-                    httpx.post(f"{URL}/trabajos", json={"pregunta": p}).json()["id"],
+                    CLIENTE.post(f"{URL}/trabajos", json={"pregunta": p}).json()["id"],
                     round((time.perf_counter() - t0) * 1000),
                 )
             )
@@ -150,7 +153,7 @@ def parte_concurrencia(preguntas: list[str]) -> dict:
         while pendientes:
             time.sleep(1)
             for i in list(pendientes):
-                trabajo = httpx.get(f"{URL}/trabajos/{i}").json()
+                trabajo = CLIENTE.get(f"{URL}/trabajos/{i}").json()
                 if trabajo["estado"] == "hecho":
                     pendientes.discard(i)
                     hechos.append(trabajo["resultado"])
@@ -287,11 +290,11 @@ def main() -> int:
 
     c = r["cache"]
     print(f"\n2. {c['peticiones']} peticiones, {c['distintas']} preguntas distintas")
-    print(f"   {'':12} {'p50':>7} {'p95':>7} {'total':>8} {'aciertos de caché':>18}")
+    print(f"   {'':12} {'p50':>8} {'p95':>8} {'total':>8} {'aciertos de caché':>18}")
     for nombre in ("sin cache", "con cache"):
         x = c[nombre]
         print(
-            f"   {nombre:12} {x['p50_s']:>6.1f}s {x['p95_s']:>6.1f}s {x['total_s']:>7.0f}s "
+            f"   {nombre:12} {x['p50_s']:>7.3f}s {x['p95_s']:>7.3f}s {x['total_s']:>7.0f}s "
             f"{x['aciertos_cache']:>18}"
         )
 

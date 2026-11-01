@@ -94,17 +94,17 @@ uv run python modulos/06-produccion/arquitectura.py
    respuesta: Usa el runbook: pagos sin conexiones a la base de datos.
    fuentes: ['runbook-pagos-conexiones#0', 'postmortem-pagos-2026-03#2', 'runbook-pagos-conexiones#1']
    rol: chat_grande (qwen2.5:7b) · caché: False · fallback: False
-   16188 ms en el servidor, 17169 ms vistos desde el cliente
+   14292 ms en el servidor, 14296 ms vistos desde el cliente
 
 2. 40 peticiones, 12 preguntas distintas
-                    p50     p95    total  aciertos de caché
-   sin cache      13.9s   20.3s     577s                  0
-   con cache       0.3s   18.7s     183s                 28
+                     p50      p95    total  aciertos de caché
+   sin cache     13.379s  19.812s     539s                  0
+   con cache      0.003s  18.064s     165s                 28
 
 3. Seis preguntas: en serie, a la vez y por la cola (sin caché)
-   en serie     p50  12.8 s · p95  20.4 s · todas en   85 s · respondió el respaldo: 0
-   a la vez     p50  39.0 s · p95  77.5 s · todas en   78 s · respondió el respaldo: 2
-   por la cola  cada POST responde en 260 ms · todas en   86 s · respondió el respaldo: 0
+   en serie     p50  13.0 s · p95  18.9 s · todas en   81 s · respondió el respaldo: 0
+   a la vez     p50  41.5 s · p95  76.2 s · todas en   76 s · respondió el respaldo: 2
+   por la cola  cada POST responde en 4 ms · todas en   83 s · respondió el respaldo: 0
 
 4. El modelo principal cae: cuánto tarda en responder el de respaldo
    el principal...         timeout  reintentos  respuesta en  quién
@@ -123,17 +123,19 @@ uv run python modulos/06-produccion/arquitectura.py
 
 ### La caché mejora la mediana, no la cola
 
-Con 40 peticiones de 12 preguntas distintas, la caché acertó 28 veces: todas las repetidas. La mediana bajó de 13,9 s a 0,3 s, y el tiempo total, de 577 s a 183 s, un tercio. Pero el p95 apenas cambió: 20,3 s sin caché y 18,7 s con caché. El p95 lo marcan las preguntas que no están en la caché, que siguen pasando por el modelo. Una caché hace el servicio más barato y la experiencia típica mucho mejor, pero no arregla la peor experiencia. Para eso hay que hacer más rápido el camino lento.
+Con 40 peticiones de 12 preguntas distintas, la caché acertó 28 veces: todas las repetidas. La mediana bajó de 13,4 s a 3 ms, y el tiempo total, de 539 s a 165 s, menos de un tercio. Pero el p95 apenas cambió: 19,8 s sin caché y 18,1 s con caché. El p95 lo marcan las preguntas que no están en la caché, que siguen pasando por el modelo. Una caché hace el servicio más barato y la experiencia típica mucho mejor, pero no arregla la peor experiencia. Para eso hay que hacer más rápido el camino lento.
+
+Una nota sobre cómo se midió: la primera versión de la práctica daba 0,3 s de mediana con caché, cuando el servidor respondía en 1 ms. Era el cliente de la propia práctica, que creaba una conexión nueva en cada petición; la lección 03 lo cuenta, porque es un error típico al medir latencias.
 
 Cuánto ayuda depende de cuánto se repiten las preguntas. Aquí, con pesos de Zipf, el 70 % eran repetidas. En un asistente interno real, donde muchas personas preguntan lo mismo, es razonable; con preguntas casi únicas, la caché exacta no acertaría casi nunca. Mide la tasa de aciertos en producción (lección 6.03) antes de dar por hecho el ahorro.
 
 ### Seis a la vez: más espera, y dos respuestas peores sin que nadie lo vea
 
-Ollama, en esta configuración, atiende las peticiones de una en una. Con seis preguntas a la vez, el total es parecido al de en serie (78 s frente a 85, algo menos porque dos las respondió el modelo pequeño, más rápido), pero cada petición espera a las anteriores: la mediana pasa de 12,8 s a 39 s y el p95, de 20,4 s a 77,5 s.
+Ollama, en esta configuración, atiende las peticiones de una en una. Con seis preguntas a la vez, el total es parecido al de en serie (76 s frente a 81, algo menos porque dos las respondió el modelo pequeño, más rápido), pero cada petición espera a las anteriores: la mediana pasa de 13 s a 41,5 s y el p95, de 18,9 s a 76,2 s.
 
 Y hay algo peor. Dos de las seis llegaron al modelo después de esperar más de 45 s en su cola, el timeout del principal saltó y las respondió el modelo de respaldo. El servicio devolvió 200 en las seis, con texto razonable. Nadie se entera de que dos respuestas salieron del modelo que, en la parte 5, falla 12 preguntas más. Es la anatomía de esta lección.
 
-Por la cola no pasó: el trabajador procesa los trabajos de uno en uno, así que cada llamada llega a un modelo libre y ninguna caduca. El cliente recibe su identificador en 0,26 s y las seis están hechas en 86 s, como en serie. La cola no hace el sistema más rápido; hace explícita la espera y la saca del timeout.
+Por la cola no pasó: el trabajador procesa los trabajos de uno en uno, así que cada llamada llega a un modelo libre y ninguna caduca. El cliente recibe su identificador en 4 ms y las seis están hechas en 83 s, como en serie. La cola no hace el sistema más rápido; hace explícita la espera y la saca del timeout.
 
 ### El fallback depende de cómo cae el principal
 
@@ -169,10 +171,10 @@ Con la eval del módulo 4, el modelo de respaldo acierta 40 de 58 preguntas, fre
 En la parte 3, con seis peticiones a la vez, la salida enseña:
 
 ```text
-   a la vez     p50  39.0 s · p95  77.5 s · todas en   78 s · respondió el respaldo: 2
+   a la vez     p50  41.5 s · p95  76.2 s · todas en   76 s · respondió el respaldo: 2
 ```
 
-Y las trazas de `curso_core` del servicio en esos segundos (de la primera ejecución; al repetirla salieron otra vez dos):
+Y las trazas de `curso_core` del servicio en esos segundos (de la primera de tres ejecuciones; en las tres respondió el respaldo a dos de las seis):
 
 ```text
 21:41:10 chat_grande False 45.0 Timeout tras 1 intentos: ReadTimeout('timed out')
@@ -196,7 +198,7 @@ Y las trazas de `curso_core` del servicio en esos segundos (de la primera ejecuc
 <Autoevaluacion
 	preguntas={[
 		{
-			pregunta: 'Activas la caché y la mediana de latencia baja de 14 s a 0,3 s, pero el p95 sigue en 19 s. ¿Qué pasa?',
+			pregunta: 'Activas la caché y la mediana de latencia baja de 13 s a unos milisegundos, pero el p95 sigue en 18 s. ¿Qué pasa?',
 			opciones: [
 				{ texto: 'La caché está mal implementada.', porque: 'Acierta en todas las repetidas. El p95 lo marcan las preguntas nuevas, que siguen pasando por el modelo ("La caché mejora la mediana, no la cola").' },
 				{ texto: 'Es lo esperable: la caché acelera lo repetido; la peor experiencia la dan las preguntas que no están en ella.', correcta: true, porque: 'Para bajar el p95 hay que hacer más rápido el camino lento, no cachear más.' },
