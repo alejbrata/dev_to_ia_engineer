@@ -1,0 +1,39 @@
+[
+  {
+    "idempotente": false,
+    "error": "el proceso muere justo después de abrir la incidencia",
+    "mensajes_en_checkpoint": 6,
+    "incidencias_tras_la_caida": 1,
+    "al_reanudar": [
+      "abrir_incidencia → Incidencia INC-2 abierta para notificaciones."
+    ],
+    "incidencias_finales": [
+      {
+        "id": "INC-1",
+        "servicio": "notificaciones",
+        "severidad": "alta"
+      },
+      {
+        "id": "INC-2",
+        "servicio": "notificaciones",
+        "severidad": "alta"
+      }
+    ]
+  },
+  {
+    "idempotente": true,
+    "error": "el proceso muere justo después de abrir la incidencia",
+    "mensajes_en_checkpoint": 6,
+    "incidencias_tras_la_caida": 1,
+    "al_reanudar": [
+      "abrir_incidencia → La incidencia INC-1 para notificaciones ya estaba abierta; no se dupli"
+    ],
+    "incidencias_finales": [
+      {
+        "id": "INC-1",
+        "servicio": "notificaciones",
+        "severidad": "alta"
+      }
+    ]
+  }
+]

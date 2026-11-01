@@ -37,12 +37,13 @@ class Paso(BaseModel):
     tokens_entrada: int
     tokens_salida: int
     segundos: float
+    coste_usd: float = 0.0  # 0 con modelos locales; con una API comercial, lo que costó
 
 
 class Ejecucion(BaseModel):
     pasos: list[Paso]
     respuesta: str
-    terminacion: Literal["respuesta", "limite_pasos"]
+    terminacion: Literal["respuesta", "limite_pasos", "presupuesto"]
 
     @property
     def tokens(self) -> int:
@@ -51,6 +52,10 @@ class Ejecucion(BaseModel):
     @property
     def segundos(self) -> float:
         return sum(p.segundos for p in self.pasos)
+
+    @property
+    def coste_usd(self) -> float:
+        return sum(p.coste_usd for p in self.pasos)
 
     @property
     def usos(self) -> list[Uso]:
@@ -69,14 +74,21 @@ def ejecutar(
     variables: dict[str, str] | None = None,
     contexto: Callable[[list[Mensaje]], list[Mensaje]] | None = None,
     paralelo: bool = False,
+    historial: list[Mensaje] | None = None,
+    al_terminar_paso: Callable[[list[Mensaje]], None] | None = None,
+    presupuesto_tokens: int | None = None,
 ) -> Ejecucion:
     """Ejecuta el bucle. `variables` rellena el prompt (por defecto, la alerta del escenario).
     `contexto`, si se pasa, decide qué parte de la conversación ve el modelo en cada paso
     (lección 07); la conversación completa se conserva igual. Con `paralelo`, las herramientas
-    que el modelo pide en un mismo paso se ejecutan a la vez (lección 08)."""
+    que el modelo pide en un mismo paso se ejecutan a la vez (lección 08).
+
+    Para aguantar fallos (lección 13): `historial` reanuda una conversación guardada,
+    `al_terminar_paso` recibe la conversación tras cada paso (para guardar un checkpoint) y
+    `presupuesto_tokens` corta la ejecución cuando los tokens gastados lo superan."""
     variables = variables or {"alerta": plataforma.escenario.alerta}
     renderizado = prompts.renderizar(prompts.cargar(prompt), **variables)
-    mensajes = list(renderizado.mensajes)
+    mensajes = list(historial) if historial else list(renderizado.mensajes)
     opciones = opciones.model_copy(update={"herramientas": herramientas})
     pasos: list[Paso] = []
     for n in range(1, max_pasos + 1):
@@ -95,6 +107,7 @@ def ejecutar(
             tokens_entrada=r.tokens_entrada,
             tokens_salida=r.tokens_salida,
             segundos=0.0,
+            coste_usd=r.coste_usd or 0.0,
         )
         if not r.llamadas:
             paso.segundos = time.perf_counter() - inicio
@@ -118,4 +131,9 @@ def ejecutar(
             mensajes.append(Mensaje(role="tool", content=resultado, respuesta_a=llamada))
         paso.segundos = time.perf_counter() - inicio
         pasos.append(paso)
+        if al_terminar_paso:
+            al_terminar_paso(mensajes)
+        gastado = sum(x.tokens_entrada + x.tokens_salida for x in pasos)
+        if presupuesto_tokens is not None and gastado > presupuesto_tokens:
+            return Ejecucion(pasos=pasos, respuesta="", terminacion="presupuesto")
     return Ejecucion(pasos=pasos, respuesta="", terminacion="limite_pasos")

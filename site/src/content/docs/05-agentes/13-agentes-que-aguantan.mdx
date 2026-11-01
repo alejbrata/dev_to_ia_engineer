@@ -1,0 +1,222 @@
+---
+title: "Agentes que aguantan"
+description: "Agentes que aguantan: herramientas que fallan y reintentos en código, presupuestos de tokens, y reanudar tras una caída sin duplicar efectos gracias a la idempotencia"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
+:::note[Revisado: 2026-11]
+Las salidas son reales, con Qwen3 8B sin razonamiento (rol `agente`) en Ollama, sobre CPU. Los fallos de las herramientas son simulados, con una semilla fija para que se puedan repetir.
+:::
+
+## Objetivos
+
+Al terminar esta lección podrás:
+
+- Decidir quién reintenta un fallo (el código o el modelo) y qué se puede reintentar sin riesgo.
+- Poner un presupuesto de tokens a un agente y medir cuántas ejecuciones cortaría.
+- Guardar la conversación del bucle tras cada paso y reanudarla después de una caída.
+- Evitar que una reanudación duplique un efecto, con una clave de idempotencia.
+
+## Teoría
+
+### Lo que falla en producción
+
+En las lecciones anteriores, todo lo que rodea al agente funcionaba: el servidor del modelo respondía, las herramientas también y el proceso no se caía. En producción, nada de eso está garantizado:
+
+- **El modelo**: tiempos de espera, errores 429 por límite de peticiones, 5xx del proveedor. `curso_core` ya reintenta estos con espera creciente y respetando `Retry-After` (módulo 1).
+- **Las herramientas**: el servicio que consultan no responde, devuelve un 503 o tarda demasiado.
+- **El propio proceso**: un despliegue, una falta de memoria o una máquina que se reinicia, a mitad de una ejecución.
+- **El coste**: un agente que entra en bucle, o que lee demasiado, gasta sin límite.
+
+Si vienes de backend, todo esto lo conoces: políticas de reintento (Resilience4j, Spring Retry), cortacircuitos, claves de idempotencia y presupuestos de tiempo por petición. Lo nuevo es que hay un modelo en medio que también reacciona a los fallos, y no siempre bien.
+
+### Quién reintenta
+
+Cuando una herramienta falla, hay dos opciones:
+
+- **Que el error le llegue al modelo**, como cualquier resultado (lecciones 02 y 03). Puede volver a intentarlo, probar otra cosa o rendirse. Cada intento cuesta un paso completo: la conversación entera otra vez, más los tokens de salida.
+- **Que lo reintente el código** antes de que el modelo se entere. Es más barato y más predecible, pero solo es seguro con lo que no tiene efectos: consultar el estado de un servicio dos veces no cambia nada; abrir una incidencia dos veces, sí.
+
+La regla práctica: el código reintenta los errores **transitorios** de las operaciones **sin efectos** (lecturas), con un límite y espera creciente. Los errores que no son transitorios (argumentos inválidos, permisos) y las acciones con efectos no se reintentan a ciegas: el error va al modelo, o a una persona.
+
+### Presupuestos
+
+El límite de pasos de la lección 03 es un presupuesto. Hay otros: tokens, tiempo y dinero. Un presupuesto tiene dos partes: **el límite** y **qué hacer al llegar a él**. Lo razonable para un agente de guardia es parar, devolver lo que tiene y avisar a una persona; nunca seguir en silencio ni fingir que ha terminado. Y el límite se elige mirando cuánto gastan las ejecuciones normales, no a ojo: demasiado bajo, corta las que iban bien; demasiado alto, no protege de nada.
+
+### Reanudar sin duplicar
+
+El grafo de la lección 05 guardaba un checkpoint tras cada nodo. El bucle de agente puede hacer lo mismo: guardar la conversación tras cada paso y, si el proceso cae, reanudarla desde el último paso guardado. Pero tiene la letra pequeña que ya viste: **lo que pasó dentro del paso que cayó se repite**. Si en ese paso el agente abrió una incidencia y el proceso murió antes de guardar, al reanudar el modelo verá una conversación en la que aún no la ha abierto, y la abrirá otra vez.
+
+La solución es la de cualquier API de pagos: una **clave de idempotencia**. El sistema que recibe el efecto (aquí, el gestor de incidencias) recuerda la clave de cada operación y, si llega otra con la misma clave, devuelve la que ya existía en lugar de crear una nueva. La clave tiene que identificar la operación, no el intento: aquí, la alerta y el servicio.
+
+## Práctica
+
+[`aguante.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/aguante.py) tiene las piezas, todas como envoltorios de la plataforma, como la guardia de la lección 11:
+
+- `Inestable`: las lecturas fallan con una probabilidad dada, con un error transitorio (`Error transitorio: el servicio no respondió a tiempo (503).`).
+- `ConReintentos`: reintenta en código esos errores, hasta tres veces, solo en las lecturas.
+- `SistemaIncidencias` y `PlataformaPersistente`: las incidencias se guardan fuera del proceso, en un fichero, como lo haría un gestor de incidencias real. Con `idempotente=True`, la clave es la alerta más el servicio.
+- `CheckpointConversacion`: guarda la conversación del bucle tras cada paso.
+
+El bucle de `agente.py` acepta ahora tres parámetros para esto: `historial` (reanudar una conversación guardada), `al_terminar_paso` (para guardar el checkpoint) y `presupuesto_tokens` (cortar al superarlo):
+
+```python
+ck = aguante.CheckpointConversacion(ruta)
+agente.ejecutar(cliente, plataforma, al_terminar_paso=ck.guardar, ...)
+# ... el proceso cae; en otro proceso:
+agente.ejecutar(cliente, plataforma_nueva, historial=ck.cargar(), al_terminar_paso=ck.guardar, ...)
+```
+
+[`aguantar.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/aguantar.py) mide las tres cosas: el agente con un 30 % de fallos en las lecturas, sin reintentos y con reintentos en código; dónde habrían cortado distintos presupuestos de tokens; y una caída justo después de abrir la incidencia, reanudada sin clave de idempotencia y con ella. Tarda unos 50 minutos en la máquina del curso; con `--grabadas`, un segundo.
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/05-agentes/aguantar.py
+```
+
+```text
+1. Las lecturas fallan el 30% de las veces, en los 9 escenarios
+                    estado ok  fallos  vistos por el modelo  pasos  tokens
+   sin fallos           4 de 9       -                     -     27   37375
+   sin reintentos       3 de 9       9                     9     27   35959
+   con reintentos       4 de 9      14                     0     28   39341
+   (sin fallos: el agente de la lección 07, en otra ejecución)
+   sin reintentos, pagos-pool-sin-despliegue: 1 error(es) → no abrió la incidencia
+   sin reintentos, pagos-token-banco: 1 error(es) → severidad alta (esperada critica)
+   sin reintentos, notificaciones-smtp: 1 error(es) → incidencia correcta
+   sin reintentos, notificaciones-push: 3 error(es) → no abrió la incidencia
+   sin reintentos, usuarios-deadlocks: 1 error(es) → severidad alta (esperada media)
+   sin reintentos, pagos-latencia-pasajera: 2 error(es) → no abrió incidencia, como debía
+
+2. Presupuesto de tokens por ejecución (9 ejecuciones con reintentos)
+   tokens por ejecución: mediana 4400, máximo 5922
+    3000 tokens: se cortarían 3 de 9 (de ellas, 1 acertaban)
+    4000 tokens: se cortarían 1 de 9 (de ellas, 0 acertaban)
+    5000 tokens: se cortarían 0 de 9 (de ellas, 0 acertaban)
+    6000 tokens: se cortarían 0 de 9 (de ellas, 0 acertaban)
+
+3. Caída justo después de abrir la incidencia (notificaciones-smtp) y reanudación
+   sin clave de idempotencia
+     el proceso muere justo después de abrir la incidencia; incidencias en el gestor: 1
+     el checkpoint tiene 6 mensajes; al reanudar:
+       abrir_incidencia → Incidencia INC-2 abierta para notificaciones.
+     incidencias al final: INC-1 (notificaciones, alta), INC-2 (notificaciones, alta)
+   con clave de idempotencia
+     el proceso muere justo después de abrir la incidencia; incidencias en el gestor: 1
+     el checkpoint tiene 6 mensajes; al reanudar:
+       abrir_incidencia → La incidencia INC-1 para notificaciones ya estaba abierta; no se dupli
+     incidencias al final: INC-1 (notificaciones, alta)
+```
+
+## Mide y depura
+
+### El modelo no reintenta: interpreta
+
+Sin reintentos, el modelo vio 9 errores transitorios en 6 escenarios. No repitió ninguna llamada fallida. En lugar de eso, leyó el error como información sobre el incidente: en `pagos-pool-sin-despliegue` escribió que "el estado del servicio de pagos indica un error transitorio (503)"; en `notificaciones-push` buscó "503 transitorio" en la documentación y decidió que no hacía falta incidencia. Es la anatomía de esta lección.
+
+El resultado no se hunde (3 de 9 frente a 4), porque varios de esos errores cayeron en llamadas que no eran decisivas. Pero los fallos que causa son de los peores: decidir con un dato falso sin saberlo.
+
+### Reintentos en código: invisibles para el modelo
+
+Con reintentos en código hubo más fallos inyectados (14, porque cada reintento es otra tirada), y el modelo no vio ninguno: los tres intentos bastaron siempre. El agente acertó 4 de 9, lo mismo que sin fallos, y con prácticamente los mismos pasos y tokens. Es el comportamiento que quieres: los fallos transitorios se resuelven por debajo, sin gastar pasos del modelo ni contaminar su contexto.
+
+Dos matices:
+
+- **Solo las lecturas.** `ConReintentos` no toca `abrir_incidencia`. Reintentar una acción con efectos solo es seguro si es idempotente, como verás en la parte 3.
+- **Con límite.** Si el servicio está caído de verdad, tres intentos fallarán y el error llegará al modelo. Ahí tiene que llegar bien explicado (ver la anatomía) y, si el agente no puede seguir, escalar a una persona.
+
+### Elegir el presupuesto con datos
+
+Las 9 ejecuciones gastan entre 4400 tokens de mediana y 5922 como máximo. Con un presupuesto de 3000 tokens se cortarían 3, y una de ellas iba a acertar; con 4000, 1 (que no acertaba); con 5000, ninguna. Un presupuesto razonable para este agente está algo por encima del máximo observado: corta las ejecuciones anómalas (un bucle, una lectura enorme) sin tocar las normales. Y se revisa cuando cambian el modelo, las herramientas o el prompt, porque cambia lo que gastan.
+
+Estos números salen de simular el corte sobre las ejecuciones grabadas: `cortada()` reproduce la comprobación que hace el bucle tras cada paso. Es una forma barata de elegir el límite sin ejecutar nada más.
+
+### La caída que duplica
+
+La parte 3 es el caso de la letra pequeña. El proceso murió justo después de abrir la incidencia, antes de guardar ese paso. El checkpoint tenía la conversación hasta el paso anterior (6 mensajes): el modelo aún no había abierto nada. Al reanudar, lo primero que hizo fue abrirla, y sin clave de idempotencia el gestor tenía dos: INC-1 e INC-2, iguales. Con clave, el gestor respondió que INC-1 ya estaba abierta y no la duplicó. El modelo hizo exactamente lo mismo en los dos casos; lo que cambió fue el sistema que recibe el efecto.
+
+## Errores frecuentes
+
+**Dejar que el modelo gestione los fallos transitorios.** No los reintenta: los interpreta, y a veces como parte del problema. Reinténtalos en código.
+
+**Reintentar acciones con efectos.** Un reintento de `abrir_incidencia` puede abrir dos. Solo con clave de idempotencia.
+
+**Reintentar sin límite ni espera.** Si el servicio está caído, los reintentos lo empeoran. Limita los intentos y espacia cada uno más que el anterior.
+
+**Un presupuesto elegido a ojo.** Mira cuánto gastan las ejecuciones normales y ponlo algo por encima del máximo.
+
+**Reanudar sin idempotencia.** El checkpoint garantiza no repetir lo terminado; no protege de repetir el paso que cayó.
+
+**Claves de idempotencia por intento.** Si la clave cambia en cada intento (una marca de tiempo, un número aleatorio), no sirve. Tiene que identificar la operación: aquí, la alerta y el servicio.
+
+### Anatomía de un error: el error de la herramienta que se leyó como síntoma
+
+Escenario `notificaciones-push`: no llega ninguna notificación push desde anoche, por credenciales caducadas. Con un 30 % de fallos en las lecturas, el agente hizo esto:
+
+```text
+estado_servicio({'servicio': 'notificaciones'})
+buscar_logs({'servicio': 'notificaciones', 'texto': 'ERROR'})
+buscar_documentacion({'consulta': '503 transitorio'})
+buscar_documentacion({'consulta': '503 transitorio'})
+```
+
+Y respondió:
+
+```text
+No se ha encontrado información relevante sobre el error 503 transitorio en el servicio de notificaciones. Basándome en el estado del servicio y los logs, parece ser un error transitorio que no requiere la apertura de una incidencia. Se recomienda mo[nitorizar]...
+```
+
+La comprobación: `no abrió la incidencia`.
+
+**Cómo leerlo.** Las dos búsquedas en la documentación buscan "503 transitorio": el texto del error que devolvió una herramienta, no algo de la alerta. El modelo recibió `Error transitorio: el servicio no respondió a tiempo (503).` en una de las lecturas y lo tomó como un dato del servicio de notificaciones. A partir de ahí, la investigación fue sobre un problema que no existía, y la conclusión, "error transitorio, no requiere incidencia", es la peor posible: una caída total de las notificaciones, descartada.
+
+**Causa.** Para el modelo, un resultado de herramienta es información sobre el mundo. Un error de la herramienta y un error del servicio que la herramienta consulta se escriben igual: un 503 es un 503. El modelo no tiene forma de saber cuál de los dos es si el mensaje no lo dice. Y no reintentó: los modelos no tienen la costumbre de un cliente HTTP de repetir ante un 503; razonan sobre él.
+
+**Solución.** Dos capas, en este orden:
+
+- **Que el error transitorio no llegue al modelo**: reintentos en código para las lecturas, como `ConReintentos`. En la parte 1, con reintentos, el modelo no vio ningún error y acertó lo mismo que sin fallos.
+- **Si llega, que diga de quién es el error.** Cuando los reintentos se agotan, el mensaje tiene que separar el fallo de la herramienta del estado del servicio, por ejemplo: "No se ha podido consultar el estado de notificaciones: la herramienta no respondió tras 3 intentos. Esto no es información sobre el servicio. Vuelve a intentarlo más tarde o escala a una persona." Es la lección 02 aplicada a los errores: el modelo solo sabe lo que el texto le dice.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'La herramienta que consulta los logs da timeouts de vez en cuando. ¿Quién debería reintentar?',
+			opciones: [
+				{ texto: 'El modelo: verá el error y lo volverá a intentar.', porque: 'En la práctica no reintentó nunca: interpretó el error como parte del problema ("El modelo no reintenta: interpreta").' },
+				{ texto: 'El código, con un límite y espera creciente, porque es una lectura sin efectos.', correcta: true, porque: 'Con reintentos en código, el modelo no vio ningún error y acertó lo mismo que sin fallos.' },
+				{ texto: 'Nadie: si falla, se para el agente.', porque: 'Un fallo transitorio se resuelve casi siempre al repetir; parar por eso es desperdiciar la ejecución.' },
+			],
+		},
+		{
+			pregunta: 'El proceso muere justo después de que el agente abra una incidencia, antes de guardar el paso. Al reanudar desde el checkpoint, ¿qué pasa?',
+			opciones: [
+				{ texto: 'Nada: el checkpoint sabe que la incidencia se abrió.', porque: 'El checkpoint es de antes de ese paso: para el modelo, aún no la ha abierto.' },
+				{ texto: 'El modelo la abre otra vez; sin clave de idempotencia, hay dos.', correcta: true, porque: 'Pasó en la parte 3: INC-1 e INC-2. Con clave, el gestor devolvió INC-1.' },
+			],
+		},
+		{
+			pregunta: 'Tus ejecuciones normales gastan como mucho 5900 tokens. ¿Qué presupuesto pones?',
+			opciones: [
+				{ texto: '3000, para ahorrar.', porque: 'Cortaría ejecuciones normales, alguna que iba a acertar ("Elegir el presupuesto con datos").' },
+				{ texto: 'Algo por encima del máximo observado, y lo reviso si cambia el sistema.', correcta: true, porque: 'Corta lo anómalo sin tocar lo normal.' },
+				{ texto: 'Ninguno: el límite de pasos ya basta.', porque: 'El límite de pasos no protege de pasos muy caros (lecturas enormes, contexto que crece).' },
+			],
+		},
+		{
+			pregunta: '¿Qué clave de idempotencia usarías para abrir la incidencia de una alerta?',
+			opciones: [
+				{ texto: 'Una marca de tiempo del momento de abrirla.', porque: 'Cambia en cada intento: el reintento tendría otra clave y crearía otra incidencia.' },
+				{ texto: 'El identificador de la alerta y el servicio afectado.', correcta: true, porque: 'Identifica la operación, no el intento: la misma alerta no abre dos incidencias del mismo servicio.' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- Google SRE Book, [Handling Overload](https://sre.google/sre-book/handling-overload/) y [Addressing Cascading Failures](https://sre.google/sre-book/addressing-cascading-failures/): reintentos con presupuesto y espera creciente, y por qué los reintentos sin límite tumban sistemas.
+- Stripe, [Idempotent requests](https://docs.stripe.com/api/idempotent_requests): claves de idempotencia en una API real.
+- AWS Builders' Library, [Timeouts, retries, and backoff with jitter](https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/).
+- LangGraph, [Durable execution](https://docs.langchain.com/oss/python/langgraph/durable-execution): reanudar ejecuciones largas en un framework.
