@@ -1,0 +1,259 @@
+---
+title: "MCP"
+description: "MCP: servir las herramientas del agente con el Model Context Protocol y el SDK oficial, conectar el mismo agente como cliente y medir lo que cuesta el protocolo"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
+:::note[Revisado: 2026-11]
+Con el SDK oficial de Python `mcp` 2.3.0, que habla la revisión 2026-07-28 de la especificación. MCP evoluciona deprisa: si usas otra versión, contrasta con su documentación. Las salidas son reales, con Qwen3 8B sin razonamiento (rol `agente`) en Ollama, sobre CPU.
+:::
+
+## Objetivos
+
+Al terminar esta lección podrás:
+
+- Explicar qué problema resuelve MCP y qué ofrece un servidor: herramientas, recursos y prompts.
+- Servir las herramientas de un agente con el SDK oficial y conectarte a ellas como cliente por stdio.
+- Comprobar que el agente decide lo mismo con las herramientas por MCP que en su propio proceso, y medir lo que cuesta el protocolo.
+- Reconocer lo que MCP no resuelve: el diseño de las herramientas y la confianza en servidores ajenos.
+
+## Teoría
+
+### El problema: cada agente, sus herramientas
+
+Hasta ahora, las herramientas del agente de guardia vivían en `plataforma.py`, en el mismo proceso que el agente, y con el formato de `curso_core`. Si mañana quieres usarlas desde otro agente (Claude Code, un IDE, un agente hecho con otro framework), tienes que reescribirlas en su formato. Con N aplicaciones y M herramientas, son N × M integraciones.
+
+El **Model Context Protocol** (MCP) es un protocolo abierto para ese problema. Una herramienta se escribe una vez, en un **servidor** MCP, y cualquier aplicación que hable el protocolo (un **cliente** MCP) puede descubrirla y usarla. Si vienes de backend, es la misma idea que JDBC para las bases de datos, o que el Language Server Protocol, que permite que un mismo servidor de lenguaje funcione en cualquier editor.
+
+### Qué ofrece un servidor
+
+Un servidor MCP expone tres tipos de cosas:
+
+- **Herramientas** (*tools*): funciones que el modelo puede pedir ejecutar, con su nombre, su descripción y el JSON Schema de sus argumentos. Es exactamente lo que ya conoces del módulo 2.
+- **Recursos** (*resources*): datos que la aplicación puede leer, identificados por una URI. No los pide el modelo: los lee el código cuando los necesita.
+- **Prompts**: plantillas de prompt que el servidor ofrece a quien lo use.
+
+Por debajo, cliente y servidor se hablan con mensajes JSON-RPC: `tools/list` para descubrir las herramientas, `tools/call` para ejecutarlas, `resources/read` para leer un recurso. Hay dos transportes: **stdio**, en el que el cliente lanza el servidor como subproceso y se comunican por su entrada y salida estándar, y **Streamable HTTP**, para servidores remotos.
+
+### La revisión 2026-07-28
+
+La especificación tiene versiones con fecha. La revisión 2026-07-28 quitó el saludo inicial y la sesión: cada petición lleva su versión del protocolo y las capacidades del cliente, y el servidor la acepta o la rechaza por separado. Para saber qué ofrece un servidor, el cliente puede pedirle `server/discover`. Las versiones anteriores (2025-11-25 y antes) empezaban con un saludo `initialize`. El SDK oficial de Python negocia solo: prueba la versión nueva y, si el servidor es antiguo, vuelve al saludo.
+
+No necesitas recordar los detalles del protocolo para usarlo: el SDK los resuelve. Sí conviene saber que existe esa negociación, porque es lo primero que mirar cuando un cliente y un servidor de versiones distintas no se entienden.
+
+### Lo que MCP no resuelve
+
+- **No mejora las herramientas.** El modelo sigue leyendo un nombre, una descripción y un esquema. Si están mal escritos, por MCP siguen mal escritos (lección 02).
+- **No es gratis.** Añade un proceso y un salto por cada llamada. Lo vas a medir.
+- **No hace seguros los servidores ajenos.** Conectar un servidor MCP de terceros es ejecutar su código y meter sus descripciones de herramientas en tu prompt. Una descripción puede contener instrucciones para el modelo. Lo verás en la lección de seguridad.
+
+## Práctica
+
+### El servidor
+
+[`servidor_mcp.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/servidor_mcp.py) sirve las cuatro herramientas de la plataforma para un escenario, con las mismas descripciones que la versión 2 de la lección 02, y las incidencias abiertas como un recurso. Con el SDK, una herramienta es una función con tipos; los tipos y las descripciones se convierten en el JSON Schema:
+
+```python
+from mcp.server import MCPServer
+
+servidor = MCPServer("plataforma-guardia")
+
+@servidor.tool(description=DESCRIPCION["buscar_logs"], structured_output=False)
+def buscar_logs(
+    servicio: Servicio, texto: Annotated[str, campo(ArgsLogsV2, "texto")] = ""
+) -> str:
+    return p.buscar_logs(ArgsLogs(servicio=servicio, texto=texto))
+
+@servidor.resource("plataforma://incidencias", mime_type="application/json")
+def incidencias() -> str:
+    return json.dumps([i.model_dump() for i in p.incidencias], ensure_ascii=False)
+
+servidor.run()  # stdio
+```
+
+`Servicio` es el mismo `Literal` de `plataforma.py`, así que el esquema lleva la lista cerrada de servicios y el SDK rechaza cualquier otro valor antes de ejecutar la función.
+
+### El cliente
+
+[`con_mcp.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/con_mcp.py) lanza el servidor como subproceso, le pide sus herramientas y las convierte al formato de `curso_core`. Después ejecuta **el mismo bucle de la lección 03**, sin tocarlo: lo único que cambia es la "plataforma" que ejecuta cada herramienta, que ahora hace un `tools/call`:
+
+```python
+from mcp import Client, StdioServerParameters
+
+parametros = StdioServerParameters(
+    command=sys.executable, args=[str(SERVIDOR), "--escenario", escenario.id]
+)
+async with Client(parametros) as c:
+    herramientas = [
+        Herramienta(nombre=t.name, descripcion=t.description or "", parametros=t.input_schema)
+        for t in (await c.list_tools()).tools
+    ]
+    ej = await anyio.to_thread.run_sync(
+        lambda: agente.ejecutar(cliente, PlataformaMCP(c, escenario), herramientas=herramientas, ...)
+    )
+    incidencias = json.loads((await c.read_resource("plataforma://incidencias")).contents[0].text)
+```
+
+Dos detalles: el SDK es asíncrono y el bucle del curso es síncrono, así que el bucle corre en un hilo y cada llamada vuelve a la sesión con `anyio.from_thread.run`. Y el estado final lo comprueba el mismo `comprobar` de siempre, con las incidencias que el cliente lee del recurso.
+
+Ejecuta el servidor una vez por escenario, como haría una aplicación real al conectarse. Tarda unos 15 minutos en la máquina del curso; con `--grabadas`, un segundo.
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/05-agentes/con_mcp.py
+```
+
+```text
+1. Conexión con el servidor (plataforma-guardia)
+   protocolo: 2026-07-28
+   herramientas: estado_servicio, buscar_logs, buscar_documentacion, abrir_incidencia
+   esquemas distintos de los de la lección 02 (sin contar títulos): ninguno
+   abrir_incidencia, argumento severidad: {"description": "Según los criterios de severidad: critica, si el servicio está caído para todos o hay pérdida de dinero…
+
+2. Tres peticiones a mano
+   tools/call estado_servicio(pagos) → is_error=False
+      estado: degradado · errores: 41.0 %
+   tools/call estado_servicio(facturacion) → is_error=True
+      Error executing tool estado_servicio: 1 validation error for estado_servicioArguments
+   resources/read plataforma://incidencias → []
+
+3. El agente en los 9 escenarios de desarrollo
+                              estado ok  pasos  tokens s/escenario
+   herramientas en el proceso     4 de 9     27   37375          73
+   herramientas por MCP           5 de 9     25   35027          62
+   MCP gana ['pagos-token-banco', 'busqueda-disco'], pierde ['notificaciones-push'], p = 1.00
+   pagos-pool-despliegue: no abrió la incidencia
+   pagos-pool-sin-despliegue: no abrió la incidencia
+   notificaciones-push: no abrió la incidencia
+   usuarios-deadlocks: severidad alta (esperada media)
+
+4. Lo que cuesta el protocolo
+   arrancar el servidor (incluye construir el índice): 25.1 s
+   una llamada a estado_servicio: 0.007 ms en el proceso, 2.59 ms por MCP
+   llamadas del agente por MCP: 30, mediana 6 ms (buscar_documentacion incluye calcular el embedding)
+```
+
+## Mide y depura
+
+### El mismo agente, las mismas decisiones
+
+Lo primero que comprueba `con_mcp.py` es que las herramientas que anuncia el servidor tienen los mismos esquemas que las de la lección 02 (sin contar los títulos, que Pydantic genera distintos): ninguno distinto. El modelo lee exactamente lo mismo, venga la herramienta de su proceso o de un servidor MCP.
+
+Y decide lo mismo, dentro de lo que varía un agente: 5 de 9 por MCP frente a 4 de 9 en el proceso, con un escenario ganado de más y otro perdido, p = 1,00. Es la variación entre ejecuciones de la lección 02, no un efecto del protocolo. Los fallos son los de siempre: tres veces dice que abre la incidencia sin abrirla y una severidad `alta` donde tocaba `media`. Cambiar cómo llegan las herramientas no arregla nada de eso, como cambiar de motor no lo arreglaba en la lección 06.
+
+### Lo que cuesta el protocolo
+
+- **Cada llamada**: 2,6 milisegundos por MCP frente a 0,007 en el proceso. Cientos de veces más, y no importa: la llamada al modelo de cada paso tarda decenas de segundos. En las llamadas reales del agente, la mediana fue de 6 milisegundos; las de `buscar_documentacion` subieron a 57-120, porque incluyen calcular el embedding de la consulta.
+- **Arrancar el servidor**: entre 20 y 25 segundos (25,1 en la parte 4; unos 20 en cada escenario del agente), casi todos construyendo el índice de la documentación. Es lo que más cuesta, y se paga en cada conexión. En producción, un servidor que tarda en arrancar se mantiene levantado (Streamable HTTP) o guarda su índice, en lugar de construirlo cada vez que un cliente lo lanza.
+
+### Errores por el protocolo, no excepciones
+
+La parte 2 llama a `estado_servicio` con un servicio que no existe. El servidor no se cae ni lanza una excepción en el cliente: responde con `is_error=True` y el mensaje de validación como contenido. Es lo mismo que hacía `plataforma.py` en la lección 02 (devolver el error al modelo como texto para que se corrija), pero ahora lo hace el SDK, validando los argumentos contra el esquema antes de ejecutar la función.
+
+Un detalle para depurar: ese mismo error aparece en la salida de error del servidor (`Tool 'estado_servicio' rejected arguments: ['servicio']`), que el cliente reenvía a tu terminal. El servidor también escribe ahí una línea por cada petición HTTP que hace a Ollama. La especificación dice que el servidor puede escribir lo que quiera en stderr y que el cliente no debe tomarlo como señal de error. Es su log, no su respuesta: la respuesta va por stdout, en JSON-RPC.
+
+### Qué mirar cuando algo no funciona
+
+- **La versión del protocolo** que negoció el cliente (`client.protocol_version`): si cliente y servidor no se entienden, es lo primero.
+- **Las herramientas que anuncia el servidor**, con sus esquemas, antes de culpar al modelo. Si el esquema no es el que crees, el modelo tampoco lo sabe.
+- **`is_error` en cada resultado**: el error viene dentro de la respuesta, no como excepción.
+- **El stderr del servidor**, que es su log.
+
+## Errores frecuentes
+
+**Escribir en stdout desde un servidor stdio.** Es el canal del protocolo. Usa `logging`, que escribe en stderr. Es la anatomía de esta lección.
+
+**Esperar que MCP mejore las decisiones.** El modelo lee el mismo nombre, la misma descripción y el mismo esquema. Si una herramienta está mal descrita, por MCP sigue mal descrita.
+
+**Construir lo caro al arrancar un servidor que se lanza en cada conexión.** Aquí son 20 segundos por escenario. Mantén el servidor levantado o guarda lo que tarda en construirse.
+
+**Conectar servidores de terceros sin revisarlos.** Ejecutas su código y metes sus descripciones en el prompt de tu agente. Lo verás en la lección de seguridad.
+
+**Tratar `is_error` como si no existiera.** Un error de herramienta llega como resultado, no como excepción. Si tu código solo mira el texto, el modelo puede tomar un mensaje de error por datos.
+
+### Anatomía de un error: un `print` que se cuela en el protocolo
+
+Mientras depuras el servidor, añades una línea para ver qué consulta:
+
+```python
+@servidor.tool(description=DESCRIPCION["estado_servicio"], structured_output=False)
+def estado_servicio(servicio: Servicio) -> str:
+    print(f"consultando {servicio}")
+    return p.estado_servicio(ArgsServicio(servicio=servicio))
+```
+
+Y en la terminal del cliente aparece esto en la primera llamada:
+
+```text
+Failed to parse JSONRPC message from server
+Traceback (most recent call last):
+  File "...\mcp\client\stdio.py", line 222, in _parse_line
+    message = types.jsonrpc_message_adapter.validate_json(line, by_name=False)
+  ...
+pydantic_core._pydantic_core.ValidationError: 1 validation error for union[JSONRPCRequest,JSONRPCNotification,JSONRPCResponse,JSONRPCError]
+  Invalid JSON: expected value at line 1 column 1 [type=json_invalid, input_value='consultando pagos\r', input_type=str]
+```
+
+**Cómo leerlo.** La primera línea lo dice todo: el cliente no pudo interpretar un mensaje del servidor. La traza señala `stdio.py`, `_parse_line`: el cliente lee la salida estándar del servidor línea a línea y valida cada una como un mensaje JSON-RPC. La última línea dice qué línea era: `'consultando pagos\r'`, tu `print`, que no es JSON.
+
+**Causa.** En el transporte stdio, la salida estándar del servidor es el canal del protocolo: cada línea tiene que ser un mensaje JSON-RPC. La especificación lo dice sin matices: el servidor no debe escribir en stdout nada que no sea un mensaje MCP válido. Un `print` escribe justo ahí.
+
+Fíjate en algo más: después del error, la llamada devolvió el estado de pagos correcto, y una segunda llamada también. El cliente del SDK descartó la línea y siguió. Eso hace el fallo más traicionero: el sistema parece funcionar mientras ensucia el canal, y depende de que cada `print` caiga en una línea suelta. Además, la salida de un proceso conectado a una tubería suele ir en bloques, así que no sabes cuándo ni junto a qué llegará lo que escribes.
+
+**Solución.** No escribir en stdout desde un servidor stdio. Para trazas de depuración, `logging`, que por defecto escribe en stderr, el canal de los logs:
+
+```python
+import logging
+
+log = logging.getLogger(__name__)
+
+def estado_servicio(servicio: Servicio) -> str:
+    log.info("consultando %s", servicio)
+    ...
+```
+
+Si una librería que usas imprime por su cuenta, redirige su salida o configúrala para que no lo haga. Es la misma regla que en cualquier proceso que habla un protocolo por su salida estándar: un CGI o una tubería de comandos de Unix.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'Pasas las herramientas de tu agente a un servidor MCP sin cambiar sus descripciones. ¿Qué esperas en los aciertos?',
+			opciones: [
+				{ texto: 'Que mejoren, porque MCP es un estándar.', porque: 'El modelo lee los mismos esquemas: aquí, ninguno distinto ("El mismo agente, las mismas decisiones").' },
+				{ texto: 'Los mismos, salvo la variación normal del agente entre ejecuciones.', correcta: true, porque: '5 de 9 frente a 4 de 9, con p = 1,00.' },
+				{ texto: 'Que empeoren por la latencia del protocolo.', porque: 'La latencia es de milisegundos y no cambia lo que lee el modelo.' },
+			],
+		},
+		{
+			pregunta: 'Una llamada a tools/call devuelve is_error=True. ¿Qué ha pasado?',
+			opciones: [
+				{ texto: 'El servidor se ha caído.', porque: 'Si se cayera, no habría respuesta. is_error es una respuesta normal con un error dentro.' },
+				{ texto: 'La herramienta falló o sus argumentos no eran válidos, y el error viene en el contenido del resultado.', correcta: true, porque: 'Se le puede devolver al modelo para que se corrija ("Errores por el protocolo, no excepciones").' },
+			],
+		},
+		{
+			pregunta: 'Tu servidor MCP por stdio escribe trazas de depuración. ¿Dónde?',
+			opciones: [
+				{ texto: 'En stdout, con print.', porque: 'stdout es el canal del protocolo: cada línea debe ser un mensaje JSON-RPC (anatomía).' },
+				{ texto: 'En stderr, por ejemplo con logging.', correcta: true, porque: 'La especificación permite al servidor usar stderr para sus logs.' },
+				{ texto: 'En ningún sitio: un servidor MCP no puede registrar nada.', porque: 'Puede, en stderr o en un fichero.' },
+			],
+		},
+		{
+			pregunta: 'Arrancar tu servidor tarda 20 segundos porque construye un índice. Cada cliente lo lanza como subproceso. ¿Qué haces?',
+			opciones: [
+				{ texto: 'Nada: 20 segundos no importan.', porque: 'Se pagan en cada conexión. Con muchas conexiones, es el mayor coste del protocolo ("Lo que cuesta el protocolo").' },
+				{ texto: 'Mantener el servidor levantado (Streamable HTTP) o guardar el índice para no construirlo en cada arranque.', correcta: true, porque: 'Lo caro se hace una vez, no por conexión.' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- [Especificación de MCP, revisión 2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28): arquitectura, primitivas, transportes y versiones.
+- [SDK oficial de Python](https://github.com/modelcontextprotocol/python-sdk) y su [documentación](https://py.sdk.modelcontextprotocol.io/): `MCPServer`, `Client` y los transportes.
+- [JSON-RPC 2.0](https://www.jsonrpc.org/specification): el formato de los mensajes que viajan por debajo.
+- [Language Server Protocol](https://microsoft.github.io/language-server-protocol/): el precedente que inspiró a MCP, en el mundo de los editores.

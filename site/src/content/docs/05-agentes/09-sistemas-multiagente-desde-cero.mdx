@@ -1,0 +1,266 @@
+---
+title: "Sistemas multiagente desde cero"
+description: "Sistemas multiagente desde cero: un investigador y un revisor sobre una pizarra compartida, con un coordinador en código, medidos para saber cuándo compensa y cuándo es complejidad gratuita"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
+:::note[Revisado: 2026-11]
+Las salidas son reales, con Qwen3 8B sin razonamiento (rol `agente`) en Ollama, sobre CPU. Los dos agentes usan el mismo modelo.
+:::
+
+## Objetivos
+
+Al terminar esta lección podrás:
+
+- Reconocer los patrones de coordinación entre agentes (supervisor, pizarra, traspaso, generador y crítico) y qué problema resuelve cada uno.
+- Construir sin framework un sistema de dos agentes que comparten una pizarra, con un coordinador en código que es el único que actúa.
+- Medir el aporte de cada agente sobre la misma ejecución, sin que la variación entre ejecuciones lo tape.
+- Decidir con datos si un segundo agente compensa o es complejidad gratuita.
+
+## Teoría
+
+### Qué es un sistema multiagente
+
+En la lección 08, el orquestador usaba subagentes como herramientas: les mandaba un encargo, esperaba el informe y seguía. Era una jerarquía. En un **sistema multiagente**, varios agentes con papeles distintos trabajan sobre el mismo problema y se coordinan: se pasan el control, leen y escriben un estado común, o uno revisa lo que hace otro.
+
+Los patrones más comunes:
+
+- **Supervisor.** Un agente (o código) decide quién actúa en cada momento. Es el orquestador de la lección 08 llevado más lejos.
+- **Pizarra.** Los agentes no se hablan entre ellos: leen y escriben en un estado compartido, la pizarra. Es una arquitectura clásica de la inteligencia artificial de los años setenta, y encaja de forma natural con el estado de un grafo (lección 05).
+- **Traspaso** (*handoff*). Un agente le pasa el control a otro, con el contexto que necesita. Es lo que hace un servicio de atención al cliente al pasarte con otro departamento.
+- **Generador y crítico.** Un agente produce y otro revisa. Si el crítico no está de acuerdo, corrige o devuelve el trabajo.
+- **Debate.** Varios agentes proponen y discuten hasta converger. Es el más caro y el más difícil de controlar.
+
+### Cuándo compensa un segundo agente
+
+Un segundo agente compensa cuando aporta algo que el primero no tiene: **otra información, otra perspectiva u otro permiso.** En backend lo conoces como el principio de los cuatro ojos: un pase a producción lo aprueba alguien distinto de quien lo hizo, y una transferencia grande la firma una segunda persona. Funciona porque la segunda persona mira con otros criterios y no está atada a la decisión del primero.
+
+Y es complejidad gratuita cuando el segundo agente es **el mismo modelo, con la misma información, haciendo otro papel**. Comparte los sesgos del primero, tiende a estar de acuerdo con lo que lee y añade llamadas, latencia y sitios donde algo se pierde. Un estudio sobre fallos de sistemas multiagente (enlazado al final) encontró que buena parte de los fallos no venían de los modelos, sino del diseño: papeles mal definidos, información que no llega y verificaciones que no verifican.
+
+### Las reglas que traemos del módulo
+
+Las lecciones anteriores dejaron tres reglas que este sistema aplica desde el principio:
+
+- **Entre agentes, datos y no prosa** (lección 08): el investigador deja en la pizarra los resultados de las herramientas tal cual, no un resumen.
+- **Que actuar no dependa del modelo** (lección 07): ningún agente abre la incidencia; la abre el coordinador, que es código.
+- **Medir los fallos por tipo, no solo el total** (lecciones 07 y módulo 4).
+
+## Práctica
+
+### El sistema
+
+[`multiagente.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/multiagente.py) monta un generador y un crítico sobre una pizarra, contra el fallo que arrastra el módulo desde la lección 01: la severidad.
+
+- **El investigador** es el bucle de la lección 03 con las herramientas de lectura y una nueva, `proponer_incidencia`. No puede abrir nada: deja su propuesta en la pizarra. Cada resultado de herramienta queda también en la pizarra, como evidencia. Si termina sin proponer, un último paso convierte su respuesta final en una propuesta estructurada.
+- **El revisor** es una llamada con salida estructurada ([`prompts/agentes/revisor.md`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/prompts/agentes/revisor.md)). Lee la propuesta, los criterios de severidad completos (el documento `severidades.md`, sin búsqueda de por medio) y las evidencias. Devuelve si está de acuerdo y, si no, la severidad, la mitigación o la decisión de abrir correctas, con el motivo.
+- **El coordinador** es código: si el revisor está de acuerdo, se queda la propuesta; si no, manda la corrección. Después abre la incidencia.
+
+```python
+class Pizarra(BaseModel):
+    alerta: str
+    evidencias: list[Evidencia] = []     # lo que devolvió cada herramienta, tal cual
+    propuesta: Propuesta | None = None   # lo que propone el investigador
+    redactada: bool = False              # la propuesta salió de su respuesta final
+    revision: Revision | None = None     # lo que dice el revisor
+```
+
+### Medir el aporte de cada agente
+
+Para saber qué aporta el revisor, no basta con comparar el sistema con el agente único: el agente cambia de una ejecución a otra (lección 02) y esa variación taparía el efecto. Por eso [`colaborar.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/colaborar.py) investiga **una sola vez** por escenario y evalúa tres decisiones sobre esa misma investigación:
+
+- **investigador solo**: la propuesta tal cual;
+- **con revisor**: la propuesta corregida por el revisor, que ve las evidencias;
+- **revisor sin evidencias**: la misma revisión, pero el revisor solo ve la propuesta y los criterios. Es un control: dice cuánto aporta que el revisor vea los datos.
+- **revisor a ciegas**: el revisor ve las evidencias y los criterios, pero no la propuesta, y decide él si abrir y con qué severidad ([`prompts/agentes/revisor-ciego.md`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/prompts/agentes/revisor-ciego.md)). Se añadió después de ver los resultados de los otros dos, como experimento; lo explica "Mide y depura".
+
+Usa los 14 escenarios (9 de desarrollo y 5 de prueba): el prompt del revisor se escribió una vez y no se ajustó mirando los resultados. Tarda algo más de una hora en la máquina del curso; con `--grabadas`, un segundo.
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/05-agentes/colaborar.py
+```
+
+```text
+1. pagos-token-banco en la pizarra
+   evidencias: estado_servicio, buscar_logs, buscar_documentacion
+   propuesta del investigador: abrir=True, severidad=alta
+      mitigación: 1. Pide un token nuevo en el portal del banco con la cuenta de servicio del equipo Cobros. 2. Guárda
+   revisor: de_acuerdo=True, severidad=alta
+      motivo: El servicio de pagos está caído al 100 %, lo que cumple el criterio de severidad alta, ya que una funcionalidad importante falla para muchos usuarios 
+   decisión final → severidad alta (esperada critica)
+
+2. Los 14 escenarios (9 de desarrollo y 5 de prueba)
+                           estado ok  severidad mal  tokens s/escenario
+   agente único                6 de 14              4   62830          71
+   investigador solo           4 de 14              6   84508            
+   con revisor                 4 de 14              6   99889         103
+   revisor sin evidencias      5 de 14              5                    
+   revisor a ciegas            6 de 14              5                    
+   con revisor frente a investigador solo: gana [], pierde [], p = 1.00
+   revisor sin evidencias frente a investigador solo: gana ['busqueda-disco'], pierde [], p = 1.00
+   revisor a ciegas frente a investigador solo: gana ['usuarios-deadlocks', 'usuarios-google'], pierde [], p = 0.50
+   con revisor frente al agente único: gana [], pierde ['pagos-pasarela-proveedor', 'catalogo-replica-normal'], p = 0.50
+   propuestas redactadas a partir de la respuesta final: 0 []
+
+3. El revisor con evidencias, de acuerdo con la propuesta: 14 de 14
+   Lo que cambian las otras revisiones (severidad: propuesta → revisión)
+   revisor sin evidencias pagos-pool-despliegue      alta → media (esperada critica)        no cambia el resultado
+   revisor sin evidencias pagos-pool-sin-despliegue  alta → media (esperada critica)        no cambia el resultado
+   revisor sin evidencias busqueda-disco             alta → media (esperada media)          arregla
+   revisor a ciegas       pagos-pool-despliegue      alta → media (esperada critica)        no cambia el resultado
+   revisor a ciegas       pagos-pool-sin-despliegue  alta → media (esperada critica)        no cambia el resultado
+   revisor a ciegas       busqueda-despliegue        critica → alta (esperada critica)      no cambia el resultado
+   revisor a ciegas       usuarios-deadlocks         alta → media (esperada media)          arregla
+   revisor a ciegas       usuarios-google            alta → media (esperada media)          arregla
+
+4. Fallos con revisor
+   pagos-pool-despliegue: severidad alta (esperada critica)
+   pagos-pool-sin-despliegue: severidad alta (esperada critica)
+   pagos-token-banco: severidad alta (esperada critica)
+   pagos-pasarela-proveedor: la mitigación no menciona 'proveedor'
+   busqueda-disco: severidad alta (esperada media)
+   busqueda-despliegue: la mitigación no menciona 'versión anterior'
+   catalogo-replica-normal: abrió una incidencia que no hacía falta
+   catalogo-imagenes: la mitigación no menciona 'versión anterior'
+   usuarios-deadlocks: severidad alta (esperada media)
+   usuarios-google: severidad alta (esperada media)
+```
+
+## Mide y depura
+
+### Un revisor que firma todo
+
+La parte 3 lo dice en una línea: el revisor con evidencias estuvo de acuerdo con la propuesta en los 14 escenarios. No corrigió nada, ni siquiera las seis severidades equivocadas. Por eso "con revisor" y "investigador solo" dan exactamente lo mismo, con 15000 tokens más. Un revisor que nunca discrepa no es un control, es un sello.
+
+Es el comportamiento esperable de un modelo que lee una propuesta razonable y bien escrita: tiende a confirmarla. En sistemas multiagente se repite tanto que tiene nombre en la bibliografía: verificaciones que no verifican.
+
+### El sistema, peor que el agente único
+
+Frente al agente único de la lección 07, el sistema acierta 4 de 14 frente a 6, gasta 99889 tokens frente a 62830 y tarda 103 segundos de mediana frente a 71. Los dos escenarios que pierde (`pagos-pasarela-proveedor` y `catalogo-replica-normal`) no los estropea el revisor, que no cambió nada: son variaciones del investigador, que es otra ejecución con otro prompt. Con p = 0,50 no se puede decir que sea peor; lo que sí se puede decir es que nada indica que sea mejor, y que cuesta más.
+
+### Lo que sí funcionó: que actúe el código
+
+Ninguna propuesta tuvo que redactarse a partir de la respuesta final: el investigador llamó a `proponer_incidencia` en los 14 escenarios. Con el agente único, en los mismos escenarios, dos veces dijo que abría la incidencia sin abrirla (lección 07). Darle una herramienta que no tiene efectos (proponer) y dejar el efecto (abrir) al coordinador quitó ese fallo de en medio. Es la parte del diseño que merece la pena quedarse.
+
+### Tres revisores, el mismo sesgo
+
+Las dos revisiones de control cambian algo, y por eso se puede ver qué hacen:
+
+- **Sin evidencias**, el revisor baja la severidad a `media` en tres escenarios. Acierta en `busqueda-disco`, pero también la baja en los dos de pagos con el pool lleno, donde tocaba `critica`. No ve el impacto, así que lo subestima.
+- **A ciegas**, sin ver la propuesta, corrige los dos escenarios de usuarios a `media` (bien) y gana 2 sin perder ninguno en la tabla (6 de 14). Pero mira sus otros cambios: baja también los dos de pagos a `media` y cambia la `critica` correcta de `busqueda-despliegue` por `alta`. No pierde aciertos solo porque esos escenarios ya fallaban por otra razón (la severidad o la mitigación).
+
+Y en ningún caso, con ninguna de las tres revisiones, el modelo elige `critica` para pagos cuando los cobros fallan. El criterio dice "pérdida de dinero" y el modelo no lo aplica, revise quien revise. La anatomía lo enseña con un caso.
+
+La conclusión es la de la teoría: un segundo agente con el mismo modelo comparte el punto ciego del primero. La revisión a ciegas reduce el anclaje, y eso se nota, pero no le da al modelo la capacidad que le falta. Además, es un único experimento, sin ajustar nada; con 14 escenarios y p = 0,50, es una pista, no una conclusión.
+
+### Qué haría que el segundo agente compensara
+
+Algo que el primero no tenga:
+
+- **Otro modelo.** Un revisor más capaz que el investigador, aunque sea más caro: solo revisa, una llamada por caso. Se mide igual, cambiando el rol del revisor (con un modelo más grande o con una API comercial, anexo G).
+- **Otra información.** En la lección 07, las notas de casos anteriores sí arreglaron la severidad de `pagos-token-banco`. Un revisor con memoria de correcciones tiene algo que el investigador no tiene.
+- **Otra forma de decidir.** Si una parte del criterio es una regla ("si los cobros fallan, es crítica"), puede comprobarse con código, que no se ancla ni tiene puntos ciegos con su propio texto.
+- **Una persona.** La aprobación humana de la lección 05 es, a fin de cuentas, un revisor con otra información y otro criterio.
+
+### Cómo medir lo que aporta cada agente
+
+Fíjate en el diseño de la medición, porque sirve para cualquier sistema multiagente. Investigar una sola vez y evaluar varias decisiones sobre la misma investigación aísla el efecto de cada papel: las diferencias entre "investigador solo", "con revisor" y "a ciegas" se deben solo a la revisión, no a que el investigador haya hecho algo distinto esta vez. Y las revisiones de control son baratas: una llamada por escenario sobre la pizarra grabada (`colaborar.py --completar` añade la revisión a ciegas a resultados ya grabados, sin repetir las investigaciones).
+
+## Errores frecuentes
+
+**Añadir un agente para arreglar un fallo de criterio del modelo.** Si el modelo no aplica bien un criterio, otro agente con el mismo modelo tampoco lo hará. Cambia algo que el primero no tenga: modelo, información o reglas en código.
+
+**Revisores que ven la conclusión antes que los datos.** Leen una propuesta bien escrita y la confirman. Si quieres una segunda opinión, que decida antes de ver la primera.
+
+**No medir la tasa de desacuerdo.** Un revisor que está de acuerdo el 100 % de las veces no está revisando. Es la primera métrica que mirar.
+
+**Comparar el sistema con el agente único en ejecuciones distintas.** La variación del agente tapa el efecto del segundo agente. Evalúa las variantes sobre la misma investigación.
+
+**Repartir el efecto entre agentes.** Si varios agentes pueden actuar, cada uno puede dar por hecho que actuará otro. Que actúe uno solo, y mejor si es código.
+
+### Anatomía de un error: el revisor que cita el criterio y se equivoca
+
+Escenario `pagos-token-banco`: el 100 % de los cobros falla desde las 08:12. En la pizarra, lo que devolvió `estado_servicio`:
+
+```text
+servicio: pagos
+estado: caido
+errores: 100.0 %
+```
+
+Y en los logs, `ERROR banco-api: 401 Unauthorized: token expired`. El investigador propuso severidad `alta`. El revisor con evidencias estuvo de acuerdo:
+
+```text
+de_acuerdo: True, severidad: alta
+motivo: El servicio de pagos está caído al 100 %, lo que cumple el criterio de severidad alta, ya que una funcionalidad importante falla para muchos usuarios y no hay alternativa.
+```
+
+El revisor a ciegas, que no vio la propuesta, llegó a lo mismo:
+
+```text
+severidad: alta
+motivo: El servicio de pagos está caído para todos con un 100% de errores, lo que corresponde al criterio de severidad 'alta' ya que una funcionalidad importante falla para muchos usuarios y no hay alternativa.
+```
+
+Y los criterios que los dos tenían delante, copiados de `severidades.md`:
+
+```text
+- critica: el servicio está caído para todos, o hay pérdida de dinero o de datos.
+- alta: una funcionalidad importante falla para muchos usuarios y no hay alternativa.
+```
+
+**Cómo leerlo.** El revisor a ciegas escribe "caído para todos", las mismas palabras del criterio de `critica`, y en la misma frase lo asigna a `alta`. No es que le falte información: tiene la evidencia (caído, 100 %), el criterio literal y hasta lo cita. Lo que falla es el paso de una cosa a la otra. Y falla igual con la propuesta delante o sin ella.
+
+**Causa.** El modelo tiene un sesgo hacia `alta` cuando algo es grave. Ya se veía en la lección 01, con el workflow, y se repite en todas las arquitecturas del módulo: agente, planificador, grafo, subagentes y ahora dos revisores. El revisor usa el mismo modelo que el investigador, así que comparte el sesgo. Añadir un agente no añade la capacidad que falta. Con la propuesta delante, además, el revisor se ancla a ella; sin ella, se equivoca por su cuenta.
+
+**Solución.** Cambiar algo que el investigador no tenga, y medirlo:
+
+- **Comprobar con código lo que es regla.** "Caído para todos" se ve en el estado del servicio (`estado: caido`), sin interpretar nada. Una comprobación de código que suba a `critica` cuando el servicio está caído no tiene puntos ciegos con su propio texto.
+- **Otro modelo para revisar.** Si el revisor es un modelo distinto, más capaz, sus errores no tienen por qué coincidir con los del investigador.
+- **Información que corrija el sesgo.** Las notas de casos parecidos de la lección 07 arreglaron justo este escenario.
+
+Y la lección de fondo: antes de añadir un agente, pregúntate qué va a saber o qué va a poder hacer que el primero no sepa o no pueda. Si la respuesta es "nada, pero con otro prompt", lo más probable es que pagues más por el mismo resultado.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'Tu agente pone mal la severidad. Propones añadir un revisor con el mismo modelo y otro prompt. ¿Qué esperas?',
+			opciones: [
+				{ texto: 'Que corrija los errores, porque revisar es más fácil que decidir.', porque: 'Con el mismo modelo comparte el sesgo: aquí no corrigió ninguna de las seis severidades ("Tres revisores, el mismo sesgo").' },
+				{ texto: 'Poco o nada, salvo que el revisor tenga algo que el investigador no tiene: otro modelo, otra información o reglas en código.', correcta: true, porque: '("Qué haría que el segundo agente compensara")' },
+				{ texto: 'Que empeore, porque dos agentes siempre se contradicen.', porque: 'Aquí pasó lo contrario: el revisor estuvo de acuerdo en los 14 escenarios.' },
+			],
+		},
+		{
+			pregunta: 'Tu revisor está de acuerdo con la propuesta en el 100 % de los casos. ¿Qué concluyes?',
+			opciones: [
+				{ texto: 'Que el investigador lo hace muy bien.', porque: 'Puede ser, pero aquí el investigador fallaba seis severidades y el revisor las aprobó.' },
+				{ texto: 'Que el revisor probablemente no está revisando; lo compruebo con los casos en los que la propuesta es incorrecta.', correcta: true, porque: '("Un revisor que firma todo")' },
+			],
+		},
+		{
+			pregunta: 'Quieres saber cuánto aporta el revisor. ¿Cómo lo mides?',
+			opciones: [
+				{ texto: 'Ejecutando el sistema con y sin revisor en dos tandas distintas.', porque: 'El investigador cambia entre ejecuciones y esa variación tapa el efecto del revisor.' },
+				{ texto: 'Investigando una vez y evaluando sobre esa misma investigación la decisión con y sin revisor.', correcta: true, porque: 'Así la diferencia solo puede venir de la revisión ("Cómo medir lo que aporta cada agente").' },
+			],
+		},
+		{
+			pregunta: 'En el sistema de la lección, ¿por qué ningún agente abre la incidencia?',
+			opciones: [
+				{ texto: 'Para que actuar no dependa de que un modelo se acuerde de hacerlo; lo hace el coordinador, que es código.', correcta: true, porque: 'Con eso desapareció el "dice sin hacer": 0 casos frente a 2 del agente único ("Lo que sí funcionó").' },
+				{ texto: 'Porque los modelos locales no saben llamar a herramientas con efectos.', porque: 'Saben: el agente único abre incidencias en casi todos los escenarios.' },
+				{ texto: 'Para ahorrar tokens.', porque: 'El ahorro es mínimo; la razón es que la acción no dependa del modelo.' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- Cemri et al., [Why Do Multi-Agent LLM Systems Fail?](https://arxiv.org/abs/2503.13657) (2025). Una taxonomía de los fallos de sistemas multiagente reales; la mayoría son de diseño y de verificación.
+- Anthropic, [Building effective agents](https://www.anthropic.com/engineering/building-effective-agents) (2024). El patrón evaluador-optimizador (generador y crítico) y cuándo usarlo.
+- Erman et al., [The Hearsay-II speech-understanding system](https://doi.org/10.1145/356810.356816) (1980). El origen de la arquitectura de pizarra.
+- Cognition, [Don't Build Multi-Agents](https://cognition.ai/blog/dont-build-multi-agents) (2025). Por qué repartir el contexto entre agentes suele romper decisiones.
