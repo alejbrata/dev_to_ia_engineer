@@ -23,6 +23,15 @@ def test_buscar_fichero_sube_por_las_carpetas(tmp_path: Path, monkeypatch) -> No
     assert cfg.buscar_fichero(profunda) == tmp_path / "config" / "models.toml"
 
 
+def test_curso_roles_redirige_un_rol(monkeypatch) -> None:
+    config = cfg.cargar(RAIZ / cfg.FICHERO)
+    monkeypatch.setenv("CURSO_ROLES", "agente=chat_openai, chat = chat_grande")
+    assert config.resolver("agente") == config.resolver("chat_openai")
+    assert config.resolver("chat") == config.resolver("chat_grande")
+    monkeypatch.delenv("CURSO_ROLES")
+    assert config.resolver("agente")[0] == "ollama"
+
+
 def test_rol_sin_configurar() -> None:
     config = cfg.Config.model_validate({"roles": {"judge": {"provider": "", "model": ""}}})
     with pytest.raises(ValueError, match="judge"):

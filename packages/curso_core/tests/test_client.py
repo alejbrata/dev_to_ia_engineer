@@ -5,7 +5,7 @@ from typing import Literal
 
 import httpx
 import pytest
-from curso_core import ClienteLLM, ErrorFormato, ErrorLLM, Mensaje, Opciones
+from curso_core import ClienteLLM, ErrorFormato, ErrorLLM, Herramienta, Mensaje, Opciones
 from curso_core import config as cfg
 from curso_core.tracing import leer
 from pydantic import BaseModel
@@ -402,6 +402,47 @@ def test_peticion_claude_sin_muestreo_y_con_sistema_aparte(tmp_path: Path) -> No
     assert peticion["fallbacks"] == "default"
     c.chat("Hola", rol="claude_otro")
     assert "fallbacks" not in api.peticiones[1] and api.peticiones[1]["max_tokens"] == 16000
+
+
+def test_claude_con_herramientas_en_bloques(tmp_path: Path) -> None:
+    """Las llamadas llegan como bloques tool_use; los resultados vuelven como tool_result,
+    todos los seguidos en un único mensaje del usuario."""
+    c, api = cliente_claude(tmp_path)
+    pide = SimpleNamespace(
+        content=[
+            SimpleNamespace(type="text", text="Miro las dos."),
+            SimpleNamespace(type="tool_use", id="t1", name="estado", input={"servicio": "a"}),
+            SimpleNamespace(type="tool_use", id="t2", name="estado", input={"servicio": "b"}),
+        ],
+        stop_reason="tool_use",
+        usage=SimpleNamespace(input_tokens=10, output_tokens=5),
+    )
+    api.create = lambda **kw: api.peticiones.append(kw) or pide
+    estado = Herramienta(nombre="estado", descripcion="El estado.", parametros={"type": "object"})
+    op = Opciones(herramientas=[estado])
+    r = c.chat("¿Cómo están a y b?", rol="claude", opciones=op)
+    assert [(ll.id, ll.argumentos) for ll in r.llamadas] == [
+        ("t1", {"servicio": "a"}),
+        ("t2", {"servicio": "b"}),
+    ]
+    assert r.motivo_fin == "tool_calls"
+    assert api.peticiones[0]["tools"][0]["input_schema"] == {"type": "object"}
+
+    mensajes = [
+        Mensaje(role="user", content="¿Cómo están a y b?"),
+        r.como_mensaje(),
+        *[Mensaje(role="tool", content=f"ok {ll.id}", respuesta_a=ll) for ll in r.llamadas],
+    ]
+    c.chat(mensajes, rol="claude", opciones=op)
+    enviados = api.peticiones[1]["messages"]
+    assert [b["type"] for b in enviados[1]["content"]] == ["text", "tool_use", "tool_use"]
+    assert enviados[2] == {
+        "role": "user",
+        "content": [
+            {"type": "tool_result", "tool_use_id": "t1", "content": "ok t1"},
+            {"type": "tool_result", "tool_use_id": "t2", "content": "ok t2"},
+        ],
+    }
 
 
 def test_claude_extrae_con_esquema_estricto_y_registra_coste(tmp_path: Path) -> None:

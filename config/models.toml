@@ -78,6 +78,14 @@ provider = "ollama"
 model = "qwen3:8b"
 hf_repo = "Qwen/Qwen3-8B"
 
+[roles.chat_hf]
+# Opcional (anexo G): un modelo abierto grande servido por Hugging Face Inference Providers,
+# de la misma familia que el local del rol `agente`, unas 30 veces mayor y con herramientas.
+# Necesita HF_TOKEN y créditos en la cuenta. Revisado: 2026-11.
+provider = "huggingface"
+model = "Qwen/Qwen3-235B-A22B-Instruct-2507"
+hf_repo = "Qwen/Qwen3-235B-A22B-Instruct-2507"
+
 [roles.chat_openai]
 # Opcional (anexo G): una API comercial, para quien quiera comparar con el modelo local o
 # necesite más calidad. Necesita OPENAI_API_KEY en .env y saldo en la cuenta. El modelo
@@ -215,6 +223,13 @@ salida = 0.0
 entrada = 0.01
 salida = 0.03
 
+
+[precios."huggingface/Qwen/Qwen3-235B-A22B-Instruct-2507"]
+# Hugging Face elige el proveedor que lo sirve, y cada uno cobra distinto: entre 0,09 y
+# 0,855 USD por millón de tokens de entrada (/v1/models, 2026-11). Aquí, el más caro, para
+# que el coste calculado sea una cota superior y no te lleves sorpresas. Revisado: 2026-11.
+entrada = 0.855
+salida = 2.565
 
 [precios."openai/gpt-6-luna"]
 # Precio publicado por OpenAI (developers.openai.com/api/docs/pricing), nivel estándar,

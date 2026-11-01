@@ -423,23 +423,51 @@ CLAUDE_CON_RESERVA = {"claude-fable-5-1", "claude-opus-5-5", "claude-opus-5", "c
 CLAUDE_BETA_RESERVA = "server-side-fallback-2026-07-01"
 
 
+def _mensajes_claude(mensajes: list[Mensaje]) -> list[dict]:
+    """Las herramientas, en bloques: las llamadas del asistente son bloques `tool_use` y cada
+    resultado es un bloque `tool_result` en un mensaje del usuario. Los resultados seguidos
+    van en un único mensaje, como pide la API."""
+    salida: list[dict] = []
+    for m in mensajes:
+        if m.role == "system":
+            continue
+        if m.role == "tool":
+            bloque = {"type": "tool_result", "tool_use_id": m.respuesta_a.id, "content": m.content}
+            anterior = salida[-1] if salida else None
+            if anterior and anterior["role"] == "user" and isinstance(anterior["content"], list):
+                anterior["content"].append(bloque)
+            else:
+                salida.append({"role": "user", "content": [bloque]})
+        elif m.llamadas:
+            bloques = [{"type": "text", "text": m.content}] if m.content else []
+            bloques += [
+                {"type": "tool_use", "id": ll.id, "name": ll.nombre, "input": ll.argumentos}
+                for ll in m.llamadas
+            ]
+            salida.append({"role": "assistant", "content": bloques})
+        else:
+            salida.append({"role": m.role, "content": m.content})
+    return salida
+
+
 def _peticion_claude(modelo: str, mensajes: list[Mensaje], op: Opciones) -> dict:
     """Los argumentos de `messages.create`. Temperatura, top_p y semilla no se envían: la
     versión actual de la API de Claude rechaza los parámetros de muestreo."""
-    if op.herramientas or op.alternativas is not None:
-        raise ErrorLLM("El proveedor 'anthropic' de curso_core no admite herramientas ni logprobs")
-    if any(m.role == "tool" or m.llamadas for m in mensajes):
-        raise ErrorLLM("El proveedor 'anthropic' de curso_core no admite herramientas")
+    if op.alternativas is not None:
+        raise ErrorLLM("El proveedor 'anthropic' de curso_core no admite logprobs")
     sistema = "\n\n".join(m.content for m in mensajes if m.role == "system")
     cuerpo: dict = {
         "model": modelo,
         "max_tokens": op.max_tokens or CLAUDE_MAX_TOKENS,
-        "messages": [
-            {"role": m.role, "content": m.content} for m in mensajes if m.role != "system"
-        ],
+        "messages": _mensajes_claude(mensajes),
     }
     if sistema:
         cuerpo["system"] = sistema
+    if op.herramientas:
+        cuerpo["tools"] = [
+            {"name": h.nombre, "description": h.descripcion, "input_schema": h.parametros}
+            for h in op.herramientas
+        ]
     if op.formato is not None:
         formato = {"type": "json_schema", "schema": esquema_estricto(op.formato)}
         cuerpo["output_config"] = {"format": formato}
@@ -449,13 +477,19 @@ def _peticion_claude(modelo: str, mensajes: list[Mensaje], op: Opciones) -> dict
 
 
 def _respuesta_claude(mensaje) -> Bruto:
-    """La respuesta es una lista de bloques (texto, razonamiento...): se queda con el texto."""
+    """La respuesta es una lista de bloques: el texto y las herramientas que pide (`tool_use`).
+    Los demás (razonamiento...) se descartan."""
     texto = "".join(b.text for b in mensaje.content if b.type == "text")
-    motivo = {"end_turn": "stop", "max_tokens": "length"}.get(
+    llamadas = [
+        LlamadaHerramienta(nombre=b.name, argumentos=b.input, id=b.id)
+        for b in mensaje.content
+        if b.type == "tool_use"
+    ]
+    motivo = {"end_turn": "stop", "max_tokens": "length", "tool_use": "tool_calls"}.get(
         mensaje.stop_reason, mensaje.stop_reason
     )
     uso = mensaje.usage
-    return Bruto(texto, uso.input_tokens, uso.output_tokens, None, motivo)
+    return Bruto(texto, uso.input_tokens, uso.output_tokens, None, motivo, llamadas)
 
 
 class Dialecto(NamedTuple):

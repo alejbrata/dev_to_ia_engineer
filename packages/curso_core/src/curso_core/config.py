@@ -13,6 +13,12 @@ from pydantic import BaseModel, ConfigDict
 FICHERO = Path("config") / "models.toml"
 
 
+def alias() -> dict[str, str]:
+    """Los roles redirigidos con CURSO_ROLES ("agente=chat_claude,chat=chat_openai")."""
+    pares = [p.split("=", 1) for p in os.environ.get("CURSO_ROLES", "").split(",") if "=" in p]
+    return {origen.strip(): destino.strip() for origen, destino in pares}
+
+
 class Proveedor(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -60,7 +66,13 @@ class Config(BaseModel):
     precios: dict[str, Precio] = {}
 
     def resolver(self, rol: str) -> tuple[str, Proveedor, str]:
-        """Devuelve (nombre del proveedor, proveedor, modelo) para un rol."""
+        """Devuelve (nombre del proveedor, proveedor, modelo) para un rol.
+
+        La variable de entorno CURSO_ROLES redirige roles sin tocar el código ni el toml:
+        con `CURSO_ROLES=agente=chat_claude`, quien pide el rol `agente` recibe el de
+        `chat_claude`. Varias, separadas por comas. Así se repite una práctica con otro modelo.
+        """
+        rol = alias().get(rol, rol)
         if rol not in self.roles:
             raise KeyError(f"El rol '{rol}' no está en models.toml")
         datos = self.roles[rol]
