@@ -1,0 +1,233 @@
+---
+title: "Arquitectura"
+description: "Arquitectura: el sistema RAG del módulo 4 servido como API, con caché, cola y fallback, y lo que cuesta cada pieza medido contra el servicio en marcha"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
+:::note[Revisado: 2026-11]
+Las salidas son reales, con el sistema vigente del módulo 4 (Qwen2.5 7B, rol `chat_grande`, con el reranker) y Qwen2.5 1,5B de respaldo (rol `chat`), en Ollama sobre CPU. FastAPI 0.162 y uvicorn 0.54.
+:::
+
+## Objetivos
+
+Al terminar esta lección podrás:
+
+- Convertir un sistema de LLM en un servicio con una API, con entrada validada y una salida que diga de dónde sale la respuesta.
+- Decidir cuándo una petición se responde en el momento y cuándo va a una cola.
+- Montar una caché de respuestas que se invalide sola cuando cambia el sistema, y saber qué no se debe cachear.
+- Diseñar un fallback que se active a tiempo, y medir lo que cuesta en calidad.
+
+## Teoría
+
+### De un script a un servicio
+
+Hasta ahora, cada práctica era un script: lo ejecutabas, esperabas y leías la salida. En producción, el mismo sistema recibe peticiones de muchos clientes a la vez, a cualquier hora, y tiene que seguir respondiendo cuando una pieza falla. Lo que cambia respecto a un servicio backend de los de siempre es la escala de los números: una respuesta tarda segundos, no milisegundos; cada una cuesta dinero o máquina; y un fallo puede ser silencioso, una respuesta peor en lugar de un error.
+
+El caso del módulo es el sistema que evaluaste en el módulo 4: el asistente de documentación interna, con su RAG, su reranker y su prompt de citas. Lo que se despliega es exactamente lo que se midió.
+
+### Las piezas
+
+```text
+cliente ─▶ API ─┬─▶ caché ──(acierto)──────────────────────────▶ respuesta
+                │      └─(fallo)─▶ RAG ─▶ modelo principal ──┐
+                │                         └─(falla)─▶ respaldo ─┼─▶ respuesta
+                │                                   └─(fallan todos)─▶ respuesta degradada
+                └─▶ cola ─▶ trabajador ─▶ (lo mismo) ─▶ resultado, que el cliente consulta
+```
+
+- **La API** valida la entrada (una pregunta de 3 a 1000 caracteres) y devuelve, además del texto, las fuentes, el modelo que respondió y si vino de la caché o del respaldo. Sin eso, nadie puede comprobar una respuesta ni investigar una queja.
+- **Síncrono o cola.** `POST /preguntas` responde en la misma petición: sirve para una pregunta suelta. `POST /trabajos` encola y devuelve al momento un identificador; el cliente consulta el resultado después. Es lo de siempre en backend con trabajos largos, y con LLMs casi todo es largo.
+- **La caché** guarda la respuesta a una pregunta. La clave incluye la pregunta normalizada (sin mayúsculas, tildes ni signos) y la **huella del sistema** del módulo 4, que cambia si cambian el prompt, los modelos o el corpus: un despliegue invalida la caché solo.
+- **El fallback** prueba el modelo principal y, si falla, el siguiente. Si fallan todos, el servicio contesta que ahora no puede, con un texto fijo, en lugar de un error 500 o una invención.
+
+### Lo que no se cachea
+
+Una caché de respuestas de LLM tiene dos trampas:
+
+- **Las respuestas del respaldo.** Si el principal cae y responde el modelo pequeño, esa respuesta, peor, no debe quedarse en la caché cuando el principal vuelva. `asistente.py` solo guarda lo que respondió el primero de la lista.
+- **Las preguntas parecidas, pero distintas.** Una caché *semántica* (que da por iguales dos preguntas con embeddings cercanos) acierta más, pero puede devolver la respuesta de "¿cuál es el límite del pool de pagos?" a "¿cuál es el límite del pool de usuarios?". La caché exacta de la práctica es más conservadora: solo iguala lo que es la misma pregunta escrita distinto.
+
+### Cuándo salta el fallback
+
+Un fallback solo sirve si detecta el fallo a tiempo, y no todos los fallos son iguales. Un servidor caído rechaza la conexión al instante. Uno colgado (sin memoria, atascado) acepta la conexión y no contesta: el cliente espera hasta que vence su *timeout*. Y los reintentos multiplican la espera: cada reintento de un timeout es otro timeout entero. El timeout del modelo principal tiene que ser algo mayor que su latencia normal y bastante menor que lo que el usuario está dispuesto a esperar.
+
+## Práctica
+
+El código está en [`modulos/06-produccion/`](https://github.com/alejbrata/dev_to_ia_engineer/tree/main/modulos/06-produccion):
+
+- [`asistente.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/06-produccion/asistente.py): el sistema vigente con la caché, el fallback y la respuesta degradada. No sabe nada de HTTP.
+- [`servicio.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/06-produccion/servicio.py): la API con FastAPI. Las funciones de las rutas son normales, no `async`: FastAPI las ejecuta en hilos aparte, y una llamada lenta al modelo no bloquea a las demás.
+
+El fallback, en el núcleo:
+
+```python
+for i, rol in enumerate(self.roles):          # ("chat_grande", "chat")
+    try:
+        r = sistema.responder(self.clientes[rol], self.indice, pregunta, ...)
+    except ErrorLLM as e:
+        errores.append(f"{rol}: {e}")
+        continue
+    resultado = Resultado(texto=r.texto, rol=rol, fallback=i > 0, ...)
+    if self.cache and i == 0:                 # lo del respaldo no se cachea
+        self.cache.guardar(pregunta, resultado)
+    return resultado
+return Resultado(texto=DEGRADADA, errores=errores)
+```
+
+Cada rol tiene su propio cliente, con un timeout de 45 s y sin reintentos (la parte 4 explica por qué). Para arrancar el servicio a mano:
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run uvicorn servicio:app --app-dir modulos/06-produccion --port 8100
+```
+
+Y en `http://127.0.0.1:8100/docs` tienes la documentación de la API, que FastAPI genera sola, con un formulario para probarla.
+
+[`arquitectura.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/06-produccion/arquitectura.py) arranca el servicio cuando lo necesita y lo mide con las preguntas del dataset del módulo 4. Para la parte 4 simula dos caídas del modelo principal: un puerto donde no escucha nadie y un servidor que acepta la conexión y no contesta nunca. Necesita Ollama con los modelos del módulo 4 y el reranker en marcha. Tarda unos 45 minutos; con `--grabadas`, un segundo.
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/06-produccion/arquitectura.py
+```
+
+```text
+1. Una petición a POST /preguntas
+   respuesta: Usa el runbook: pagos sin conexiones a la base de datos.
+   fuentes: ['runbook-pagos-conexiones#0', 'postmortem-pagos-2026-03#2', 'runbook-pagos-conexiones#1']
+   rol: chat_grande (qwen2.5:7b) · caché: False · fallback: False
+   16188 ms en el servidor, 17169 ms vistos desde el cliente
+
+2. 40 peticiones, 12 preguntas distintas
+                    p50     p95    total  aciertos de caché
+   sin cache      13.9s   20.3s     577s                  0
+   con cache       0.3s   18.7s     183s                 28
+
+3. Seis preguntas: en serie, a la vez y por la cola (sin caché)
+   en serie     p50  12.8 s · p95  20.4 s · todas en   85 s · respondió el respaldo: 0
+   a la vez     p50  39.0 s · p95  77.5 s · todas en   78 s · respondió el respaldo: 2
+   por la cola  cada POST responde en 260 ms · todas en   86 s · respondió el respaldo: 0
+
+4. El modelo principal cae: cuánto tarda en responder el de respaldo
+   el principal...         timeout  reintentos  respuesta en  quién
+   rechaza la conexión        120s           3         10.0s  chat
+   se cuelga                  120s           0        126.8s  chat
+   se cuelga                   15s           3         71.8s  chat
+   se cuelga                   15s           0         21.8s  chat
+
+5. Calidad del respaldo (qwen2.5:1.5b) con la eval del módulo 4
+   vigente (7B): 52 de 58
+   respaldo:     40 de 58, p50 2.6 s
+   el respaldo gana 0, pierde 12, p = 0.000
+```
+
+## Mide y depura
+
+### La caché mejora la mediana, no la cola
+
+Con 40 peticiones de 12 preguntas distintas, la caché acertó 28 veces: todas las repetidas. La mediana bajó de 13,9 s a 0,3 s, y el tiempo total, de 577 s a 183 s, un tercio. Pero el p95 apenas cambió: 20,3 s sin caché y 18,7 s con caché. El p95 lo marcan las preguntas que no están en la caché, que siguen pasando por el modelo. Una caché hace el servicio más barato y la experiencia típica mucho mejor, pero no arregla la peor experiencia. Para eso hay que hacer más rápido el camino lento.
+
+Cuánto ayuda depende de cuánto se repiten las preguntas. Aquí, con pesos de Zipf, el 70 % eran repetidas. En un asistente interno real, donde muchas personas preguntan lo mismo, es razonable; con preguntas casi únicas, la caché exacta no acertaría casi nunca. Mide la tasa de aciertos en producción (lección 6.03) antes de dar por hecho el ahorro.
+
+### Seis a la vez: más espera, y dos respuestas peores sin que nadie lo vea
+
+Ollama, en esta configuración, atiende las peticiones de una en una. Con seis preguntas a la vez, el total es parecido al de en serie (78 s frente a 85, algo menos porque dos las respondió el modelo pequeño, más rápido), pero cada petición espera a las anteriores: la mediana pasa de 12,8 s a 39 s y el p95, de 20,4 s a 77,5 s.
+
+Y hay algo peor. Dos de las seis llegaron al modelo después de esperar más de 45 s en su cola, el timeout del principal saltó y las respondió el modelo de respaldo. El servicio devolvió 200 en las seis, con texto razonable. Nadie se entera de que dos respuestas salieron del modelo que, en la parte 5, falla 12 preguntas más. Es la anatomía de esta lección.
+
+Por la cola no pasó: el trabajador procesa los trabajos de uno en uno, así que cada llamada llega a un modelo libre y ninguna caduca. El cliente recibe su identificador en 0,26 s y las seis están hechas en 86 s, como en serie. La cola no hace el sistema más rápido; hace explícita la espera y la saca del timeout.
+
+### El fallback depende de cómo cae el principal
+
+| El principal... | Timeout | Reintentos | Respuesta en |
+| --- | --- | --- | --- |
+| rechaza la conexión | 120 s | 3 | 10,0 s |
+| se cuelga | 120 s | 0 | 126,8 s |
+| se cuelga | 15 s | 3 | 71,8 s |
+| se cuelga | 15 s | 0 | 21,8 s |
+
+Si el servidor está caído, la conexión se rechaza al momento y el respaldo responde en lo que tarda él, 10 s: los reintentos no cuentan, porque `curso_core` no reintenta un error de conexión. Si está colgado, el cliente espera hasta su timeout. Con 120 s, el fallback llega a los dos minutos, cuando el usuario ya se ha ido. Y los reintentos multiplican: 15 s con 3 reintentos son cuatro esperas de 15 s más las pausas entre ellas, 72 s.
+
+El timeout de 45 s del asistente sale de los datos: algo más del doble del p95 normal del modelo principal (20 s). Lo bastante para no cortar una respuesta lenta, pero no tanto como para tener al usuario esperando un modelo colgado. Y sin reintentos, porque para eso está el respaldo.
+
+### Lo que cuesta el respaldo
+
+Con la eval del módulo 4, el modelo de respaldo acierta 40 de 58 preguntas, frente a 52 del sistema vigente: pierde 12 y no gana ninguna (p < 0,001). Responde en 2,6 s de mediana. El fallback mantiene el servicio en pie, pero con respuestas peores. Es un compromiso que hay que decidir, no un detalle técnico: ¿es mejor una respuesta peor o un "ahora no puedo"? En un asistente de documentación, quizá lo primero, avisando en la respuesta; en algo con consecuencias, quizá lo segundo.
+
+## Errores frecuentes
+
+**Dejar el timeout por defecto.** Con 120 s y reintentos, un modelo colgado retiene cada petición minutos y el fallback llega tarde. Pon un timeout algo mayor que la latencia normal y quita los reintentos de timeouts si hay respaldo.
+
+**Cachear las respuestas del respaldo.** Seguirían saliendo de la caché cuando el principal vuelva. Cachea solo lo que respondió el principal.
+
+**Una caché sin la versión del sistema en la clave.** Cambias el prompt o el modelo y la caché sigue sirviendo respuestas viejas. Mete en la clave la huella de lo que puede cambiar la respuesta.
+
+**Aceptar más peticiones de las que el modelo puede atender.** Se acumulan en la cola del servidor de modelos, la latencia se dispara y los timeouts saltan. Limita la concurrencia o usa una cola propia.
+
+**Un fallback que nadie ve.** Si el servicio no dice qué modelo respondió, una caída del principal pasa por una bajada de calidad sin explicación. Devuelve el rol en la respuesta y mídelo (lección 6.03).
+
+### Anatomía de un error: las dos respuestas que salieron del modelo equivocado
+
+En la parte 3, con seis peticiones a la vez, la salida enseña:
+
+```text
+   a la vez     p50  39.0 s · p95  77.5 s · todas en   78 s · respondió el respaldo: 2
+```
+
+Y las trazas de `curso_core` del servicio en esos segundos (de la primera ejecución; al repetirla salieron otra vez dos):
+
+```text
+21:41:10 chat_grande False 45.0 Timeout tras 1 intentos: ReadTimeout('timed out')
+21:41:12 chat_grande False 45.0 Timeout tras 1 intentos: ReadTimeout('timed out')
+21:41:23 chat        True   7.0
+21:41:27 chat        True  13.4
+```
+
+**Cómo leerlo.** El servicio no falló: las seis peticiones devolvieron 200. Lo que dicen las trazas es que dos llamadas al modelo principal agotaron sus 45 s y, segundos después, respondió el de respaldo. Sin el campo `fallback` en la respuesta y sin mirar las trazas, solo verías que esas dos respuestas tardaron un poco menos que las demás.
+
+**Causa.** El modelo principal no estaba caído: estaba ocupado. Ollama atiende de una en una, así que las seis peticiones esperaron en su cola, y el timeout del cliente cuenta también ese tiempo de espera. Las dos últimas pasaron de 45 s esperando turno. Para el cliente, un modelo muy ocupado y uno colgado son lo mismo: no contestan a tiempo.
+
+**Solución.** Tres medidas, de la más simple a la más completa:
+
+- **No mandar al modelo más trabajo del que puede hacer**: limitar las peticiones simultáneas que el servicio envía a Ollama (un semáforo), o usar la cola, como en la parte 3, donde ninguna llegó tarde.
+- **Distinguir "ocupado" de "caído"**: con la concurrencia limitada, el timeout solo mide el tiempo de generación y vuelve a significar "colgado".
+- **Medir el fallback**: el porcentaje de respuestas que da el respaldo es una métrica de salud. Si sube sin que haya ninguna caída, el sistema está sobrecargado. La lección 6.03 lo convierte en una alerta.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'Activas la caché y la mediana de latencia baja de 14 s a 0,3 s, pero el p95 sigue en 19 s. ¿Qué pasa?',
+			opciones: [
+				{ texto: 'La caché está mal implementada.', porque: 'Acierta en todas las repetidas. El p95 lo marcan las preguntas nuevas, que siguen pasando por el modelo ("La caché mejora la mediana, no la cola").' },
+				{ texto: 'Es lo esperable: la caché acelera lo repetido; la peor experiencia la dan las preguntas que no están en ella.', correcta: true, porque: 'Para bajar el p95 hay que hacer más rápido el camino lento, no cachear más.' },
+			],
+		},
+		{
+			pregunta: 'El modelo principal se cuelga a veces. Tienes un respaldo. ¿Cómo configuras el cliente del principal?',
+			opciones: [
+				{ texto: 'Timeout de 120 s y 3 reintentos, para no perder respuestas.', porque: 'Con un modelo colgado son minutos de espera antes del fallback: aquí, 15 s con 3 reintentos ya fueron 72 s.' },
+				{ texto: 'Timeout algo por encima de su latencia normal y sin reintentos de timeout.', correcta: true, porque: 'El respaldo llega en segundos. Aquí, 15 s sin reintentos: respuesta en 22 s.' },
+			],
+		},
+		{
+			pregunta: 'Tu servicio recibe picos de 20 peticiones a la vez y el modelo atiende de una en una. Ves que en los picos la calidad baja, aunque no hay errores. ¿Qué miras?',
+			opciones: [
+				{ texto: 'El prompt, que funciona peor con más carga.', porque: 'El prompt no sabe cuánta carga hay. Lo que cambia es qué modelo responde.' },
+				{ texto: 'Cuántas respuestas da el modelo de respaldo: en los picos, el principal agota su timeout esperando turno.', correcta: true, porque: 'Es la anatomía: ocupado y colgado se ven igual desde el cliente. Limita la concurrencia o usa una cola.' },
+			],
+		},
+		{
+			pregunta: 'Tu equipo quiere guardar en la caché también las respuestas del modelo de respaldo, "para no recalcular". ¿Qué le dices?',
+			opciones: [
+				{ texto: 'Que sí: una respuesta es una respuesta.', porque: 'La del respaldo es peor (aquí, 12 aciertos menos de 58) y seguiría sirviéndose cuando el principal vuelva.' },
+				{ texto: 'Que no: solo se cachea lo que respondió el principal.', correcta: true, porque: 'Así, cuando el principal vuelve, las preguntas se responden con la calidad que se evaluó.' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- [Documentación de FastAPI](https://fastapi.tiangolo.com/), en especial [concurrencia y async/await](https://fastapi.tiangolo.com/async/): por qué una función normal no bloquea el servidor.
+- Google, [Site Reliability Engineering](https://sre.google/sre-book/table-of-contents/), capítulos sobre sobrecarga y fallos en cascada: los timeouts, los reintentos y la degradación, con más detalle.
+- Microsoft, [patrones de diseño en la nube](https://learn.microsoft.com/es-es/azure/architecture/patterns/): *Cache-Aside*, *Queue-Based Load Leveling* y *Circuit Breaker*, los mismos patrones con otro nombre.

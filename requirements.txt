@@ -4,6 +4,8 @@
     # via curso-ai-engineering
 aiosqlite==0.22.1
     # via langgraph-checkpoint-sqlite
+annotated-doc==0.0.5
+    # via fastapi
 annotated-types==0.8.0
     # via pydantic
 anthropic==2.3.0
@@ -46,10 +48,14 @@ distro==1.9.0
     # via langsmith
 docstring-parser==0.18.0
     # via anthropic
+fastapi==0.162.0
+    # via curso-ai-engineering
 filelock==4.2.4
     # via huggingface-hub
 fsspec==2026.7.0
     # via huggingface-hub
+googleapis-common-protos==1.76.0
+    # via opentelemetry-exporter-otlp-proto-http
 h11==0.16.0
     # via
     #   httpcore
@@ -136,7 +142,31 @@ openai==3.41.0
 opentelemetry-api==1.45.2
     # via
     #   anthropic
+    #   fastapi
     #   mcp
+    #   opentelemetry-exporter-http-transport
+    #   opentelemetry-exporter-otlp-proto-http
+    #   opentelemetry-sdk
+    #   opentelemetry-semantic-conventions
+opentelemetry-exporter-http-transport==0.66b2
+    # via opentelemetry-exporter-otlp-proto-http
+opentelemetry-exporter-otlp-common==0.66b2
+    # via opentelemetry-exporter-otlp-proto-http
+opentelemetry-exporter-otlp-proto-common==1.45.2
+    # via opentelemetry-exporter-otlp-proto-http
+opentelemetry-exporter-otlp-proto-http==1.45.2
+    # via curso-ai-engineering
+opentelemetry-proto==1.45.2
+    # via
+    #   opentelemetry-exporter-otlp-proto-common
+    #   opentelemetry-exporter-otlp-proto-http
+opentelemetry-sdk==1.45.2
+    # via
+    #   curso-ai-engineering
+    #   opentelemetry-exporter-otlp-common
+    #   opentelemetry-exporter-otlp-proto-http
+opentelemetry-semantic-conventions==0.66b2
+    # via opentelemetry-sdk
 orjson==3.13.0
     # via
     #   langgraph-sdk
@@ -153,6 +183,12 @@ pgvector==0.5.1
     # via curso-core
 pluggy==1.7.0
     # via pytest
+prometheus-client==0.26.0
+    # via curso-ai-engineering
+protobuf==7.36.2
+    # via
+    #   googleapis-common-protos
+    #   opentelemetry-proto
 psycopg==3.3.6
     # via curso-core
 psycopg-binary==3.3.6 ; implementation_name != 'pypy'
@@ -164,6 +200,7 @@ pydantic==2.14.1
     #   anthropic
     #   curso-ai-engineering
     #   curso-core
+    #   fastapi
     #   langchain-core
     #   langgraph
     #   langsmith
@@ -196,6 +233,8 @@ referencing==0.37.0
 requests==2.34.2
     # via
     #   langsmith
+    #   opentelemetry-exporter-http-transport
+    #   opentelemetry-exporter-otlp-proto-http
     #   requests-toolbelt
 requests-toolbelt==1.0.0
     # via langsmith
@@ -215,6 +254,7 @@ sse-starlette==3.6.0
     # via mcp
 starlette==1.10.0
     # via
+    #   fastapi
     #   mcp
     #   sse-starlette
 tenacity==9.2.1
@@ -231,6 +271,7 @@ typing-extensions==4.16.0
     # via
     #   anthropic
     #   anyio
+    #   fastapi
     #   httpx2
     #   huggingface-hub
     #   langchain-core
@@ -240,6 +281,9 @@ typing-extensions==4.16.0
     #   mcp-types
     #   openai
     #   opentelemetry-api
+    #   opentelemetry-exporter-otlp-proto-http
+    #   opentelemetry-sdk
+    #   opentelemetry-semantic-conventions
     #   psycopg
     #   pydantic
     #   pydantic-core
@@ -248,6 +292,7 @@ typing-extensions==4.16.0
     #   typing-inspection
 typing-inspection==0.4.4
     # via
+    #   fastapi
     #   mcp
     #   pydantic
 tzdata==2026.6 ; sys_platform == 'win32'
@@ -258,8 +303,10 @@ uuid-utils==0.19.0
     # via
     #   langchain-core
     #   langsmith
-uvicorn==0.54.0 ; sys_platform != 'emscripten'
-    # via mcp
+uvicorn==0.54.0
+    # via
+    #   curso-ai-engineering
+    #   mcp
 websockets==17.4
     # via
     #   langgraph-sdk
