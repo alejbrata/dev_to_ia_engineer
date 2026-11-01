@@ -439,6 +439,15 @@ def test_razonar_se_traduce_a_think_en_ollama() -> None:
     assert "think" not in c._preparar("Hola", "chat", Opciones(), False).cuerpo
 
 
+def test_sin_razonar_anade_los_parametros_del_proveedor() -> None:
+    config = CONFIG.model_copy(deep=True)
+    config.providers["nube"].sin_razonar = {"reasoning_effort": "none"}
+    c = ClienteLLM(config)
+    cuerpo = c._preparar("Hola", "remoto", Opciones(razonar=False), False).cuerpo
+    assert cuerpo["reasoning_effort"] == "none"
+    assert "reasoning_effort" not in c._preparar("Hola", "remoto", Opciones(), False).cuerpo
+
+
 def test_el_razonamiento_de_ollama_llega_aparte_del_texto(tmp_path: Path) -> None:
     """Con un modelo que razona, Ollama devuelve el razonamiento aparte; sus tokens van en
     eval_count. Si se agota el límite pensando, el texto llega vacío."""

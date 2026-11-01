@@ -30,6 +30,9 @@ class Proveedor(BaseModel):
     # Si el proveedor exige el JSON Schema "estricto": cada objeto con
     # additionalProperties=false y todas sus propiedades en `required` (OpenAI, Claude).
     esquema_estricto: bool = False
+    # Parámetros que se añaden a la petición con `razonar=False`, en proveedores cuyos
+    # modelos razonan por defecto (en OpenAI, `reasoning_effort = "none"`).
+    sin_razonar: dict[str, str] = {}
 
 
 class Rol(BaseModel):

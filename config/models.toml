@@ -170,14 +170,16 @@ api_key_env = "HF_TOKEN"
 [providers.openai]
 # Opcional (anexo G). La API de OpenAI pide `max_completion_tokens` en lugar de
 # `max_tokens`, y sus modelos actuales solo aceptan la temperatura por defecto: con
-# temperature=0 responden 400; y su salida estructurada estricta exige el esquema cerrado.
-# Revisado: 2026-10.
+# temperature=0 responden 400; su salida estructurada estricta exige el esquema cerrado; y
+# razonan por defecto, algo incompatible con las herramientas en /chat/completions (400):
+# con razonar=False se envía reasoning_effort="none". Revisado: 2026-11.
 tipo = "openai"
 base_url = "https://api.openai.com/v1"
 api_key_env = "OPENAI_API_KEY"
 parametro_max_tokens = "max_completion_tokens"
 omitir = ["temperature"]
 esquema_estricto = true
+sin_razonar = { reasoning_effort = "none" }
 
 [providers.anthropic]
 # Opcional (anexo A). No usa el formato de OpenAI: curso_core lo llama con el SDK oficial,

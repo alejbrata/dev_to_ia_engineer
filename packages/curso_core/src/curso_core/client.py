@@ -90,8 +90,9 @@ class Opciones(BaseModel):
     formato: dict | None = None
     # Herramientas que el modelo puede pedir que ejecutes (tool calling).
     herramientas: list[Herramienta] | None = None
-    # En modelos que razonan antes de responder: activarlo o desactivarlo. Solo Ollama
-    # (parámetro `think`); `None` deja el comportamiento del modelo.
+    # En modelos que razonan antes de responder: activarlo o desactivarlo. En Ollama es el
+    # parámetro `think`; en otros proveedores, solo desactivarlo y si su configuración dice
+    # cómo (`sin_razonar`). `None` deja el comportamiento del modelo.
     razonar: bool | None = None
 
 
@@ -768,6 +769,8 @@ class ClienteLLM:
             cuerpo[proveedor.parametro_max_tokens] = cuerpo.pop("max_tokens")
         for parametro in proveedor.omitir:
             cuerpo.pop(parametro, None)
+        if opciones.razonar is False:
+            cuerpo |= proveedor.sin_razonar
         if proveedor.esquema_estricto and "response_format" in cuerpo:
             formato = cuerpo["response_format"]["json_schema"]
             formato["schema"] = esquema_estricto(formato["schema"])
