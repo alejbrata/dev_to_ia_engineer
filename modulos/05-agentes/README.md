@@ -21,6 +21,9 @@ El caso de todo el módulo es un agente de guardia sobre la plataforma de los m�
 - `servidor_mcp.py` y `con_mcp.py`: las herramientas de la plataforma como servidor MCP con el SDK oficial, y el mismo agente como cliente por stdio (lección 10). `test_multiagente_mcp.py` prueba el coordinador y el servidor en memoria, sin modelo.
 - `seguridad.py` y `atacar.py`: cinco ataques reales (inyección en logs, exfiltración, documentación envenenada, herramienta envenenada) con tres configuraciones de defensa (lección 11). `test_seguridad.py` prueba la guardia sin modelo.
 - `evals_agentes.py`: resultado, trayectoria, fiabilidad (pass^k) y coste en los escenarios de prueba, repitiendo igual y con variación (`datos/alertas_variantes.json`) (lección 12).
+- `aguante.py` y `aguantar.py`: herramientas que fallan y reintentos en código, presupuestos de tokens y reanudación tras una caída con clave de idempotencia (lección 13). `test_aguante.py` lo prueba sin modelo.
+- `skills.py` y `con_skills.py`: los runbooks como skills que el agente carga cuando las necesita, frente a toda la documentación en el prompt y frente al RAG (lección 14).
+- `crisis.py` y `comite.py`: el cierre del módulo. Un comité de crisis multiagente (orquestador, especialistas técnico, legal, de negocio y de comunicación, y aprobación humana) frente a un agente único, con el modelo local y, si hay clave, con uno comercial. Los incidentes están en `datos/crisis.jsonl` y las políticas de cada área en `datos/crisis/` (lección 15). `test_crisis.py` prueba el anclaje, la puntuación y el plan de encargos sin modelo.
 - `checkpoints/`: los checkpoints de los grafos. No se versiona.
 - `resultados/`: resultados grabados caso a caso (`curso_core.evals.Informe`). Con `--grabadas`, las prácticas los reutilizan sin llamar al modelo.
 

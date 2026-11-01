@@ -1,0 +1,251 @@
+---
+title: "Cierre: un comité de crisis"
+description: "Cierre del módulo: un comité de crisis multiagente (orquestador que planifica como grafo, especialistas por área y aprobación humana) medido frente a un agente único, con un modelo local y con uno comercial"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
+:::note[Revisado: 2026-11]
+Las salidas son reales: con Qwen3 8B sin razonamiento (rol `agente`) en Ollama, sobre CPU, y con el modelo barato de OpenAI (rol `chat_openai`, GPT-6 Luna) por su API. La parte comercial es opcional: necesita tu propia clave en `.env` y cuesta unos céntimos. Sin clave, el script ejecuta solo la parte local.
+:::
+
+## Objetivos
+
+Al terminar esta lección podrás:
+
+- Montar un sistema multiagente completo con las piezas del módulo: un grafo de estado, un orquestador que planifica encargos como grafo de tareas, especialistas con sus herramientas y permisos, y aprobación humana.
+- Elegir un caso en el que especializar tenga sentido: el conocimiento y las obligaciones están repartidos entre áreas.
+- Evaluar un plan de respuesta frente a lo que exigen las políticas, y medirlo frente a un agente único.
+- Decidir con datos si el sistema multiagente compensa, y con qué modelo.
+
+## Teoría
+
+### Por qué este caso
+
+En la lección 09, el sistema multiagente no ayudó: el revisor tenía la misma información y el mismo modelo que el investigador, y por tanto los mismos puntos ciegos. La conclusión era que un segundo agente compensa cuando aporta **algo que el primero no tiene**.
+
+Este caso está pensado para eso. Los incidentes ya no son solo técnicos: un error de precios, una brecha de datos, cobros duplicados o una caída en Black Friday piden decisiones de cuatro áreas, y cada área tiene sus propias reglas:
+
+- **técnico**: los runbooks de siempre, y unos nuevos para estos incidentes;
+- **legal**: el procedimiento de brechas de datos (con el plazo de 72 horas del RGPD) y los criterios con clientes;
+- **negocio**: qué se hace con los pedidos, los reembolsos, las compensaciones y los vendedores del marketplace;
+- **comunicación**: qué se publica, a quién y en cuánto tiempo.
+
+Las políticas están en [`datos/crisis/`](https://github.com/alejbrata/dev_to_ia_engineer/tree/main/modulos/05-agentes/datos/crisis). Son de la empresa ficticia del curso, salvo el plazo del RGPD, que es real. Un agente único tiene que encontrarlo todo en una documentación mezclada y acordarse de cubrir las cuatro áreas. En el comité, cada especialista solo ve las políticas de su área. Si vienes de backend, es la diferencia entre un servicio que lo hace todo y varios servicios con un dominio cada uno: cada uno es más simple, pero alguien tiene que coordinarlos.
+
+Y hay una segunda pregunta: ¿cambia la respuesta con un modelo más capaz? Es razonable esperar que un modelo comercial planifique y consolide mejor que uno local de 8B. Aquí se mide.
+
+### La arquitectura
+
+```text
+alerta ─▶ planificar ──▶ ejecutar encargos ──▶ consolidar ──▶ [aprobación] ──▶ aplicar
+          (orquestador:     (especialistas en       (plan de          (persona)
+           grafo de         orden topológico,        respuesta)
+           encargos)        cada uno con sus
+                            políticas y permisos)
+```
+
+Cada pieza viene de una lección del módulo:
+
+- El flujo es un **grafo de estado** con checkpoints y una parada antes de aplicar (lección 05).
+- El orquestador escribe los encargos como un **grafo de tareas** con dependencias, que se valida y se ordena antes de ejecutar (lección 04). Por ejemplo, la comunicación puede depender de lo que diga legal.
+- Cada especialista es **el bucle de la lección 03** con su prompt, su índice de documentación y solo sus herramientas, a través de la plataforma restringida (lecciones 08 y 11).
+- El consolidador convierte los informes en un **plan estructurado** (módulo 2), y una **persona lo aprueba** antes de aplicarlo.
+
+### Cómo se evalúa
+
+El resultado es un plan de respuesta con una severidad y cuatro listas de acciones. Cada incidente tiene unas **claves esperadas**, ancladas a las políticas (un test comprueba que cada una sale de la documentación de su área, como en el módulo 4): por ejemplo, en la brecha de datos, "72 horas", "DPO" y "AEPD" en lo legal, y "retirar el acceso público" y "rotar las credenciales" en lo técnico. Se mide:
+
+- **cobertura**: cuántas claves cubre el plan, en cualquiera de sus partes;
+- **completos**: en cuántos incidentes las cubre todas;
+- **severidad**: si coincide con la que dan los criterios de severidad del corpus. Esta se añadió después de leer los planes; "Mide y depura" cuenta por qué;
+- **coste**: llamadas, tokens, dólares y tiempo.
+
+Tiene límites que conviene decir desde el principio. Son 4 incidentes. La comprobación busca palabras, así que una acción bien explicada con otras palabras cuenta como no cubierta. Y no penaliza las acciones de más, aunque sobren. Es una eval para comparar configuraciones entre sí, no una nota absoluta.
+
+## Práctica
+
+[`crisis.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/crisis.py) tiene los incidentes, las políticas por área, la puntuación y los dos sistemas. El grafo del comité:
+
+```python
+def construir(comite: Comite) -> grafo.Grafo[EstadoComite]:
+    g = grafo.Grafo(EstadoComite, inicio="planificar")
+    g.nodo("planificar", comite.planificar)
+    g.nodo("ejecutar", comite.ejecutar)
+    g.nodo("consolidar", comite.consolidar)
+    g.nodo("aplicar", comite.aplicar)
+    g.arista_condicional("planificar", tras_planificar, {"planificar", "ejecutar", grafo.FIN})
+    g.arista("ejecutar", "consolidar")
+    g.arista("consolidar", "aplicar")
+    g.arista("aplicar", grafo.FIN)
+    return g
+```
+
+Si el plan de encargos no es válido (un id que no existe, un ciclo), `tras_planificar` vuelve a planificar con el error delante, una vez como mucho. El agente único usa el mismo bucle con todas las herramientas, la documentación entera y una herramienta `proponer_plan`; si termina sin un plan válido, lo que dejó (su respuesta o su último intento) se estructura en un plan, como en la lección 09. La anatomía de esta lección cuenta por qué hace falta el último intento.
+
+[`comite.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/comite.py) ejecuta los cuatro incidentes con cuatro configuraciones: agente único y comité, con el modelo local y con el comercial. Aprueba todos los planes; con `--humano`, los apruebas tú. La parte local tarda cerca de hora y media en la máquina del curso; la comercial, unos minutos. Con `--grabadas`, un segundo.
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/05-agentes/comite.py
+```
+
+```text
+1. brecha-datos, con el comité y el modelo local
+   intentos de planificación: 1
+   e1 → tecnico      (3 pasos) ¿Está el fichero accesible sin autenticación y cuál es su ubicación en el sistem
+   e3 → legal        (3 pasos) ¿Qué implicaciones legales tiene la exposición de datos personales de los client
+   e2 → tecnico      (1 pasos) ¿Qué medidas técnicas se deben tomar para bloquear el acceso no autorizado al fi
+   e4 → comunicacion (4 pasos) ¿Qué mensaje se debe comunicar a los clientes afectados y cuál es el plan de com
+   e5 → negocio      (3 pasos) ¿Qué políticas de compensación o reembolso se deben aplicar a los clientes afect
+   cubre 6 de 6; falta: nada
+
+2. Los 4 incidentes, con cada configuración
+                                 cubiertas  completos  severidad  llamadas  tokens  coste $  s/incid.
+   agente único, agente           11 de 20     0 de 4     0 de 4        44  110154   0.0000       784
+   comité, agente                 20 de 20     4 de 4     0 de 4        60   61019   0.0000       550
+   agente único, chat_openai      19 de 20     3 de 4     0 de 4        16   35147   0.0045         9
+   comité, chat_openai            20 de 20     4 de 4     0 de 4        56   71957   0.0108        30
+
+3. Claves cubiertas por incidente
+   incidente            agente/agente comité/agente agente/chat_o comité/chat_o
+   precio-erroneo                 4/6           6/6           6/6           6/6
+   brecha-datos                   2/6           6/6           5/6           6/6
+   cobro-duplicado                4/5           5/5           5/5           5/5
+   caida-black-friday             1/3           3/3           3/3           3/3
+
+4. Lo que se queda sin cubrir
+   agente único, agente, precio-erroneo: negocio: cupon, comunicacion: pagina de estado
+   agente único, agente, brecha-datos: tecnico: retira el acceso publico, tecnico: rota, legal: 72 horas, legal: delegado de proteccion de datos
+   agente único, agente, cobro-duplicado: comunicacion: pagina de estado
+   agente único, agente, caida-black-friday: negocio: credito, comunicacion: pagina de estado
+   agente único, chat_openai, brecha-datos: tecnico: retira el acceso publico
+```
+
+## Mide y depura
+
+### Con el modelo local, el comité compensa
+
+Con el modelo local, el comité cubre 20 de 20 claves y el agente único, 11. Las que le faltan al agente único son de las que cuestan caro: en la brecha de datos no menciona el plazo de 72 horas, ni avisar al DPO, ni rotar las credenciales; en la caída de Black Friday decide no compensar a los vendedores, cuando la política lo prevé; y en tres incidentes olvida la página de estado. Tenía la misma documentación que el comité, pero mezclada, y tenía que acordarse de cubrir cuatro áreas a la vez. Cada especialista solo tiene que cubrir la suya, con sus políticas delante.
+
+Y gastó menos: 61 019 tokens frente a 110 154, y 550 segundos de mediana por incidente frente a 784. Más agentes no significa más coste si cada uno trabaja con un contexto corto. El agente único arrastra en cada paso todo lo que ha leído (y aquí, además, los nueve intentos de la anatomía).
+
+Es lo contrario de lo que pasó en la lección 09. Allí, el segundo agente tenía la misma información que el primero. Aquí, cada especialista tiene un trozo de información y una responsabilidad que el agente único tiene que repartir solo.
+
+### Con el modelo comercial, el agente único casi basta
+
+Con el modelo comercial, el agente único cubre 19 de 20. La que le falta, "retira el acceso público" en la brecha, es un falso negativo: su plan dice "Retirar de inmediato el acceso público al contenedor", y la comprobación busca la frase sin el "de inmediato". Contada a mano, cubre 20 de 20, igual que el comité. Es el límite que anunciaba "Cómo se evalúa". El plan del agente único local tiene otro igual ("Bloquear el acceso al contenedor"): contado a mano, cubre 12, no 11.
+
+La conclusión depende del modelo. Un modelo capaz mantiene las cuatro áreas en la cabeza sin ayuda; uno de 8B necesita que el sistema se las reparta. Es lo que se esperaba al plantear el caso, y aquí está medido, aunque con 4 incidentes.
+
+### La eval llegó a su techo
+
+Tres de las cuatro configuraciones cubren todas las claves (contando a mano). Con esta eval no se puede decir si el comité comercial es mejor que el local, ni que el agente único comercial: los tres la aprueban. Una eval que todos aprueban ya no compara nada. Para seguir, hace falta una más exigente: más incidentes, penalizar lo que sobra o está mal (el plan del comité local repite en negocio las acciones legales) y una revisión de la calidad por una persona o un juez, como en el módulo 4.
+
+### La severidad, que nadie consultó
+
+Leyendo los planes apareció lo que la cobertura no medía: ninguna configuración acierta la severidad. Según los criterios del corpus, los cuatro incidentes son `critica` (pérdida de dinero en dos, pérdida de datos en uno, la búsqueda caída para todos en el otro), y todos los planes dicen `alta`, salvo uno del comité local que dice `media`. Por eso la salida tiene ahora una columna de severidad: 0 de 4 en todas las filas.
+
+La causa no es el modelo, porque falla igual el comercial. Ningún agente buscó los criterios y el orquestador no los encargó a nadie. El consolidador decide la severidad sin tenerlos delante. Es el mismo fallo que la skill `severidades` de la lección 14, que no se cargó nunca: lo que hace falta siempre no se deja a que el modelo decida buscarlo. La corrección es darle los criterios a quien decide la severidad, en su prompt. No está hecha: es el primer ejercicio de esta lección.
+
+### Coste y tiempo
+
+| | Tiempo por incidente (mediana) | Coste de los 4 incidentes |
+| --- | --- | --- |
+| Agente único, local | 784 s | 0 (tu máquina) |
+| Comité, local | 550 s | 0 (tu máquina) |
+| Agente único, comercial | 9 s | 0,0045 $ |
+| Comité, comercial | 30 s | 0,0108 $ |
+
+El comité comercial cuesta 2,4 veces lo que el agente único comercial y tarda más del triple, y con esta eval no cubre más. El local no cuesta dinero por llamada, pero en CPU tarda unos 9 minutos por incidente, y en una crisis eso cuenta; con GPU, la cuenta cambia. No hay una respuesta única: depende de cuánto valgan el tiempo, el dinero y los datos que salen de tu infraestructura, y antes de decidir hace falta una eval que no esté en el techo.
+
+## Errores frecuentes
+
+**Montar un comité donde un agente basta.** Con el modelo comercial, el agente único cubrió lo mismo por menos de la mitad de coste y en menos de un tercio del tiempo. Especializar compensa cuando un agente solo no llega, y eso se mide con tu modelo y tus casos.
+
+**Repartir el trabajo pero no la información.** Si todos los especialistas ven lo mismo, son el revisor de la lección 09 repetido. Lo que hace útil a un especialista es lo que solo él tiene: sus políticas, sus herramientas, sus permisos.
+
+**Dejar fuera lo que hace falta siempre.** Los criterios de severidad no los pidió nadie. Lo que tiene que estar en todos los casos se pone en el prompt de quien lo usa; no se espera a que el modelo lo busque.
+
+**Fiarse de una eval en su techo.** Si todas las configuraciones aprueban, la eval ya no decide nada. Hazla más exigente antes de elegir con ella.
+
+**Comprobar solo palabras clave sin leer los planes.** La comprobación tuvo falsos negativos ("retirar de inmediato el acceso público") y no veía la severidad. Lee una muestra de salidas en cada medición; la métrica dice dónde mirar, no lo que pasa.
+
+**Errores de herramienta que no dicen qué corregir.** "Input should be a valid string", sin el campo, no le dice al modelo qué tiene que cambiar. Di siempre qué campo falla y qué se esperaba.
+
+### Anatomía de un error: el plan que nunca entró
+
+En la primera ejecución completa, el agente único con el modelo local cubrió 0 de 20 claves: cero en los cuatro incidentes. El plan guardado de cada uno era este:
+
+```text
+{"severidad":"alta","tecnico":[],"legal":[],"negocio":[],"comunicacion":[]}
+```
+
+Y las herramientas que usó en `precio-erroneo`:
+
+```text
+estado_servicio, buscar_logs, buscar_documentacion, datos_negocio,
+proponer_plan, proponer_plan, proponer_plan, proponer_plan, proponer_plan,
+proponer_plan, proponer_plan, proponer_plan, proponer_plan
+```
+
+**Cómo leerlo.** Investigó bien y propuso un plan nueve veces. El contenido era bueno ("Revertir la importación de precios aplicada a las 11:05", "Congelar la sincronización del catálogo con el ERP..."). El problema era la forma. El esquema pide que `comunicacion` sea una lista de textos, y el modelo mandaba objetos:
+
+```text
+'comunicacion': [{'canal': 'correo electrónico y mensaje de texto',
+                  'destinatarios': ['clientes afectados'], 'mensaje': 'Se ha detectado...'}]
+```
+
+La descripción del campo, "Qué se comunica, a quién y por qué canal", casi pide esa estructura. Cada intento devolvía un error, el agente agotó los pasos sin responder, y el respaldo (estructurar su respuesta, como en la lección 09) recibió una respuesta vacía. De ahí, el plan vacío.
+
+Había además un fallo del curso: la herramienta respondía `Error en el plan: Input should be a valid string`, sin decir qué campo fallaba. La plataforma de la lección 02 sí lo dice; esta, no. Corregido el mensaje a `Error en el plan (comunicacion.0): Input should be a valid string`, se repitió el agente único: otra vez 0 de 20, con nueve llamadas idénticas por incidente. Con el campo delante, el modelo siguió mandando lo mismo.
+
+**Causa.** El modelo local no respetó el esquema de la herramienta y no supo corregirse con el error. Repitió la misma llamada que acababa de fallar, con el campo señalado: el mensaje de error es necesario, pero con este modelo no bastó. El modelo comercial siguió el esquema a la primera en los cuatro incidentes.
+
+**Solución.** En el sistema, no en el prompt. Si el agente termina sin un plan válido, `agente_unico` estructura ahora su respuesta o, si no la hay, su último intento de plan. Lo hace con salida estructurada, que restringe el formato al generar (módulo 2), así que el JSON cumple el esquema. Con ese cambio, el agente único local pasó de 0 a 11 de 20, y la comparación con el comité mide por fin el contenido de los planes y no un fallo de formato. Otras dos opciones, que puedes probar:
+
+- **Aceptar la forma que el modelo genera de forma natural**: `comunicacion` como lista de objetos con canal, destinatarios y mensaje. Si varios modelos tienden a una estructura, a veces el esquema es lo que está mal.
+- **Cortar los bucles de llamadas idénticas**: si el modelo repite la misma llamada que acaba de fallar, no va a mejorar. Pararlo a la segunda ahorra siete llamadas por incidente, que en CPU son minutos.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'Los dos comités, el local y el comercial, cubren 20 de 20 claves. ¿Qué concluyes?',
+			opciones: [
+				{ texto: 'Que el modelo local es tan bueno como el comercial para esto.', porque: 'La eval está en su techo: no puede distinguir entre dos sistemas que la aprueban. Puede haber diferencias que no mide ("La eval llegó a su techo").' },
+				{ texto: 'Que esta eval ya no sirve para compararlos, y hace falta una más exigente.', correcta: true, porque: 'Una eval que todos aprueban no discrimina. Añade lo que no mide: la severidad, las acciones de más o una revisión por una persona o un juez (módulo 4).' },
+				{ texto: 'Que el comité es perfecto.', porque: 'Cubre las claves, pero ninguno acertó la severidad, y la eval no penaliza las acciones repetidas o de más.' },
+			],
+		},
+		{
+			pregunta: 'Tu agente repite nueve veces la misma llamada inválida, aunque el error le dice qué campo falla. ¿Qué cambias?',
+			opciones: [
+				{ texto: 'El prompt, para insistir en que lea los errores.', porque: 'El error ya decía qué campo fallaba y no lo corrigió. Un modelo que repite la misma llamada no suele salir del bucle con más texto (la anatomía).' },
+				{ texto: 'El sistema: estructurar su último intento con salida estructurada, cortar las repeticiones o aceptar la forma que genera.', correcta: true, porque: 'Son decisiones en código que no dependen de que el modelo se corrija. Con la primera, el agente único local dejó de dar planes vacíos.' },
+			],
+		},
+		{
+			pregunta: 'Ningún plan acertó la severidad: todos dicen "alta" y los criterios dicen "critica". ¿Dónde está el fallo más probable?',
+			opciones: [
+				{ texto: 'En los modelos: ninguno sabe clasificar.', porque: 'Nadie consultó los criterios: ningún agente los buscó ni el orquestador los encargó ("La severidad, que nadie consultó").' },
+				{ texto: 'En el diseño: los criterios no llegan a quien decide la severidad.', correcta: true, porque: 'El consolidador decide la severidad sin los criterios delante. Lo que hace falta siempre va en el prompt de quien decide, como en la lección 14.' },
+				{ texto: 'En la eval: la severidad no importa.', porque: 'En una crisis, la severidad decide a quién se despierta y con qué prisa. Que no la midiéramos al principio es justo lo que permitió no verlo.' },
+			],
+		},
+		{
+			pregunta: 'Para estos cuatro incidentes, con estos datos, ¿qué configuración pondrías en producción?',
+			opciones: [
+				{ texto: 'El comité con el modelo local: es gratis y cubre todo.', porque: 'Tarda unos 9 minutos por incidente en CPU. En una crisis, eso cuenta; con GPU cambiaría ("Coste y tiempo").' },
+				{ texto: 'Depende de lo que valga el tiempo frente al dinero, y antes haría una eval más exigente.', correcta: true, porque: 'El comercial responde en segundos por céntimos; el local, en minutos sin coste por llamada. Y con la eval en su techo, la calidad entre comités no está decidida.' },
+				{ texto: 'El agente único comercial: es el más barato.', porque: 'Es el más barato y rápido, y quizá baste. Pero con 4 incidentes y una eval que no mira la severidad, no hay datos para decidirlo sin más.' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- Anthropic, [How we built our multi-agent research system](https://www.anthropic.com/engineering/multi-agent-research-system) (2025). Un orquestador con especialistas en producción, y cuándo compensa el coste.
+- Cemri et al., [Why Do Multi-Agent LLM Systems Fail?](https://arxiv.org/abs/2503.13657) (2025). Los fallos de coordinación más comunes.
+- Reglamento (UE) 2016/679, [artículo 33](https://eur-lex.europa.eu/legal-content/ES/TXT/?uri=CELEX:32016R0679): la notificación de brechas de datos a la autoridad de control en 72 horas.

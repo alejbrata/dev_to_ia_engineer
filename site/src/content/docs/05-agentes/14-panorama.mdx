@@ -1,0 +1,252 @@
+---
+title: "Panorama"
+description: "Panorama: los SDK de agentes, los protocolos MCP y A2A, las skills y AGENTS.md, puestos en relación con lo que has construido en el módulo, y una práctica con skills medida"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
+:::caution[Revisado: 2026-11]
+Esta es la lección que más rápido caduca. Las versiones y el estado de cada proyecto son los de sus páginas oficiales a 1 de noviembre de 2026, con el enlace a cada una. Antes de decidir nada con ellas, mira la versión actual. Las salidas de la práctica son reales, con Qwen3 8B sin razonamiento (rol `agente`) en Ollama, sobre CPU.
+:::
+
+## Objetivos
+
+Al terminar esta lección podrás:
+
+- Situar los SDK de agentes más usados respecto a lo que has construido a mano en el módulo: bucle, herramientas, grafos, subagentes, guardias y trazas.
+- Distinguir para qué sirve cada protocolo: MCP entre un agente y sus herramientas, A2A entre agentes.
+- Explicar qué son las skills y la revelación progresiva, y medir cuánto contexto ahorran.
+- Elegir con criterio entre construir y usar un SDK, sin depender de qué está de moda este mes.
+
+## Teoría
+
+### Lo que ya sabes hacer, con otros nombres
+
+Todos los SDK de agentes resuelven los mismos problemas que has resuelto a mano en este módulo. Si sabes qué hace cada pieza, cualquiera de ellos se lee en una tarde:
+
+| Pieza | Dónde la construiste | Cómo suele llamarse en un SDK |
+| --- | --- | --- |
+| El bucle modelo-herramientas | lección 03 | *agent loop*, *runner* |
+| Herramientas con esquema | lección 02 | *tools*, *function tools* |
+| Flujo explícito, checkpoints, aprobación | lecciones 05 y 06 | *graph*, *workflow*, *checkpointer*, *human in the loop* |
+| Contexto y memoria | lección 07 | *sessions*, *memory*, *context management* |
+| Delegar en otro agente | lecciones 08 y 09 | *handoffs*, *agents as tools*, *sub-agents* |
+| Revisar antes de actuar | lección 11 | *guardrails*, *hooks*, *permissions* |
+| Medir y reproducir | todo el módulo | *tracing*, *evals* |
+
+### Los SDK más usados
+
+| SDK | De quién | Versión (nov. 2026) | La idea que lo distingue |
+| --- | --- | --- | --- |
+| [OpenAI Agents SDK](https://openai.github.io/openai-agents-python/) | OpenAI | 0.24.0 (Python) | Orquestar con Python normal: agentes, *handoffs* entre ellos y *guardrails*, con trazas integradas. Sucesor de Swarm. |
+| [Claude Agent SDK](https://code.claude.com/docs/en/agent-sdk/overview) | Anthropic | 0.2.176 (Python), 0.3.316 (TypeScript) | El bucle, las herramientas y los permisos de Claude Code, como librería. Las herramientas propias son servidores MCP dentro del proceso. |
+| [Google ADK](https://adk.dev/) | Google | 2.13.0 (Python) | Agentes y *workflows* en grafo (bucles, reintentos, ramas en paralelo), en Python, TypeScript, Go, Java y Kotlin. |
+| [LangGraph](https://docs.langchain.com/oss/python/langgraph/overview) | LangChain | 1.2.19 | Grafos de estado con persistencia (lección 06). |
+| [Pydantic AI](https://ai.pydantic.dev/) | Pydantic | 2.64.0 | Un bucle tipado, con el modelo intercambiable cambiando una cadena. |
+| [smolagents](https://huggingface.co/docs/smolagents) | Hugging Face | 1.26.0 | Agentes que escriben su acción como código Python en lugar de como JSON. |
+
+Unas observaciones para leer la tabla:
+
+- **Las versiones dicen algo.** Un 0.x promete cambios que rompen; varios de estos proyectos publican cada dos semanas. Si adoptas uno, fija la versión y prueba antes de actualizar (lo viviste con el aviso de LangGraph en la lección 06).
+- **Los de un proveedor funcionan mejor con su modelo**, aunque admitan otros. Si te importa poder cambiar de modelo (el pilar "agnóstico" del curso), compruébalo con tus evals antes de comprometerte.
+- **Ninguno resuelve lo que este módulo ha medido**: el criterio del modelo en la decisión final, la información que se pierde entre agentes o la documentación envenenada. Eso se resuelve con diseño, evals y guardias, uses el SDK que uses.
+
+### Dos protocolos que se complementan
+
+- **MCP** (lección 10) conecta un agente con **herramientas y datos**. La especificación vigente es la revisión 2026-07-28, y el proyecto está bajo la Linux Foundation (LF Projects).
+- **[A2A](https://a2a-protocol.org/)** (*Agent2Agent*) conecta **agentes entre sí**, cuando cada uno es un servicio distinto, quizá de otra empresa o hecho con otro SDK. Cada agente publica una *Agent Card*, un JSON en `/.well-known/agent-card.json` que dice quién es, qué sabe hacer, dónde se le llama y qué autenticación pide. Por debajo, JSON-RPC 2.0 sobre HTTP. Lo creó Google, lo donó a la Linux Foundation y en agosto de 2026 entró en la Agentic AI Foundation; la versión 1.0.0 es la vigente.
+
+La diferencia, en términos de backend: MCP es como un driver para que tu servicio use un recurso (una base de datos, una cola); A2A es como un contrato de API entre dos servicios que se encargan trabajo. Si tus agentes viven en el mismo proceso, como los de las lecciones 08, 09 y 15, no necesitas A2A: es una llamada a función.
+
+### Skills y AGENTS.md
+
+- **[Agent Skills](https://agentskills.io/)** es un formato abierto, creado por Anthropic, para empaquetar conocimiento y procedimientos: una carpeta con un `SKILL.md` (un nombre, una descripción y las instrucciones), y opcionalmente scripts y ficheros de referencia. La idea clave es la **revelación progresiva**: al empezar, el agente solo carga el nombre y la descripción de cada skill; cuando una tarea encaja con una descripción, carga la skill entera; y los scripts o ficheros que trae, solo si los necesita. Es la lección 07 aplicada al conocimiento: que el contexto lleve lo que hace falta y nada más.
+- **[AGENTS.md](https://agents.md/)** es un fichero Markdown en la raíz de un repositorio con las instrucciones para los agentes de código: cómo se compila, cómo se pasan los tests, qué convenciones seguir. Un README para agentes. Según su web, lo usan más de 60 000 proyectos de código abierto y lo leen, entre otros, Codex, GitHub Copilot, Cursor, Gemini CLI y Jules; también está en la Agentic AI Foundation.
+
+## Práctica
+
+Las skills se pueden probar sin ningún SDK, con el bucle de la lección 03. [`skills.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/skills.py) convierte cada runbook del corpus y los criterios de severidad en una skill: la descripción es el título y la primera frase del documento ("Usa este runbook cuando..."). El agente ve el catálogo (una línea por skill) y tiene una herramienta nueva, `cargar_skill`, en lugar de `buscar_documentacion`:
+
+```python
+def catalogo(skills: list[Skill]) -> str:
+    return "\n".join(f"- {s.nombre}: {s.descripcion}" for s in skills)
+```
+
+[`con_skills.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/con_skills.py) compara tres formas de darle la documentación al agente, en los 9 escenarios de desarrollo: con búsqueda (el RAG de siempre), toda en el prompt y como skills. Las dos nuevas usan un contexto de 8192 tokens, porque toda la documentación no cabe con holgura en los 4096 que Ollama usa por defecto y se recortaría sin avisar (lección 1.02). Tarda unos 25 minutos en la máquina del curso; con `--grabadas`, un segundo.
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/05-agentes/con_skills.py
+```
+
+```text
+1. Una skill (runbook-pagos-conexiones/SKILL.md), las primeras líneas
+   ---
+   name: runbook-pagos-conexiones
+   description: Runbook: pagos sin conexiones a la base de datos. Usa este runbook cuando el servicio de pagos de
+   ---
+
+   # Runbook: pagos sin conexiones a la base de datos
+   catálogo: 12 skills, 2008 caracteres; todas enteras: 8010 caracteres
+
+2. Tres formas de darle la documentación, en los 9 escenarios de desarrollo
+                          estado ok  tokens  entrada 1.er paso  entrada máx.
+   búsqueda (RAG)             4 de 9   37375               1036          1620
+   toda en el prompt          6 de 9   88350               3053          3399
+   skills                     3 de 9   48221               1558          2103
+   (búsqueda: el agente de la lección 07, en otra ejecución; entrada: mediana y máximo)
+
+3. Qué skills cargó en cada escenario
+   fallo pagos-pool-despliegue      cargó: ninguna (runbook del caso: runbook-pagos-conexiones)
+   fallo pagos-pool-sin-despliegue  cargó: ninguna (runbook del caso: runbook-pagos-conexiones)
+   fallo pagos-token-banco          cargó: runbook-pagos-credenciales (runbook del caso: runbook-pagos-credenciales)
+   ok    notificaciones-smtp        cargó: runbook-notificaciones-smtp (runbook del caso: runbook-notificaciones-smtp)
+   ok    notificaciones-push        cargó: runbook-notificaciones-push (runbook del caso: runbook-notificaciones-push)
+   fallo busqueda-disco             cargó: runbook-busqueda-disco (runbook del caso: runbook-busqueda-disco)
+   fallo catalogo-replica-normal    cargó: runbook-catalogo-replica (runbook del caso: runbook-catalogo-replica)
+   fallo usuarios-deadlocks         cargó: runbook-usuarios-deadlocks (runbook del caso: runbook-usuarios-deadlocks)
+   ok    pagos-latencia-pasajera    cargó: ninguna (runbook del caso: ninguno)
+   todo, pagos-pool-despliegue: severidad alta (esperada critica); la mitigación no menciona 'versión anterior'
+   todo, pagos-pool-sin-despliegue: no abrió la incidencia
+   todo, usuarios-deadlocks: severidad alta (esperada media)
+   skills, pagos-pool-despliegue: no abrió la incidencia
+   skills, pagos-pool-sin-despliegue: no abrió la incidencia
+   skills, pagos-token-banco: severidad alta (esperada critica)
+   skills, busqueda-disco: no abrió la incidencia
+   skills, catalogo-replica-normal: abrió una incidencia que no hacía falta
+   skills, usuarios-deadlocks: severidad alta (esperada media)
+```
+
+## Mide y depura
+
+### Toda en el prompt acertó más, y costó más del doble
+
+Con toda la documentación delante, el agente acertó 6 de 9; con búsqueda, 4; con skills, 3. Pero gastó 88 350 tokens, 2,4 veces lo que gasta con búsqueda, porque cada paso vuelve a pagar los 12 documentos: la entrada del primer paso pasa de unos 1000 tokens a 3053.
+
+Antes de sacar conclusiones, tres matices:
+
+- **Son 9 escenarios y una ejecución.** En la lección 12 viste que una ejecución decide poco: una diferencia de dos casos puede ser ruido.
+- **La fila de búsqueda es otra ejecución**: el agente de siempre, con su prompt y el contexto por defecto, grabado en la lección 07. Las otras dos comparten prompt (cambia solo cómo llega la documentación) y contexto de 8192.
+- **Funciona porque la documentación es pequeña.** Doce documentos son unos 2000 tokens. Con 500 runbooks no cabría, y el coste por paso crecería con cada documento nuevo.
+
+La regla práctica: si la documentación cabe con holgura en el contexto, empieza por ponerla entera y mide. Recuperar o cargar bajo demanda tiene sentido cuando no cabe o cuando el coste por paso importa. Es el mismo criterio que en backend: no montas una caché hasta que medir te dice que la necesitas.
+
+### Skills: menos contexto, pero el modelo tiene que decidir cargarlas
+
+Con skills, el primer paso lleva 1558 tokens en lugar de 3053: el catálogo ocupa 2008 caracteres frente a los 8010 de todos los documentos. En total gastó 48 221 tokens, cerca de lo que gasta la búsqueda. El ahorro de contexto funciona.
+
+Lo que falla es la decisión de cargar. La parte 3 de la salida lo enseña escenario a escenario:
+
+- **Cuando cargó un runbook, fue el correcto.** De los 8 escenarios que tienen runbook, cargó el suyo en 6 y no cargó ninguno equivocado.
+- **En los dos de pagos con el pool de conexiones no cargó nada**, y en ninguno abrió la incidencia. Es la anatomía de esta lección.
+- **La skill `severidades` no se cargó nunca**, en 9 escenarios, aunque el prompt pide expresamente cargar los criterios de severidad. Dos de los fallos son de severidad: `alta` donde tocaba `critica` o `media`.
+- **Cargar el runbook no garantiza actuar.** En `busqueda-disco` cargó el runbook correcto y escribió en la respuesta una incidencia con la severidad y la mitigación correctas, pero no llamó a `abrir_incidencia`; llegó a escribir que "se han borrado los índices antiguos", algo que no puede hacer con sus herramientas. Es el "dice sin hacer" de la lección 07, y se repitió igual al volver a ejecutarlo.
+
+### Qué instrumentar en un agente con skills
+
+Registra en cada ejecución qué skills cargó, y compáralas con las que esperabas. Dos señales:
+
+- **La skill correcta, cargada o no**, en cada caso de tu eval. Aquí, 6 de 8.
+- **Las skills que no se cargan nunca** en muchas ejecuciones. `severidades`, 0 de 9. Es como un endpoint sin tráfico en el APM: o no hace falta, o nadie sabe que existe. Con skills, casi siempre es lo segundo, y se arregla en la descripción.
+
+## Errores frecuentes
+
+**Descripciones que dicen qué es, pero no cuándo usarla.** "Criterios de severidad de las incidencias" describe el contenido; no le dice al modelo que lo necesita cada vez que va a abrir una incidencia. No se cargó nunca.
+
+**Describir con el vocabulario de la solución y no con el del síntoma.** La descripción de una skill la lee alguien que todavía no sabe qué pasa. Escríbela con las palabras con las que llega el problema: el nombre de la alerta, el mensaje de error, lo que nota el usuario.
+
+**Dejar a la decisión del modelo lo que hace falta siempre.** Si una skill se usa en todos los casos, como los criterios de severidad, ponla en el prompt. Que el modelo decida solo lo que de verdad depende del caso. Es la idea de las lecciones 04 y 09: lo que se puede fijar en código, no se deja al criterio del modelo.
+
+**Usar skills (o RAG) cuando la documentación cabe.** Aquí cabía entera, y ponerla toda acertó más. Mide antes de añadir una capa.
+
+**Creer que cargar el runbook es seguirlo.** El modelo puede leer el procedimiento correcto y no ejecutarlo. Comprueba el estado final, no lo que dice la respuesta.
+
+**Confundir MCP con A2A.** MCP es para que un agente use herramientas y datos; A2A, para que dos agentes que son servicios distintos se encarguen trabajo. Si tus agentes viven en el mismo proceso, no necesitas ninguno de los dos para coordinarlos.
+
+**Adoptar un SDK sin fijar la versión.** En un 0.x, cualquier actualización puede cambiar el comportamiento. Fija la versión y actualiza después de pasar tus evals.
+
+### Anatomía de un error: la skill que no se cargó
+
+Escenario `pagos-pool-sin-despliegue`: el pool de PgBouncer de pagos está saturado y los cobros fallan. Lo esperado es una incidencia crítica con la mitigación del runbook `runbook-pagos-conexiones`. Repetido para ver las llamadas (con el mismo resultado que en la ejecución grabada), el agente hizo esto:
+
+```text
+estado_servicio({'servicio': 'pagos'})
+  → estado: degradado, errores: 35.0 %, latencia p95: 2400 ms
+buscar_logs({'servicio': 'pagos', 'texto': 'PoolConexionesPagos'})
+  → Ninguna línea contiene 'PoolConexionesPagos'.
+```
+
+Y respondió:
+
+```text
+No se encontraron líneas relacionadas con "PoolConexionesPagos" en los logs del servicio de pagos. La alerta podría indicar un posible problema con el pool de conexiones de PgBouncer, pero no hay evidencia directa en los logs para confirmarlo. [...]
+```
+
+La comprobación: `no abrió la incidencia`.
+
+**Cómo leerlo.** Hay dos fallos encadenados. El primero, la búsqueda en los logs: buscó el nombre de la alerta, que nunca aparece en un log; los logs sí decían `FATAL: sorry, too many clients already` y `pgbouncer: pool pagos 186/200 conexiones activas`. Ese fallo no es de las skills: con toda la documentación en el prompt, este escenario también falló sin abrir la incidencia. El segundo, el que sí es de las skills: con 35 % de errores y la palabra "PgBouncer" en la alerta, no cargó el runbook. Compara lo que veía en el catálogo con lo que tenía delante:
+
+```text
+alerta:    PoolConexionesPagos: el pool de PgBouncer de pagos está al 93 %.
+catálogo:  runbook-pagos-conexiones: Runbook: pagos sin conexiones a la base de datos.
+           Usa este runbook cuando el servicio de pagos devuelva errores 500 y en los
+           logs aparezca too many connections contra PostgreSQL.
+```
+
+La descripción no menciona PgBouncer ni el pool, y pide como condición un texto en los logs que el agente no había encontrado.
+
+**Causa.** El modelo decide qué cargar solo con la descripción. Esta descripción está escrita desde la solución, para quien ya sabe que el problema son las conexiones a PostgreSQL. La alerta llega con otro vocabulario. En el módulo 3, la búsqueda densa encontraba textos que dicen lo mismo con otras palabras; aquí no hay embeddings que ayuden: el modelo elige leyendo una línea.
+
+**Solución.** Reescribir las descripciones con las palabras del síntoma, y sacar del catálogo lo que se usa siempre:
+
+```text
+runbook-pagos-conexiones: Pagos se queda sin conexiones a la base de datos. Úsalo con
+  alertas del pool de conexiones de pagos (PgBouncer), errores 500 en los cobros o
+  "too many clients/connections" en los logs.
+```
+
+Y los criterios de severidad, que se necesitan cada vez que se abre una incidencia, en el prompt, no en una skill. No lo hemos medido. Es el ejercicio de esta lección: cambia las descripciones en `skills.py` (la descripción sale del documento, así que puedes sobrescribirla para estas dos), vuelve a ejecutar y mira la parte 3 de la salida. Que cargue el runbook no garantiza que este escenario se resuelva, porque el problema de la búsqueda en los logs sigue ahí. Por eso se mide.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'Tu agente tiene 15 runbooks que suman unos 3000 tokens, y el modelo admite 32 000 de contexto. ¿Cómo le das la documentación?',
+			opciones: [
+				{ texto: 'Como skills: es la forma moderna.', porque: 'En la práctica, las skills ahorraron contexto pero acertaron menos, porque el modelo tiene que decidir cargarlas ("Skills: menos contexto...").' },
+				{ texto: 'Entera en el prompt, y lo mides frente a la alternativa con tus evals.', correcta: true, porque: 'Cabe con holgura y el modelo no tiene que decidir qué buscar. Cuesta más tokens por paso, así que mide si compensa ("Toda en el prompt acertó más...").' },
+				{ texto: 'Con búsqueda: recuperar siempre es mejor que poner todo.', porque: 'Recuperar compensa cuando la documentación no cabe o el coste por paso importa; aquí acertó menos que ponerla entera.' },
+			],
+		},
+		{
+			pregunta: 'En 50 ejecuciones, el agente no ha cargado nunca la skill de criterios de severidad, aunque el prompt se lo pide. ¿Qué haces primero?',
+			opciones: [
+				{ texto: 'Cambiar a un modelo más grande.', porque: 'Puede ayudar, pero el modelo solo ve la descripción, y la de `severidades` no dice cuándo usarla. Arregla primero lo barato (la anatomía).' },
+				{ texto: 'Reescribir la descripción para que diga cuándo usarla, o poner los criterios en el prompt si se usan siempre.', correcta: true, porque: 'Lo que se necesita en todos los casos no se deja a la decisión del modelo. Lo que se carga a veces, se describe con las palabras de cuándo hace falta.' },
+				{ texto: 'Añadir más contenido a la skill.', porque: 'El contenido no se ve hasta que se carga: no cambia la decisión de cargarla.' },
+			],
+		},
+		{
+			pregunta: 'Tu agente de soporte tiene que encargar trabajo al agente de facturación de otra empresa, hecho con otro SDK. ¿Qué protocolo encaja?',
+			opciones: [
+				{ texto: 'MCP.', porque: 'MCP conecta un agente con herramientas y datos, no con otro agente que razona y tiene sus propias tareas ("Dos protocolos que se complementan").' },
+				{ texto: 'A2A.', correcta: true, porque: 'Es para agentes que son servicios distintos: cada uno publica su Agent Card y se encargan tareas por HTTP.' },
+				{ texto: 'AGENTS.md.', porque: 'Es un fichero de instrucciones para agentes de código en un repositorio, no un protocolo de comunicación.' },
+			],
+		},
+		{
+			pregunta: 'Adoptas un SDK de agentes en versión 0.x que publica cada dos semanas. ¿Qué haces con las actualizaciones?',
+			opciones: [
+				{ texto: 'Actualizar siempre a la última, para tener las mejoras.', porque: 'Un 0.x no promete compatibilidad: una actualización puede romper o cambiar el comportamiento sin avisar ("Las versiones dicen algo").' },
+				{ texto: 'Fijar la versión y actualizar solo después de pasar tus evals con la nueva.', correcta: true, porque: 'Un aviso como el de LangGraph en la lección 06 puede llegar con cualquier actualización. El cambio de versión se trata como cualquier otro cambio del sistema: se mide antes de desplegarlo.' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- [Agent Skills](https://agentskills.io/) y la [documentación de skills de Anthropic](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview): el formato y la revelación progresiva.
+- [Especificación de A2A](https://a2a-protocol.org/latest/specification/): la Agent Card, las tareas y el transporte.
+- [AGENTS.md](https://agents.md/): el formato y quién lo usa.
+- La documentación de cada SDK, enlazada en la tabla. Léela buscando las piezas del módulo: dónde está el bucle, cómo se definen las herramientas, cómo se guarda el estado y cómo se traza.
