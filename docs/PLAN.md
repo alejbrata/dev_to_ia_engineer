@@ -81,7 +81,7 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 - **Errores clave**: bucles infinitos, argumentos de herramienta alucinados, explosión de coste, pérdida de estado, inyección a través del resultado de una herramienta
 - **Estado** (2026-11-01): las 15 lecciones escritas, con salidas reales; pendiente de la revisión de Alex. LangGraph (lección 6) y el SDK de MCP (lección 10) entran como dependencias del curso. La lección 15 es el cierre que pedía la decisión (orquestador que planifica encargos como grafo, especialistas técnico, legal, de negocio y de comunicación con sus propias políticas, y aprobación humana), sobre cuatro incidentes de negocio, medido frente al agente único con el modelo local y con uno comercial (decisión de Alex, 2026-11-01). Las políticas e incidentes de la lección 15 son ficticios, salvo el plazo de 72 horas del RGPD
 
-## Módulo 6 — Producción ⬜
+## Módulo 6 — Producción 🟨
 
 1. Arquitectura: API, colas, caché, fallbacks
 2. Observabilidad: trazas (OpenTelemetry, Langfuse u equivalentes)
@@ -91,6 +91,8 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 6. Despliegue: contenedores y cloud
 7. Lectura de incidentes: de la alerta a la causa raíz
 - **Errores clave**: secretos en el repo y cómo limpiar el historial, degradación silenciosa, costes descontrolados
+- **Decisiones** (2026-11-01, tomadas por Claude para que Alex las valide): el caso del módulo es el sistema vigente del módulo 4 servido como API (FastAPI), "lo que se despliega es lo que se midió"; trazas con OpenTelemetry (curso_core emite los spans con los atributos `gen_ai.*`; Jaeger opcional con Docker) y métricas en formato Prometheus, los dos estándares abiertos
+- **Estado** (2026-11-01): lecciones 1 a 3 escritas, con salidas reales; 4 a 7 pendientes
 
 ## Módulo 7 — Modelos propios ⬜
 
