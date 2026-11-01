@@ -8,7 +8,7 @@
 
 El rol comercial solo se ejecuta si hay OPENAI_API_KEY en .env (cuesta dinero: unos céntimos).
 Con --humano, apruebas tú cada plan. Con --grabadas no llama a ningún modelo. Con
---incidente ID, ejecuta solo ese incidente (unos 20 minutos en local) y no guarda nada.
+--incidente ID, ejecuta solo ese incidente (una media hora en local) y no guarda nada.
 Uso: `uv run python modulos/05-agentes/comite.py [--grabadas | --humano] [--incidente ID]`
 """
 
@@ -103,7 +103,7 @@ def main() -> int:
     parser.add_argument(
         "--incidente",
         choices=[c.id for c in casos],
-        help="solo ese incidente, para probar en minutos (no guarda los resultados)",
+        help="solo ese incidente, para probar antes (no guarda los resultados)",
     )
     args = parser.parse_args()
     if args.incidente and args.grabadas:
@@ -133,7 +133,8 @@ def main() -> int:
             f"   cubre {d['cubiertas']} de {d['total']}; falta: {', '.join(d['faltan']) or 'nada'}"
         )
 
-    print(f"\n2. Los {len(casos)} incidentes, con cada configuración")
+    titulo = "El incidente" if len(casos) == 1 else f"Los {len(casos)} incidentes"
+    print(f"\n2. {titulo}, con cada configuración")
     print(
         f"   {'':28} {'cubiertas':>10} {'completos':>10} {'severidad':>10} {'llamadas':>9} "
         f"{'tokens':>7} {'coste $':>8} {'s/incid.':>9}"
