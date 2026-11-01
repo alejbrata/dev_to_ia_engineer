@@ -1,0 +1,40 @@
+{
+ "spans": 53,
+ "trazas": 11,
+ "trazas_preguntas": 6,
+ "cascada": [
+  "   POST /preguntas                                     0 ms    13882 ms  ",
+  "     fastapi.dependencies                              1 ms        0 ms  ",
+  "     fastapi.endpoint                                  1 ms    13880 ms  ",
+  "       asistente.responder                             1 ms    13880 ms  cache=False fallback=False rol=chat_grande",
+  "         embeddings bge-m3                             1 ms      110 ms  19→0 tokens",
+  "         rerank gpustack/bge-reranker-v2-m3-GGU      114 ms     1981 ms  1852→0 tokens",
+  "         chat qwen2.5:7b                            2097 ms    11782 ms  642→36 tokens",
+  "     fastapi.serialization                         13881 ms        0 ms  "
+ ],
+ "cascada_cache": [
+  "   POST /preguntas                                     0 ms        2 ms  ",
+  "     fastapi.dependencies                              0 ms        0 ms  ",
+  "     fastapi.endpoint                                  1 ms        0 ms  ",
+  "       asistente.responder                             1 ms        0 ms  cache=True fallback=False rol=chat_grande",
+  "     fastapi.serialization                             1 ms        0 ms  "
+ ],
+ "respuestas_ms": [
+  13879,
+  14106,
+  10429,
+  18336,
+  0
+ ],
+ "etapas_ms": {
+  "embeddings": 427.207098,
+  "reordenar": 7983.7755,
+  "generar (chat)": 48309.192195999996,
+  "resto": 40.594906000000265
+ },
+ "jaeger_trazas": 11,
+ "coste_ms": {
+  "sin trazas": 2.101799938827753,
+  "con trazas": 2.0737999584525824
+ }
+}

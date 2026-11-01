@@ -675,7 +675,7 @@ class ClienteLLM:
             DIALECTOS[proveedor.tipo],
             ruta,
             cuerpo,
-            dict(rol=rol, proveedor=nombre, modelo=modelo),
+            dict(rol=rol, proveedor=nombre, modelo=modelo, operacion="embeddings"),
         )
         inicio = time.perf_counter()
         try:
@@ -732,7 +732,7 @@ class ClienteLLM:
             DIALECTOS[proveedor.tipo],
             ruta,
             cuerpo,
-            dict(rol=rol, proveedor=nombre, modelo=modelo),
+            dict(rol=rol, proveedor=nombre, modelo=modelo, operacion="rerank"),
         )
         inicio = time.perf_counter()
         try:
@@ -812,6 +812,7 @@ class ClienteLLM:
             rol=rol,
             proveedor=nombre,
             modelo=modelo,
+            operacion="chat",
             prompt=prompt,
             opciones=opciones.model_dump(exclude_none=True),
         )

@@ -6,7 +6,8 @@
   para cuando el cliente no puede esperar con la conexión abierta.
 - GET /salud: si el servicio está en marcha y con qué versión del sistema.
 
-Configuración por variables de entorno: ASISTENTE_CACHE=0 desactiva la caché.
+Configuración por variables de entorno: ASISTENTE_CACHE=0 desactiva la caché;
+ASISTENTE_TRAZAS=1 activa las trazas de OpenTelemetry (lección 6.02, observabilidad.py).
 Arranque: `uv run uvicorn servicio:app --app-dir modulos/06-produccion --port 8100`
 """
 
@@ -48,11 +49,18 @@ def trabajador() -> None:
 
 @asynccontextmanager
 async def ciclo_de_vida(_: FastAPI):
+    trazas = None
+    if os.environ.get("ASISTENTE_TRAZAS") == "1":
+        import observabilidad
+
+        trazas = observabilidad.configurar()
     # Construir el índice tarda unos segundos: se hace una vez, al arrancar.
     estado["asistente"] = Asistente(cache=os.environ.get("ASISTENTE_CACHE", "1") != "0")
     estado["cola"], estado["trabajos"] = queue.Queue(), {}
     threading.Thread(target=trabajador, daemon=True).start()
     yield
+    if trazas:
+        trazas.shutdown()  # envía los spans que quedan en el búfer antes de salir
 
 
 app = FastAPI(title="Asistente de documentación interna", lifespan=ciclo_de_vida)
@@ -62,6 +70,8 @@ app = FastAPI(title="Asistente de documentación interna", lifespan=ciclo_de_vid
 def preguntar(p: Pregunta) -> Resultado:
     # Una función normal (no async): FastAPI la ejecuta en un hilo aparte, así que una
     # llamada lenta al modelo no bloquea al resto de peticiones.
+    # Con las trazas activas, FastAPI abre él mismo el span de la petición (POST /preguntas,
+    # con método, ruta y código de respuesta): el del asistente cuelga de ese.
     return estado["asistente"].responder(p.pregunta)
 
 

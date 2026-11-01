@@ -21,6 +21,8 @@ import time
 import unicodedata
 from pathlib import Path
 
+from opentelemetry import trace
+from opentelemetry.trace import StatusCode
 from pydantic import BaseModel
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "04-evals"))
@@ -31,6 +33,7 @@ from curso_core import ClienteLLM, ErrorLLM  # noqa: E402
 from curso_core import config as cfg  # noqa: E402
 
 ROLES = ("chat_grande", "chat")  # el del sistema vigente (7B) y, de respaldo, el de 1,5B
+tracer = trace.get_tracer("asistente")
 DEGRADADA = (
     "Ahora mismo no puedo responder: el servicio de modelos no está disponible. "
     "Inténtalo en unos minutos o consulta directamente la documentación."
@@ -103,6 +106,17 @@ class Asistente:
         self.cache = Cache(self.version) if cache else None
 
     def responder(self, pregunta: str) -> Resultado:
+        # Un span por pregunta (lección 6.02): las llamadas de curso_core cuelgan de él.
+        with tracer.start_as_current_span("asistente.responder") as span:
+            r = self._responder(pregunta)
+            span.set_attribute("asistente.cache", r.cache)
+            span.set_attribute("asistente.fallback", r.fallback)
+            span.set_attribute("asistente.rol", r.rol or "degradada")
+            if r.rol is None:
+                span.set_status(StatusCode.ERROR, "respuesta degradada")
+            return r
+
+    def _responder(self, pregunta: str) -> Resultado:
         inicio = time.perf_counter()
         if self.cache and (guardado := self.cache.leer(pregunta)):
             return guardado.model_copy(update={"cache": True, "ms": ms_desde(inicio)})

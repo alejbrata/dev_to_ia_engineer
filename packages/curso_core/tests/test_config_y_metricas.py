@@ -77,3 +77,41 @@ def test_resumir_por_modelo() -> None:
     assert set(grupos) == {"a", "b"}
     assert grupos["a"].llamadas == 2 and grupos["a"].errores == 1
     assert grupos["b"].llamadas == 1
+
+
+def test_cada_traza_es_un_span_de_opentelemetry(tmp_path: Path) -> None:
+    from curso_core.tracing import registrar
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+    from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
+
+    exportador = InMemorySpanExporter()
+    proveedor = TracerProvider()
+    proveedor.add_span_processor(SimpleSpanProcessor(exportador))
+    tracer = proveedor.get_tracer("test")
+    import curso_core.tracing as tracing
+
+    original = tracing.otel.get_tracer
+    tracing.otel.get_tracer = lambda nombre: proveedor.get_tracer(nombre)
+    try:
+        with tracer.start_as_current_span("peticion"):
+            registrar(
+                Traza(
+                    rol="chat",
+                    proveedor="ollama",
+                    modelo="m",
+                    operacion="chat",
+                    ok=True,
+                    intentos=1,
+                    latencia_s=0.5,
+                    tokens_entrada=10,
+                    tokens_salida=3,
+                ),
+                tmp_path / "t.jsonl",
+            )
+    finally:
+        tracing.otel.get_tracer = original
+    llamada, peticion = exportador.get_finished_spans()
+    assert llamada.name == "chat m" and llamada.parent.span_id == peticion.context.span_id
+    assert llamada.attributes["gen_ai.usage.input_tokens"] == 10
+    assert abs((llamada.end_time - llamada.start_time) / 1e9 - 0.5) < 1e-3

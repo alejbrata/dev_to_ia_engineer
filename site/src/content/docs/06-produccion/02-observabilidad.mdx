@@ -1,0 +1,211 @@
+---
+title: "Observabilidad"
+description: "Observabilidad: trazas del asistente con OpenTelemetry y sus convenciones para IA generativa, en un fichero y en Jaeger; leer una cascada, encontrar dónde se va el tiempo y medir lo que cuesta trazar"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
+:::note[Revisado: 2026-11]
+OpenTelemetry 1.45 para Python y Jaeger 2.22. Las convenciones semánticas para IA generativa (`gen_ai.*`) siguen en desarrollo y han cambiado de nombre más de una vez: las de esta lección son las de su repositorio a noviembre de 2026.
+:::
+
+## Objetivos
+
+Al terminar esta lección podrás:
+
+- Explicar qué añade una traza distribuida a los registros de llamadas que el curso guarda desde el módulo 1.
+- Instrumentar un servicio de LLM con OpenTelemetry, separando la API (en el código) del SDK (en la configuración).
+- Usar los atributos estándar de IA generativa para que las trazas se lean igual en cualquier herramienta.
+- Leer una traza en cascada para encontrar dónde se va el tiempo, y medir lo que cuesta trazar.
+
+## Teoría
+
+### Del registro de llamadas a la traza
+
+Desde el módulo 1, `curso_core` guarda cada llamada a un modelo en `trazas/llamadas.jsonl`: rol, modelo, tokens, latencia, coste. Es un registro de accesos: dice qué llamadas hubo, pero no cuáles pertenecen a la misma petición de un usuario ni en qué orden ocurrieron. Con un servicio que atiende a varios usuarios a la vez, las líneas se mezclan.
+
+Una **traza** agrupa todo lo que pasó por una petición. Es un árbol de **spans**: cada span es una operación con su inicio, su fin, sus atributos y su padre. La raíz es la petición HTTP; debajo, el asistente; debajo, cada llamada a un modelo. Si vienes de backend, es lo que ves en un APM (New Relic, Dynatrace, Elastic APM) cuando abres una transacción lenta y ves la consulta SQL que se la come.
+
+### OpenTelemetry: API, SDK y exportadores
+
+OpenTelemetry es el estándar abierto para trazas, métricas y logs. Tiene tres piezas:
+
+- **La API**: lo que usa el código para crear spans (`tracer.start_as_current_span(...)`). Sin configurar, no hace nada.
+- **El SDK**: lo que, al arrancar el servicio, decide qué se guarda, cómo se agrupa y adónde se envía.
+- **Los exportadores**: los destinos. Por OTLP, el protocolo de OpenTelemetry, cualquier backend compatible: Jaeger, Grafana Tempo, Langfuse, Honeycomb, Datadog...
+
+Es la misma separación que entre SLF4J y Logback en Java: la librería escribe contra la fachada, y la aplicación elige la implementación. Por eso `curso_core` puede crear spans sin obligar a nadie a instalar el SDK.
+
+### Atributos con nombre estándar
+
+Para que una traza se lea igual en cualquier herramienta, los atributos tienen nombres acordados. Para IA generativa, los principales son:
+
+| Atributo | Qué dice | Ejemplo |
+| --- | --- | --- |
+| `gen_ai.operation.name` | Qué operación es | `chat`, `embeddings` |
+| `gen_ai.provider.name` | Quién la sirve | `ollama`, `openai` |
+| `gen_ai.request.model` | Qué modelo se pidió | `qwen2.5:7b` |
+| `gen_ai.usage.input_tokens` | Tokens de entrada | `1203` |
+| `gen_ai.usage.output_tokens` | Tokens de salida | `45` |
+
+El nombre del span sigue el patrón `{operación} {modelo}`, por ejemplo `chat qwen2.5:7b`. Los atributos propios (aquí, si la respuesta vino de la caché o del respaldo) llevan un prefijo propio (`asistente.*`) para no chocar con los estándar. Para el reranker no hay operación estándar, y la práctica usa `rerank`.
+
+### Qué no meter en una traza
+
+El texto de la pregunta y de la respuesta es lo más útil para depurar, y también lo más delicado: puede llevar datos personales o información interna, y el backend de trazas lo suele ver más gente que la base de datos. Las convenciones de OpenTelemetry dejan el contenido de los mensajes como algo que se activa a propósito. La práctica no lo guarda; la lección 6.04 vuelve sobre ello.
+
+## Práctica
+
+Tres piezas, de abajo arriba:
+
+- **`curso_core`** convierte cada llamada que ya registraba en un span de OpenTelemetry con los atributos `gen_ai.*`. Si OpenTelemetry no está instalado o no se ha configurado, no hace nada.
+- **[`asistente.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/06-produccion/asistente.py)** abre un span `asistente.responder` con lo que decidió: si usó la caché, qué rol respondió y si fue el respaldo.
+- **[`servicio.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/06-produccion/servicio.py)**, con `ASISTENTE_TRAZAS=1`, configura el SDK con [`observabilidad.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/06-produccion/observabilidad.py): un fichero JSONL siempre y, si existe la variable estándar `OTEL_EXPORTER_OTLP_ENDPOINT`, también OTLP. El span raíz de cada petición no hace falta crearlo: FastAPI lo abre él mismo cuando hay un SDK configurado, con el método, la ruta y el código de respuesta.
+
+En el asistente, toda la instrumentación son unas líneas:
+
+```python
+from opentelemetry import trace
+
+tracer = trace.get_tracer("asistente")
+
+with tracer.start_as_current_span("asistente.responder") as span:
+    ...                                         # las llamadas de curso_core cuelgan de aquí
+    span.set_attribute("asistente.cache", False)
+    span.set_attribute("asistente.rol", rol)
+```
+
+[`observar.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/06-produccion/observar.py) arranca el servicio con trazas, hace cinco preguntas (cuatro distintas y una repetida), lee los spans y mide lo que cuesta trazar. Con `--jaeger`, levanta Jaeger en Docker y le envía las trazas: las verás en `http://127.0.0.1:16687`, buscando el servicio `asistente-documentacion`. La práctica usa los puertos 16687 y 4319 en lugar de los habituales (16686 y 4318) para no chocar con otro Jaeger que ya tengas en marcha. Tarda unos 10 minutos; con `--grabadas`, un segundo.
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/06-produccion/observar.py --jaeger
+```
+
+```text
+53 spans en 11 trazas, 6 de preguntas
+
+1. Una pregunta, como cascada
+   span                                             empieza        dura
+   POST /preguntas                                     0 ms    13882 ms
+     fastapi.dependencies                              1 ms        0 ms
+     fastapi.endpoint                                  1 ms    13880 ms
+       asistente.responder                             1 ms    13880 ms  cache=False fallback=False rol=chat_grande
+         embeddings bge-m3                             1 ms      110 ms  19→0 tokens
+         rerank gpustack/bge-reranker-v2-m3-GGU      114 ms     1981 ms  1852→0 tokens
+         chat qwen2.5:7b                            2097 ms    11782 ms  642→36 tokens
+     fastapi.serialization                         13881 ms        0 ms
+
+2. La misma pregunta, desde la caché
+   POST /preguntas                                     0 ms        2 ms
+     fastapi.dependencies                              0 ms        0 ms
+     fastapi.endpoint                                  1 ms        0 ms
+       asistente.responder                             1 ms        0 ms  cache=True fallback=False rol=chat_grande
+     fastapi.serialization                             1 ms        0 ms
+
+3. Dónde se va el tiempo (4 preguntas distintas)
+   generar (chat)      48.3 s  85.1%
+   reordenar            8.0 s  14.1%
+   embeddings           0.4 s   0.8%
+   resto                0.0 s   0.1%
+   Jaeger recibió 11 trazas
+
+4. Lo que cuesta trazar (200 peticiones desde la caché, mediana)
+   sin trazas 2.10 ms · con trazas 2.07 ms
+```
+
+## Mide y depura
+
+### La cascada dice dónde mirar
+
+En una pregunta sin caché, de 13,9 s, la cascada se lee de un vistazo: 110 ms para el embedding de la pregunta, 2 s para reordenar 20 candidatos y 11,8 s para generar la respuesta, que empieza cuando acaba lo anterior. Sumando las cuatro preguntas distintas, generar se lleva el 85 % del tiempo, reordenar el 14 % y el embedding menos del 1 %. Lo que pasa entre medias (FastAPI, el asistente, el código de la práctica) es un 0,1 %.
+
+Antes de optimizar nada, esto dice qué merece la pena tocar. Un embedding más rápido no se notaría. Un modelo de generación más rápido, menos contexto en el prompt o menos tokens de salida, sí: es el 85 %. Y el reranker es el segundo candidato, con 2 s por pregunta en CPU.
+
+### La traza también dice lo que no pasó
+
+La pregunta repetida tiene una traza de 2 ms, sin ninguna llamada a un modelo debajo de `asistente.responder`, y con `cache=True`. Una traza demuestra que la caché funcionó en esa petición concreta, cosa que una métrica agregada no puede. Es lo que se mira cuando alguien dice "esta respuesta es antigua": si la traza tiene `cache=True`, ya sabes por dónde empezar.
+
+### Lo que cuesta trazar no se nota
+
+Con 200 peticiones desde la caché, la mediana fue de 2,10 ms sin trazas y 2,07 ms con ellas. La diferencia está por debajo del ruido de la medida: crear los cinco spans de una petición servida por la caché y escribirlos en segundo plano cuesta microsegundos. Frente a los segundos que tarda un modelo, trazar todas las peticiones es gratis en latencia. Lo que sí cuesta es el almacenamiento en el backend; con mucho tráfico, se guarda una muestra (*sampling*) en lugar de todas.
+
+### Si el backend de trazas cae, el servicio sigue
+
+En la parte 4, con Jaeger ya parado, una versión anterior de la práctica seguía mandándole las trazas. El exportador escribió errores en el log (`Failed to export spans batch due to timeout, max retries or shutdown`) y reintentó, pero las peticiones se respondieron igual. El exportador trabaja en segundo plano: perder las trazas no debe tumbar el servicio. Al revés también: si tu servicio se cae cuando el backend de trazas no responde, la observabilidad se ha convertido en una dependencia crítica.
+
+## Errores frecuentes
+
+**Mirar solo el registro de llamadas.** Dice qué llamadas hubo, no a qué petición pertenecen ni en qué orden. Con concurrencia, sin traza no se reconstruye una petición.
+
+**Atributos con nombres propios para lo que tiene nombre estándar.** `modelo` en lugar de `gen_ai.request.model` funciona en tu panel y en ninguno más. Usa las convenciones, y prefija lo tuyo.
+
+**Guardar el texto de las preguntas y respuestas en la traza sin pensarlo.** Es lo más útil para depurar y lo más delicado. Que sea una decisión explícita, con quién puede verlo (lección 6.04).
+
+**Duplicar los spans del framework.** FastAPI ya crea el span de la petición cuando hay un SDK configurado; uno manual encima solo añade ruido. Mira qué instrumenta ya tu framework antes de añadir el tuyo.
+
+**Parar el servicio sin dejarle cerrar.** Los spans esperan en un búfer y se envían cada pocos segundos: si el proceso muere de golpe, los últimos se pierden (la anatomía).
+
+### Anatomía de un error: las trazas a las que les faltaba la raíz
+
+La primera versión de `observar.py` paraba el servicio con `terminate()`. Al leer el fichero de spans, el script falló:
+
+```text
+    raices = {t: next(s for s in ss if s["padre"] is None) for t, ss in todas.items()}
+StopIteration
+```
+
+Y en el fichero había esto (una línea por traza, con sus spans):
+
+```text
+7cc6461a [('POST /preguntas', False), ('POST /preguntas', True), ('asistente.responder', False), ...]
+65c4e3cc [('POST /preguntas', False), ('POST /preguntas', True), ('asistente.responder', False), ...]
+d153febb [('embeddings bge-m3', False), ('fastapi.dependencies', False), ('rerank gpustack/...', False)]
+```
+
+**Cómo leerlo.** `StopIteration` dice que una traza no tiene ningún span sin padre: le falta la raíz. La última traza del fichero tiene el embedding y el reranker, pero no la llamada al modelo, ni `asistente.responder`, ni la petición. Y de las seis preguntas solo había cinco trazas. Lo que falta es justo lo que termina más tarde. (Las dos líneas `POST /preguntas` de cada traza completa eran otro problema: un span manual duplicado con el de FastAPI, que se quitó.)
+
+**Causa.** El SDK no escribe cada span al terminar, sino por lotes, cada pocos segundos (`BatchSpanProcessor`), y al cerrar vacía lo que le queda. En Windows, `terminate()` mata el proceso sin avisarle. El cierre del servicio, donde está `trazas.shutdown()`, no llegó a ejecutarse, y los spans del final se perdieron con el proceso. Los hijos de la última petición sí llegaron, porque habían terminado antes y salieron en un lote anterior.
+
+**Solución.** Parar el servicio con orden: en Linux y macOS, `SIGTERM` (lo que hace `terminate()` allí y lo que manda Docker o Kubernetes al parar un contenedor); en Windows, Ctrl+Break, que uvicorn también atiende. Con eso, el cierre llama a `shutdown()` y las seis trazas llegan completas. En producción es lo mismo: si tu plataforma mata los procesos sin esperar (un tiempo de gracia demasiado corto), pierdes justo las trazas de lo último que pasó, que suelen ser las del problema.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'La traza de una pregunta lenta muestra: embedding 0,1 s, reordenar 2 s, generar 12 s. Te piden bajar la latencia. ¿Por dónde empiezas?',
+			opciones: [
+				{ texto: 'Por un modelo de embeddings más rápido.', porque: 'Es menos del 1 % del tiempo: aunque fuera instantáneo, no se notaría ("La cascada dice dónde mirar").' },
+				{ texto: 'Por la generación: modelo más rápido, menos contexto o menos tokens de salida.', correcta: true, porque: 'Es el 85 % del tiempo. Lo siguiente sería el reranker.' },
+			],
+		},
+		{
+			pregunta: 'Un usuario dice que el asistente le dio una respuesta desactualizada. ¿Qué te dice la traza de esa petición?',
+			opciones: [
+				{ texto: 'Si vino de la caché (asistente.cache=True) y, si no, qué fragmentos y qué modelo se usaron.', correcta: true, porque: 'La traza cuenta qué pasó en esa petición concreta, cosa que una métrica agregada no puede ("La traza también dice lo que no pasó").' },
+				{ texto: 'Nada: las trazas solo sirven para la latencia.', porque: 'Los atributos dicen qué se decidió: caché, rol, fallback, modelo, tokens.' },
+			],
+		},
+		{
+			pregunta: 'Tu plataforma da 2 segundos a los contenedores para parar antes de matarlos, y faltan trazas de justo antes de cada despliegue. ¿Qué pasa?',
+			opciones: [
+				{ texto: 'El backend de trazas está perdiendo datos.', porque: 'Los spans no llegan a salir: se quedan en el búfer del proceso cuando lo matan (la anatomía).' },
+				{ texto: 'El proceso muere antes de vaciar su búfer de spans; hay que dejarle tiempo para cerrar.', correcta: true, porque: 'El SDK envía por lotes y vacía al cerrar. Sin cierre ordenado, se pierden los últimos.' },
+			],
+		},
+		{
+			pregunta: '¿Por qué curso_core usa solo la API de OpenTelemetry y no configura el SDK?',
+			opciones: [
+				{ texto: 'Para que la aplicación decida si traza, cómo y adónde envía, sin que la librería obligue a nada.', correcta: true, porque: 'Sin SDK, la API no hace nada. Es la separación entre fachada e implementación, como SLF4J y Logback ("OpenTelemetry: API, SDK y exportadores").' },
+				{ texto: 'Porque el SDK es demasiado lento.', porque: 'La parte 4 mide que trazar no se nota en la latencia; la razón es de diseño.' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- [OpenTelemetry para Python](https://opentelemetry.io/docs/languages/python/): la API, el SDK y los exportadores.
+- [Convenciones semánticas de IA generativa](https://github.com/open-telemetry/semantic-conventions-genai): los atributos `gen_ai.*` y su estado.
+- [Jaeger](https://www.jaegertracing.io/docs/latest/): el backend de trazas de la práctica.
+- Sigelman et al., [Dapper, a Large-Scale Distributed Systems Tracing Infrastructure](https://research.google/pubs/dapper-a-large-scale-distributed-systems-tracing-infrastructure/) (2010): el origen de las trazas distribuidas.
