@@ -1,0 +1,65 @@
+{
+ "construir": {
+  "desde_cero_s": 27.00685609993525,
+  "tras_cambiar_el_servicio_s": 1.8123817999148741
+ },
+ "imagen": {
+  "comprimida_mb": 120.010047,
+  "en_disco": "572MB",
+  "capas": [
+   {
+    "tamano": "311MB",
+    "orden": "COPY /app/.venv ./.venv # buildkit"
+   },
+   {
+    "tamano": "85.3MB",
+    "orden": "# debian.sh --arch 'amd64' out/ 'bookworm' '…"
+   },
+   {
+    "tamano": "45MB",
+    "orden": "RUN /bin/sh -c set -eux;   savedAptMark=\"$(a…"
+   },
+   {
+    "tamano": "9.68MB",
+    "orden": "RUN /bin/sh -c set -eux;  apt-get update;  a…"
+   },
+   {
+    "tamano": "209kB",
+    "orden": "COPY modulos/03-rag ./modulos/03-rag # build…"
+   }
+  ],
+  "env_en_app": false,
+  "variables": [
+   "PATH=/app/.venv/bin:/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+   "LANG=C.UTF-8",
+   "GPG_KEY=7169605F62C751356D054A26A821E680E5FA6305",
+   "PYTHON_VERSION=3.12.16",
+   "PYTHON_SHA256=b5796915dc45ff745cfb4e990a7e7c93d6f546328a102ce31448d69ebc37575c",
+   "PYTHONUNBUFFERED=1",
+   "CURSO_TRAZAS=/tmp/trazas/llamadas.jsonl"
+  ],
+  "secretos_en_el_codigo": 2,
+  "ficheros_revisados": 131
+ },
+ "arrancar": {
+  "hasta_salud_s": 21.628586299950257,
+  "version_servida": "54e7cf273ba5ea58",
+  "version_medida": "54e7cf273ba5ea58",
+  "primera_s": 5.617792299948633,
+  "primera": "Cada 90 días",
+  "salud_docker": "healthy",
+  "memoria": "57.2MiB / 15.34GiB"
+ },
+ "parar": {
+  "exec": {
+   "s": 0.6380524999694899,
+   "codigo": 0,
+   "cierre_ordenado": true
+  },
+  "shell": {
+   "s": 1.4557897000340745,
+   "codigo": 137,
+   "cierre_ordenado": false
+  }
+ }
+}

@@ -1,0 +1,22 @@
+# El asistente en un contenedor (lección 6.06). Desde la raíz del repo:
+#   docker compose -f modulos/06-produccion/compose.yaml up -d --build
+# Ollama y el reranker siguen en tu máquina: el contenedor los usa por red.
+services:
+  asistente:
+    build:
+      context: ../..
+      dockerfile: modulos/06-produccion/Dockerfile
+    ports:
+      - "127.0.0.1:8100:8100"
+    environment:
+      CURSO_URL_OLLAMA: http://host.docker.internal:11434
+      CURSO_URL_LLAMACPP_RERANK: http://host.docker.internal:8082/v1
+      ASISTENTE_GUARDRAILS: "1"
+      # Las claves de las APIs, si las usas, desde un .env que no entra en la imagen:
+      # OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    extra_hosts:
+      # En Linux, host.docker.internal no existe por defecto: esto lo crea.
+      - "host.docker.internal:host-gateway"
+    # El tiempo que docker compose stop espera antes de matar el proceso.
+    stop_grace_period: 30s
+    restart: unless-stopped

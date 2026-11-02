@@ -53,6 +53,10 @@ def test_privacidad_detecta_formas_y_valida_el_dni():
     assert "[EMAIL]" in privacidad.redactar(texto) and "ana@" not in privacidad.redactar(texto)
     assert privacidad.buscar_secretos('KEY = "sk-curso-0123456789abcdefghij"')
     assert not privacidad.buscar_secretos("normal = 1")
+    # En código de LLMs, "tokens" es una palabra normal: no es un secreto (lección 6.06).
+    assert not privacidad.buscar_secretos("tokens = round(palabras * 1.4)")
+    assert not privacidad.buscar_secretos('api_key_env = "HF_TOKEN"')
+    assert privacidad.buscar_secretos('DB_PASSWORD = "supersecreta1234567"')
 
 
 def test_guardrails_de_entrada_y_salida():

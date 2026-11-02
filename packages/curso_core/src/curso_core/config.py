@@ -108,4 +108,10 @@ def cargar(ruta: Path | None = None) -> Config:
     ruta = ruta or buscar_fichero()
     load_dotenv(ruta.resolve().parent.parent / ".env", override=False)
     with ruta.open("rb") as f:
-        return Config.model_validate(tomllib.load(f))
+        config = Config.model_validate(tomllib.load(f))
+    # CURSO_URL_<PROVEEDOR> cambia la URL de un proveedor sin tocar el toml: por ejemplo,
+    # dentro de un contenedor, Ollama no está en 127.0.0.1 sino en el anfitrión (lección 6.06).
+    for nombre, proveedor in config.providers.items():
+        if url := os.environ.get(f"CURSO_URL_{nombre.upper()}"):
+            proveedor.base_url = url
+    return config

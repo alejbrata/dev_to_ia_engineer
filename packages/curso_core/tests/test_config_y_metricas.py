@@ -128,3 +128,11 @@ def test_los_observadores_reciben_cada_traza(tmp_path: Path) -> None:
     finally:
         tracing.observadores.remove(vistas.append)
     assert vistas == [t]
+
+
+def test_curso_url_cambia_la_url_de_un_proveedor(monkeypatch) -> None:
+    monkeypatch.setenv("CURSO_URL_OLLAMA", "http://host.docker.internal:11434")
+    config = cfg.cargar(RAIZ / cfg.FICHERO)
+    assert config.providers["ollama"].base_url == "http://host.docker.internal:11434"
+    monkeypatch.delenv("CURSO_URL_OLLAMA")
+    assert "127.0.0.1" in cfg.cargar(RAIZ / cfg.FICHERO).providers["ollama"].base_url

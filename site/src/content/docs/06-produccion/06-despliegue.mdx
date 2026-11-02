@@ -1,0 +1,231 @@
+---
+title: "Despliegue"
+description: "Despliegue: el asistente en un contenedor, medido de la construcción a la parada (capas, tamaño, secretos, arranque, versión servida y señales), y dónde ponerlo en la nube según dónde corre el modelo"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
+:::note[Revisado: 2026-11]
+Docker 28.5 con Docker Desktop en Windows, imagen base `python:3.12-slim-bookworm` y uv 0.12. Ollama y el reranker siguen en la máquina anfitriona, como en el resto del módulo. Los precios de la nube son los que publica Hugging Face por su API a noviembre de 2026.
+:::
+
+## Objetivos
+
+Al terminar esta lección podrás:
+
+- Empaquetar un servicio de LLM en una imagen de contenedor pequeña, reproducible y sin secretos.
+- Configurar por entorno lo que cambia entre máquinas (la URL de un modelo, una clave), sin tocar el código ni la imagen.
+- Comprobar que la imagen sirve exactamente la versión del sistema que se evaluó.
+- Hacer que el contenedor arranque, avise de su salud y se pare con orden.
+- Decidir dónde desplegar según dónde corre el modelo, con el coste delante.
+
+## Teoría
+
+### El contenedor no lleva el modelo
+
+En un servicio de LLM hay dos piezas con necesidades muy distintas:
+
+- **El servicio**: la API, el RAG, la caché, los guardrails. Es código Python normal, con poca memoria y CPU.
+- **El modelo**: necesita mucha memoria y, para ir rápido, GPU. Pesa gigas y se actualiza a su ritmo.
+
+Meter el modelo en la imagen del servicio la haría enorme y obligaría a reconstruirla para cambiar de modelo. Lo habitual es separarlos: el servicio, en un contenedor ligero; el modelo, en un servidor de inferencia (Ollama, vLLM, un Inference Endpoint) o en una API, al que el servicio llama por red. Es la misma separación que entre una aplicación y su base de datos.
+
+### Una imagen bien hecha
+
+- **Por capas, de lo que menos cambia a lo que más.** Docker reutiliza las capas que no han cambiado. Si las dependencias se instalan antes de copiar el código, cambiar una línea del servicio no vuelve a instalarlas.
+- **En dos etapas.** Una instala las dependencias con uv; la final solo copia el entorno ya instalado, sin uv ni compiladores.
+- **Sin privilegios.** El proceso corre con un usuario normal, no como root.
+- **Sin secretos.** Ni `.env` ni claves dentro: se excluyen con `.dockerignore` y se pasan al arrancar, como variables de entorno o con el sistema de secretos de la plataforma.
+
+### Configuración por entorno
+
+Dentro del contenedor, `127.0.0.1` es el propio contenedor: Ollama no está ahí. Lo que cambia entre entornos (la URL de un servicio, una clave, si se activan los guardrails) va en variables de entorno, no en el código: es el principio de configuración de las aplicaciones de doce factores. Para eso, `curso_core` admite ahora `CURSO_URL_<PROVEEDOR>`, que cambia la URL de un proveedor de `config/models.toml` sin tocarlo: `CURSO_URL_OLLAMA=http://host.docker.internal:11434`.
+
+### Arrancar, avisar y parar
+
+- **Salud.** Un *healthcheck* le dice a la plataforma si el servicio responde. Docker lo marca `healthy` o `unhealthy`. Kubernetes no usa el de la imagen, sino sus propias sondas (*readiness* y *liveness*), con la misma idea: no mandar tráfico a un contenedor que aún arranca y reiniciar el que se ha colgado.
+- **Parada ordenada.** Para parar un contenedor, la plataforma manda `SIGTERM` al proceso principal y, si no termina en un plazo, lo mata. Si el proceso principal es tu servidor, cierra con orden: termina las peticiones en curso y envía sus trazas (lección 6.02). Si es un shell que lo lanzó, la señal se queda en el shell. Es la anatomía de esta lección.
+
+## Práctica
+
+El [`Dockerfile`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/06-produccion/Dockerfile) sigue la guía de uv para Docker, en dos etapas:
+
+```dockerfile
+FROM python:3.12-slim-bookworm AS dependencias
+COPY --from=ghcr.io/astral-sh/uv:0.12.10 /uv /bin/uv
+WORKDIR /app
+COPY pyproject.toml uv.lock ./
+COPY packages ./packages
+RUN uv sync --frozen --no-dev          # sin el grupo hf: el servicio no usa torch
+
+FROM python:3.12-slim-bookworm
+RUN useradd --create-home --uid 1000 asistente
+WORKDIR /app
+COPY --from=dependencias /app/.venv ./.venv
+COPY --from=dependencias /app/packages ./packages
+COPY config ./config
+COPY prompts ./prompts
+COPY modulos/03-rag ./modulos/03-rag
+COPY modulos/04-evals ./modulos/04-evals
+COPY modulos/06-produccion ./modulos/06-produccion
+ENV PATH="/app/.venv/bin:$PATH" PYTHONUNBUFFERED=1 CURSO_TRAZAS=/tmp/trazas/llamadas.jsonl
+USER asistente
+HEALTHCHECK --interval=10s --start-period=60s \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8100/salud')"
+CMD ["uvicorn", "servicio:app", "--app-dir", "modulos/06-produccion", "--host", "0.0.0.0", "--port", "8100"]
+```
+
+El [`.dockerignore`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/.dockerignore) de la raíz deja fuera `.env`, `.git`, el `.venv` local, la web y los resultados. Y [`compose.yaml`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/06-produccion/compose.yaml) lo arranca con un comando, con las URLs de Ollama y del reranker en el anfitrión y los guardrails activados:
+
+```sh title="Terminal de VS Code · raíz del repo"
+docker compose -f modulos/06-produccion/compose.yaml up -d --build
+```
+
+[`desplegar.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/06-produccion/desplegar.py) mide todo el ciclo: construye la imagen desde cero y tras cambiar una línea, la inspecciona (tamaño, capas, `.env`, variables y un escaneo de secretos con el `privacidad.py` de la lección 04), la arranca, comprueba la versión del sistema que sirve y la para de dos formas. Necesita Docker, y Ollama y el reranker en marcha. Tarda unos 5 minutos; con `--grabadas`, un segundo.
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/06-produccion/desplegar.py
+```
+
+```text
+1. Construir la imagen
+   desde cero: 27 s
+   tras cambiar una línea de servicio.py: 1.8 s
+
+2. La imagen: 120 MB comprimida, 572MB en disco
+   las capas más pesadas:
+      311MB  COPY /app/.venv ./.venv # buildkit
+     85.3MB  # debian.sh --arch 'amd64' out/ 'bookworm' '…
+       45MB  RUN /bin/sh -c set -eux;   savedAptMark="$(a…
+     9.68MB  RUN /bin/sh -c set -eux;  apt-get update;  a…
+      209kB  COPY modulos/03-rag ./modulos/03-rag # build…
+   .env dentro de /app: no
+   variables de la imagen: PATH, LANG, GPG_KEY, PYTHON_VERSION, PYTHON_SHA256, PYTHONUNBUFFERED, CURSO_TRAZAS
+   secretos en el código: 2 en 131 ficheros
+
+3. Arrancar
+   de `docker run` a responder /salud: 21.6 s
+   versión del sistema que sirve: 54e7cf273ba5ea58
+   versión que midió el módulo 4: 54e7cf273ba5ea58
+   primera pregunta: 5.6 s → Cada 90 días
+   healthcheck de Docker: healthy · memoria: 57.2MiB / 15.34GiB
+
+4. Parar con `docker stop`
+   uvicorn como proceso principal    0.6 s · código   0 · uvicorn cerró con orden
+   a través de `sh -c`               1.5 s · código 137 · uvicorn no llegó a cerrar
+```
+
+## Mide y depura
+
+### El orden de las capas: de 27 s a 2
+
+Construir la imagen desde cero cuesta 27 s, casi todo en instalar las dependencias. Tras cambiar una línea de `servicio.py`, 1,8 s: Docker reutiliza la capa de las dependencias, porque `pyproject.toml` y `uv.lock` no han cambiado, y solo rehace las copias del código. Con el orden al revés (copiar todo y después instalar), cada cambio de código reinstalaría todo. En un CI que construye en cada commit, es la diferencia entre segundos y minutos.
+
+### Qué ocupa la imagen
+
+La imagen pesa 120 MB comprimida (lo que se descarga) y 572 MB en disco. Las capas dicen dónde: 311 MB son el entorno de Python con las dependencias, y unos 140 MB la base de Debian y Python. El código del servicio, el corpus y los prompts, menos de 1 MB.
+
+Esos 311 MB son las dependencias de todo el curso, también las que el servicio no usa (LangGraph, el SDK de MCP, los clientes de OpenAI y Anthropic). Un servicio de verdad tendría su propio `pyproject.toml` con lo justo, y una imagen bastante más pequeña. Y fíjate en lo que no está: torch, que va en el grupo opcional `hf` y habría añadido varios cientos de megas.
+
+### Sin secretos dentro, y un escáner que mentía
+
+En la imagen no hay `.env`, y entre sus variables no hay ninguna clave. El escaneo de los 131 ficheros de la aplicación encuentra dos secretos, y los dos están puestos a propósito: la clave inventada de la práctica de la lección 04 y la de su test.
+
+La primera ejecución dio 19, y la diferencia es una lección por sí sola. La regla de "asignación de secreto" de `privacidad.py` saltaba con cualquier `token = ...`, y en un código de LLMs eso son las cuentas de tokens: `tokens = round(palabras * 1.4)`, `tokens_entrada=bruto.tokens_entrada`. 17 falsos positivos. Un escáner que da 17 avisos falsos de 19 acaba ignorado, y entonces no sirve para el aviso verdadero. Se corrigió la regla para exigir un valor literal largo entre comillas, y se volvió a medir.
+
+### La imagen sirve lo que se midió
+
+El servicio dice en `/salud` la huella del sistema (lección 01): un resumen del prompt, los modelos, el corpus y el código del RAG. La imagen sirve `54e7cf273ba5ea58`, la misma que tiene la eval del módulo 4. Es la comprobación que cierra el círculo: lo que está en producción es exactamente lo que se evaluó. Si alguien cambia el prompt sin pasar la eval, la huella cambia y se ve.
+
+### Arrancar tarda lo que tarda el índice
+
+Del `docker run` a responder `/salud` pasan unos 22 s. No es Python ni FastAPI: es el índice, que se construye al arrancar, calculando los embeddings de todo el corpus. Con 30 documentos es asumible; con miles, el índice se construye una vez y se guarda (pgvector, módulo 3), y el servicio solo lo abre. Por eso el healthcheck tiene un periodo de gracia (`--start-period=60s`): sin él, la plataforma daría el contenedor por muerto mientras arranca.
+
+El contenedor usa 57 MiB de memoria. El modelo, que es lo que pesa, está fuera.
+
+### Parar: con orden o a la fuerza
+
+Con uvicorn como proceso principal, `docker stop` tarda 0,6 s, el código de salida es 0 y el log de uvicorn termina con su cierre ordenado. Con el mismo comando lanzado a través de `sh -c`, el contenedor acaba con código 137 (matado) y uvicorn no llega a cerrar. Es la anatomía.
+
+### Dónde desplegarlo
+
+El contenedor del servicio cabe en cualquier sitio: una VM con Docker (como la web del curso, en `deploy/`), un servicio de contenedores gestionado o Kubernetes. La decisión de verdad es dónde corre el modelo:
+
+| Opción para el modelo | Cómo se paga | Encaja cuando... |
+| --- | --- | --- |
+| Una API (anexo G) o Inference Providers (anexo B.5) | Por token | Hay poco tráfico o es irregular, y los datos pueden salir |
+| Tu propia GPU, en una VM o un Inference Endpoint | Por hora encendida | Hay tráfico constante, o los datos no pueden salir |
+| CPU, como en el curso | Por hora, y barato | Pocas peticiones y la latencia no importa |
+
+Una cuenta orientativa con los números del módulo: la GPU más pequeña de los Spaces de Hugging Face (T4) cuesta 0,40 $ la hora, unos 290 $ al mes encendida siempre. Con el modelo barato de OpenAI, cada mil preguntas sin caché costaban 0,081 $ (lección 03). A ese precio, la GPU empieza a compensar por encima de unos 3,6 millones de preguntas al mes, si puede con ellas, cosa que no hemos medido. Los precios cambian cada pocos meses; el método, no: tokens por pregunta medidos, por el precio de hoy, frente a horas de máquina.
+
+## Errores frecuentes
+
+**Meter el modelo en la imagen del servicio.** Gigas en cada despliegue y una reconstrucción para cambiar de modelo. El modelo va en su servidor; el servicio lo llama por red.
+
+**Copiar el código antes de instalar las dependencias.** Cada cambio de código las reinstala. Primero `pyproject.toml` y `uv.lock`; después, el código.
+
+**Secretos en la imagen.** Un `.env` copiado por descuido viaja con la imagen a cualquier registro donde la subas. `.dockerignore`, y secretos al arrancar.
+
+**Escribir `localhost` en la configuración de un contenedor.** Dentro del contenedor, es el contenedor. Las URLs, por variables de entorno.
+
+**Un escáner con tantos falsos positivos que nadie lo mira.** Mídelo con tu código, como cualquier otro clasificador, y corrige las reglas que molestan.
+
+**Arrancar el servidor a través de un shell.** No recibe las señales y no cierra con orden (la anatomía).
+
+### Anatomía de un error: el servidor que no se enteró de que lo paraban
+
+En la parte 4, el mismo contenedor arrancado de dos formas:
+
+```text
+4. Parar con `docker stop`
+   uvicorn como proceso principal    0.6 s · código   0 · uvicorn cerró con orden
+   a través de `sh -c`               1.5 s · código 137 · uvicorn no llegó a cerrar
+```
+
+**Cómo leerlo.** El código 137 es 128 + 9: el proceso terminó por la señal 9, `SIGKILL`, que no se puede atender. No cerró él: lo mataron. Y el log lo confirma: uvicorn no escribió ni "Shutting down" ni "Finished server process".
+
+**Causa.** Dentro del contenedor, con `sh -c`, el proceso 1 es el shell (`/proc/1/exe -> /usr/bin/dash`) y uvicorn es su hijo (el proceso 7). `docker stop` manda `SIGTERM` al proceso 1, el shell, que no se la pasa a su hijo. Uvicorn no se entera de que lo están parando y acaba matado sin cerrar: las peticiones en curso se cortan y los spans que tenía en el búfer se pierden, como en la lección 6.02. (Que aquí tardara 1,5 s y no los 10 s del plazo por defecto de `docker stop` no lo hemos investigado: el resultado, un proceso matado, es el mismo.)
+
+**Solución.** Que el servidor sea el proceso 1: la forma *exec* del `CMD`, con corchetes (`CMD ["uvicorn", ...]`), como en el `Dockerfile` de la práctica. La forma *shell* (`CMD uvicorn ...`) lanza el comando a través de `/bin/sh -c`, que es justo el caso que falla. Si de verdad necesitas un script de arranque, que termine con `exec uvicorn ...`, para que uvicorn sustituya al shell en lugar de ser su hijo.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'Cada vez que cambias una línea del servicio, la imagen tarda 5 minutos en construirse. ¿Qué miras primero?',
+			opciones: [
+				{ texto: 'El orden del Dockerfile: si copia el código antes de instalar las dependencias.', correcta: true, porque: 'Entonces cada cambio de código invalida la capa de las dependencias. Al revés, aquí pasó de 27 s a 1,8 s ("El orden de las capas").' },
+				{ texto: 'Usar una imagen base más pequeña.', porque: 'Ayuda al tamaño, pero no a reinstalar todo en cada cambio.' },
+			],
+		},
+		{
+			pregunta: 'Tu servicio funciona en local y, en el contenedor, no conecta con Ollama. La configuración dice http://127.0.0.1:11434. ¿Qué pasa?',
+			opciones: [
+				{ texto: 'Ollama no admite conexiones desde contenedores.', porque: 'Las admite. El problema es la dirección: dentro del contenedor, 127.0.0.1 es el propio contenedor ("Configuración por entorno").' },
+				{ texto: 'Dentro del contenedor, 127.0.0.1 es el contenedor; la URL tiene que apuntar al anfitrión, por una variable de entorno.', correcta: true, porque: 'Con CURSO_URL_OLLAMA=http://host.docker.internal:11434, sin tocar el código ni la imagen.' },
+			],
+		},
+		{
+			pregunta: '¿Cómo sabes que el contenedor en producción sirve el mismo sistema que pasó la eval?',
+			opciones: [
+				{ texto: 'Por la etiqueta de la imagen.', porque: 'La etiqueta la pone una persona; no dice qué prompt, modelos y corpus lleva dentro.' },
+				{ texto: 'Comparando la huella que da /salud con la que guardó la eval.', correcta: true, porque: 'La huella se calcula de los ficheros que deciden las respuestas: si coinciden, es el mismo sistema ("La imagen sirve lo que se midió").' },
+			],
+		},
+		{
+			pregunta: 'Tu Dockerfile termina con `CMD uvicorn servicio:app --host 0.0.0.0` y, al desplegar, se pierden peticiones en curso. ¿Por qué?',
+			opciones: [
+				{ texto: 'Porque uvicorn no sabe cerrar con orden.', porque: 'Sí sabe, si recibe la señal. Con la forma shell, la recibe el shell y no se la pasa (la anatomía).' },
+				{ texto: 'Porque la forma shell lanza uvicorn a través de sh, que recibe SIGTERM y no se la pasa; uvicorn acaba matado.', correcta: true, porque: 'Con la forma exec, CMD ["uvicorn", ...], uvicorn es el proceso 1 y cierra con orden.' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- [Usar uv en Docker](https://docs.astral.sh/uv/guides/integration/docker/): la guía oficial que sigue el Dockerfile.
+- Docker: [construcción en varias etapas](https://docs.docker.com/build/building/multi-stage/), [buenas prácticas](https://docs.docker.com/build/building/best-practices/), [formas shell y exec](https://docs.docker.com/reference/dockerfile/#shell-and-exec-form) y [`docker stop`](https://docs.docker.com/reference/cli/docker/container/stop/).
+- [La aplicación de doce factores: configuración](https://12factor.net/es/config).

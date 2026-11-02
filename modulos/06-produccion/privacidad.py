@@ -28,8 +28,11 @@ SECRETOS = {
         r"\b(?:sk|hf|ghp|gho|xoxb|xoxp)[-_][A-Za-z0-9_-]{16,}"
     ),
     "clave de AWS": re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
+    # Un nombre que acaba en password, secret, token o api_key, y un valor literal largo entre
+    # comillas. En código de LLMs, "tokens = ..." es lo normal: sin las comillas y la longitud,
+    # la regla salta en cada cuenta de tokens (lección 6.06).
     "asignación de secreto": re.compile(
-        r"(?i)\b(?:password|passwd|secret|token|api[_-]?key)\w*\s*[=:]\s*['\"]?([^\s'\"]{8,})"
+        r"(?i)\b\w*(?:password|passwd|secret|token|api_?key)\s*[=:]\s*['\"][\w/+=.-]{16,}['\"]"
     ),
 }
 
@@ -63,10 +66,10 @@ def redactar(texto: str) -> str:
 
 
 def buscar_secretos(texto: str) -> list[tuple[str, str]]:
-    """[(tipo, línea)] de las líneas que parecen contener un secreto."""
-    return [
-        (tipo, linea.strip())
-        for linea in texto.splitlines()
-        for tipo, patron in SECRETOS.items()
-        if patron.search(linea)
-    ]
+    """[(tipo, línea)] de las líneas que parecen contener un secreto, una vez por línea."""
+    hallados = []
+    for linea in texto.splitlines():
+        tipo = next((t for t, patron in SECRETOS.items() if patron.search(linea)), None)
+        if tipo:
+            hallados.append((tipo, linea.strip()))
+    return hallados

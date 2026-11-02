@@ -14,6 +14,8 @@ convertido en un servicio: el asistente de documentación interna.
 - `amenazas.py`: inyección directa e indirecta (una página del runbook editada), datos personales y una clave en el historial de git, limpiada con `git filter-repo` (lección 04).
 - `guardrails.py`: comprobaciones de entrada (inyección, datos personales) y de salida (sin fundamento, contacto externo, credenciales, comandos destructivos). El asistente las aplica con `guardrails=True`; el servicio, con `ASISTENTE_GUARDRAILS=1`.
 - `defensas.py`: los guardrails con las 58 respuestas del módulo 4 (falsos positivos) y con nueve ataques en vivo (lección 05).
+- `Dockerfile` y `compose.yaml`: la imagen del servicio (dos etapas, uv, usuario sin privilegios, healthcheck) y su arranque. Construcción desde la raíz: `docker build -f modulos/06-produccion/Dockerfile -t asistente .`. El `.dockerignore` está en la raíz.
+- `desplegar.py`: construir, inspeccionar, arrancar y parar el contenedor, medido (lección 06).
 - `test_produccion.py`: la caché y la API con un asistente falso, sin modelos.
 - `resultados/`: lo que midió cada práctica. Con `--grabadas`, se reutiliza sin llamar a nada.
 

@@ -1,0 +1,19 @@
+# Lo que no entra en el contexto de construcción de las imágenes (lección 6.06).
+# Sobre todo, los secretos: .env no debe llegar nunca a una imagen.
+.env
+.env.*
+!.env.example
+.git
+.venv
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+site
+node_modules
+trazas
+**/trazas
+**/checkpoints
+**/resultados
+bitacora
+docs
+deploy
