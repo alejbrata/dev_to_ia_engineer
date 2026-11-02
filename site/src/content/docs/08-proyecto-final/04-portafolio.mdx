@@ -14,6 +14,7 @@ Las cifras son las del asistente del curso, medidas en los módulos anteriores. 
 Al terminar esta lección podrás:
 
 - Escribir el README de tu proyecto con las seis secciones, cada cifra con su intervalo y el comando que la reproduce.
+- Escribir el informe de una medición: la pregunta, cómo se midió, el resultado con su incertidumbre, su lectura, sus límites y la decisión.
 - Contar una decisión técnica con su contexto, las alternativas, el dato que decidió y su límite.
 - Preparar las preguntas habituales de una entrevista de AI Engineering con tus propias medidas.
 - Reconocer, antes que quien te entrevista, las afirmaciones que no aguantan una pregunta.
@@ -36,6 +37,31 @@ Las seis secciones de la plantilla son las de un informe técnico corto: problem
 
 - **Los resultados, en tabla y con la línea base.** "90 % de aciertos" no dice nada; "52 de 58 (IC 79 %-95 %), frente a 16 sin documentación y 40 con un modelo más pequeño" sí.
 - **Los límites suman.** Decir qué no funciona, qué no has medido y dónde la evidencia no llega es lo que hace creíble el resto. Quien revisa los va a encontrar igual; mejor que los encuentre escritos por ti.
+
+### El informe de una medición
+
+Cada vez que mides algo para decidir (un modelo frente a otro, un prompt nuevo, una cuantización), el resultado tiene que poder leerlo otra persona sin haber estado delante. Un informe de una medición cabe en media página y tiene seis partes:
+
+1. **La pregunta.** Qué querías saber, en una frase, y qué decisión depende de la respuesta.
+2. **Qué se comparó y cómo.** Las versiones exactas (modelo, prompt, commit), el dataset, cuántos casos y el comando que lo repite. Es lo que permite que otro llegue al mismo número.
+3. **El resultado, con su incertidumbre.** Los totales con su intervalo, y la comparación caso a caso: cuántos casos gana y pierde cada versión, con su p.
+4. **La lectura.** Qué casos cambian y por qué, mirados uno a uno. El total dice si hay diferencia; los casos dicen qué es.
+5. **Lo que no dice.** Los límites del dataset, del comprobador o de la propia medición: lo que no se midió, lo que no es reproducible, lo que podría ser un falso positivo.
+6. **La decisión.** Qué se hace con esto, o qué haría falta medir para decidir.
+
+Con la comparación del anexo G, escrita así:
+
+> **¿Compensa pasar el asistente a una API comercial?** Se comparó el sistema vigente con el modelo local de 7B y con el modelo barato de OpenAI, cambiando solo el modelo que genera: misma recuperación, mismo prompt, las 58 preguntas del módulo 4 (`con_api.py --rol chat_openai`).
+>
+> **Resultado.** 53 de 58 con la API (IC 95 %: 81 %-96 %) frente a 52 en local (79 %-95 %). La API gana 4 casos y pierde 3, p = 1,00: no hay diferencia de calidad demostrable. La latencia sí cambia: 1,1 s de mediana frente a 11,5 s, por 0,0047 $ las 58 preguntas.
+>
+> **Lectura.** La API resiste la inyección de la g-01, que el modelo local no resistía. Una de sus tres "pérdidas" (m3-09) es una respuesta correcta que el comprobador no reconoce.
+>
+> **Límites.** Una sola ejecución, y el modelo no admite temperatura 0: otra ejecución puede dar otro resultado. El comprobador está ajustado a las respuestas del modelo local.
+>
+> **Decisión.** La calidad no decide; la latencia y el coste favorecen la API. La decisión depende de si los datos pueden salir de la infraestructura, que esta medición no responde.
+
+Fíjate en lo que no hace: no dice "la API es mejor" por un caso de diferencia, no esconde la pérdida que no lo es y separa lo medido (calidad, latencia, coste) de lo que decide otra cosa (los datos). Es el mismo informe que va en la sección de resultados de tu README, una vez por cada decisión importante.
 
 ### Contar una decisión
 
@@ -186,6 +212,13 @@ Y es tentador escribir en el README, o decir en una entrevista: "Cuantizar a 4 b
 			opciones: [
 				{ texto: 'Ajustar el umbral para que el aviso desaparezca.', porque: 'Mover el umbral después de medir le quita su valor (lección 01).' },
 				{ texto: 'Dejar el aviso y escribirlo en Resultados y en Límites del README.', correcta: true, porque: 'Un límite escrito por ti suma credibilidad ("El aviso no desaparece: se convierte en un límite").' },
+			],
+		},
+		{
+			pregunta: 'Comparas dos modelos: 53 frente a 52 de 58, uno gana 4 casos y pierde 3 (p = 1,00), y es diez veces más rápido. ¿Cómo lo escribes en el informe?',
+			opciones: [
+				{ texto: '"El modelo B es mejor: acierta más y es más rápido".', porque: 'Un caso de diferencia con p = 1,00 no demuestra que acierte más ("El informe de una medición").' },
+				{ texto: '"Sin diferencia de calidad demostrable; B es diez veces más rápido", con los casos que cambian y los límites de la medición.', correcta: true, porque: 'Separa lo que la medición demuestra (la latencia) de lo que no (la calidad), y deja ver los casos para quien quiera mirarlos.' },
 			],
 		},
 	]}
