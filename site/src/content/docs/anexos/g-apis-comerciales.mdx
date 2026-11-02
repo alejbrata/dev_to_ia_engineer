@@ -54,7 +54,7 @@ Tres cosas que conviene saber:
 
 <TablaCompatibilidad />
 
-«Sin probar» es Claude sin clave en el entorno donde se generó la tabla. Las prácticas que no aparecen son locales por definición (servir, cuantizar o ajustar un modelo, el servicio de producción y su respaldo, el reranker) o no llaman a ningún modelo; `compatibilidad.py --grabadas` las lista con el motivo.
+«Sin probar» sería un proveedor sin clave en el entorno donde se generó la tabla. Las prácticas que no aparecen son locales por definición (servir, cuantizar o ajustar un modelo, el servicio de producción y su respaldo, el reranker) o no llaman a ningún modelo; `compatibilidad.py --grabadas` las lista con el motivo.
 
 Que una práctica pase sus tres primeras llamadas no garantiza que pase todas: una parte posterior puede pedir algo que el proveedor no admite. La conocida: la parte 4 de `bucle.py`, que hace razonar al agente en cada paso, falla con OpenAI (herramientas y razonamiento no van juntos en `/chat/completions`).
 
@@ -132,7 +132,7 @@ Cómo leerla:
 
 ## Claude
 
-Anthropic no usa el formato de OpenAI: tiene su propia API. `curso_core` la habla con su SDK oficial (proveedor de tipo `anthropic`), así que se usa igual, con el rol `chat_claude` (`con_api.py --rol chat_claude`) o con `CURSO_PROVEEDOR=claude`. No ofrece embeddings ni logprobs. Los detalles, y lo que el cliente hace distinto con Claude, están en el [anexo A](../a-claude-y-claude-code/). Esa integración, herramientas incluidas, está probada con tests, pero aún no contra la API real.
+Anthropic no usa el formato de OpenAI: tiene su propia API. `curso_core` la habla con su SDK oficial (proveedor de tipo `anthropic`), así que se usa igual, con el rol `chat_claude` (`con_api.py --rol chat_claude`) o con `CURSO_PROVEEDOR=claude`. No ofrece embeddings ni logprobs. Y tiene el mismo problema que OpenAI con el razonamiento: sus modelos actuales deciden solos si razonan, y ese razonamiento cuenta en `max_tokens`. Al probar el curso, Opus 5.5 gastó los 20 tokens de una respuesta corta razonando y devolvió el texto vacío. No admite desactivarlo (responde 400); con el esfuerzo bajo (`output_config.effort = "low"`) respondió sin razonar. Es lo que `curso_core` envía cuando la práctica no pide razonar. Los detalles, y lo que el cliente hace distinto con Claude, están en el [anexo A](../a-claude-y-claude-code/). Está probada contra la API real con todas las prácticas del curso (la tabla de arriba). Una diferencia más con OpenAI: la salida estructurada de Claude no admite un objeto libre (un `dict[str, Any]`) ni en modo no estricto; con un esquema así, `curso_core` pide el JSON solo con el prompt y lo valida al recibirlo. Lo destapó `planificar.py`.
 
 ## Otros proveedores
 
@@ -151,7 +151,7 @@ uv run python modulos/05-agentes/comite.py --rol chat_hf
 | Rol | Modelo y proveedor | Clave en `.env` | Estado (2026-11) |
 | --- | --- | --- | --- |
 | `chat_openai` | El modelo barato de OpenAI | `OPENAI_API_KEY` | Probado: la lección 15 y `traza.py` |
-| `chat_claude` | Claude, con el SDK oficial | `ANTHROPIC_API_KEY` | Probado con tests, no contra la API real |
+| `chat_claude` | Claude, con el SDK oficial | `ANTHROPIC_API_KEY` | Probado: todas las prácticas con `CURSO_PROVEEDOR=claude`, tres llamadas cada una (tabla de arriba) |
 | `chat_hf` | Un Qwen3 de 235B en Hugging Face Inference Providers, de la familia del modelo local y unas 30 veces mayor | `HF_TOKEN` y créditos | Probado: `traza.py` y la lección 15 (0,12 $ como mucho, los 4 incidentes con agente único y comité). Sin créditos, la API responde 402 |
 
 Los nombres exactos de los modelos están en `config/models.toml`. Puedes cambiarlos por otros, o añadir roles, siempre que el modelo admita herramientas: en Hugging Face, la API `/v1/models` dice qué proveedores las admiten para cada modelo.

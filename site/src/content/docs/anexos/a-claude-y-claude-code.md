@@ -16,7 +16,7 @@ TODO(alex)
 ## La API de Claude
 
 :::note[Revisado: 2026-10]
-Modelos y precios publicados por Anthropic en octubre de 2026. Cambian a menudo: consulta la [página de precios](https://platform.claude.com/docs/en/about-claude/pricing) y la de [modelos](https://platform.claude.com/docs/en/about-claude/models/overview). La integración con `curso_core` tiene tests, pero aún no se ha probado contra la API real con una clave.
+Modelos y precios publicados por Anthropic en octubre de 2026. Cambian a menudo: consulta la [página de precios](https://platform.claude.com/docs/en/about-claude/pricing) y la de [modelos](https://platform.claude.com/docs/en/about-claude/models/overview). La integración con `curso_core` está probada contra la API real en noviembre de 2026: todas las prácticas del curso con `CURSO_PROVEEDOR=claude` (anexo G).
 :::
 
 :::tip[Opcional]

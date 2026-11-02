@@ -14,7 +14,7 @@
    "claude": {
     "estado": "sin modelos",
     "detalle": "",
-    "segundos": 0.8707976000150666
+    "segundos": 0.339945700019598
    }
   },
   "modulos/00-introduccion/comprobar_entorno.py": {
@@ -31,7 +31,7 @@
    "claude": {
     "estado": "sin modelos",
     "detalle": "",
-    "segundos": 0.45337839995045215
+    "segundos": 0.18398990004789084
    }
   },
   "modulos/01-fundamentos-de-llms/comparar_modelos.py": {
@@ -46,9 +46,9 @@
     "segundos": 4.1609794000396505
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 10.093516299966723
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 7.540533800027333
    }
   },
   "modulos/01-fundamentos-de-llms/conversacion.py": {
@@ -63,9 +63,9 @@
     "segundos": 6.260224800091237
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 8.947625799919479
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 9.667213700013235
    }
   },
   "modulos/01-fundamentos-de-llms/coste_y_latencia.py": {
@@ -80,9 +80,9 @@
     "segundos": 17.227029499947093
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 9.385168400011025
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 9.460432399995625
    }
   },
   "modulos/01-fundamentos-de-llms/errores_api.py": {
@@ -99,7 +99,7 @@
    "claude": {
     "estado": "solo local",
     "detalle": "huggingface",
-    "segundos": 5.371408800012432
+    "segundos": 2.194400000036694
    }
   },
   "modulos/01-fundamentos-de-llms/ficha_modelo.py": {
@@ -116,7 +116,7 @@
    "claude": {
     "estado": "sin modelos",
     "detalle": "",
-    "segundos": 3.6330125000094995
+    "segundos": 2.1143752000061795
    }
   },
   "modulos/01-fundamentos-de-llms/prediccion.py": {
@@ -133,7 +133,7 @@
    "claude": {
     "estado": "sin logprobs",
     "detalle": "",
-    "segundos": 1.3281085999915376
+    "segundos": 0.5140140000730753
    }
   },
   "modulos/01-fundamentos-de-llms/razonamiento.py": {
@@ -148,9 +148,9 @@
     "segundos": 3.812732999911532
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 9.438775400049053
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 8.147750100004487
    }
   },
   "modulos/01-fundamentos-de-llms/sampling.py": {
@@ -167,7 +167,7 @@
    "claude": {
     "estado": "sin logprobs",
     "detalle": "",
-    "segundos": 1.4066705000586808
+    "segundos": 0.5766781999263912
    }
   },
   "modulos/01-fundamentos-de-llms/streaming.py": {
@@ -182,9 +182,9 @@
     "segundos": 9.786895300028846
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 10.462420600000769
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 6.607862300006673
    }
   },
   "modulos/01-fundamentos-de-llms/tokens.py": {
@@ -199,9 +199,9 @@
     "segundos": 4.884738499997184
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 11.441409899969585
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 6.3848035000264645
    }
   },
   "modulos/02-prompting/anatomia.py": {
@@ -216,9 +216,9 @@
     "segundos": 24.77086019993294
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 9.54224169999361
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 12.269283299916424
    }
   },
   "modulos/02-prompting/evaluar.py": {
@@ -233,9 +233,9 @@
     "segundos": 5.6555498000234365
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 8.249590300023556
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 11.151190200005658
    }
   },
   "modulos/02-prompting/few_shot.py": {
@@ -250,9 +250,9 @@
     "segundos": 5.526729000033811
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 8.605311500024982
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 10.83396099996753
    }
   },
   "modulos/02-prompting/herramientas.py": {
@@ -267,9 +267,9 @@
     "segundos": 6.195231200079434
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 8.197328599984758
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 7.558308899984695
    }
   },
   "modulos/02-prompting/prompts_como_codigo.py": {
@@ -284,9 +284,9 @@
     "segundos": 20.45293779997155
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 8.786748599959537
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 11.717909900005907
    }
   },
   "modulos/02-prompting/salida_estructurada.py": {
@@ -301,9 +301,9 @@
     "segundos": 5.846236799960025
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 9.2837219000794
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 9.997285999939777
    }
   },
   "modulos/03-rag/chunking.py": {
@@ -320,7 +320,7 @@
    "claude": {
     "estado": "solo local",
     "detalle": "ollama",
-    "segundos": 149.35930210002698
+    "segundos": 86.21933430002537
    }
   },
   "modulos/03-rag/cuando_rag.py": {
@@ -335,9 +335,9 @@
     "segundos": 24.006968799978495
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 47.729495299980044
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 28.097615499980748
    }
   },
   "modulos/03-rag/embeddings.py": {
@@ -354,7 +354,7 @@
    "claude": {
     "estado": "solo local",
     "detalle": "ollama",
-    "segundos": 96.27585700002965
+    "segundos": 52.34791590005625
    }
   },
   "modulos/03-rag/generacion.py": {
@@ -369,9 +369,9 @@
     "segundos": 102.85014170000795
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 106.00411950005218
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 71.10843600006774
    }
   },
   "modulos/03-rag/recuperacion.py": {
@@ -388,7 +388,7 @@
    "claude": {
     "estado": "solo local",
     "detalle": "ollama",
-    "segundos": 40.79444669990335
+    "segundos": 24.695943599916063
    }
   },
   "modulos/04-evals/analisis_errores.py": {
@@ -405,7 +405,7 @@
    "claude": {
     "estado": "necesita previa",
     "detalle": "",
-    "segundos": 2.235577999963425
+    "segundos": 0.7579695000313222
    }
   },
   "modulos/04-evals/calibrar_juez.py": {
@@ -420,9 +420,9 @@
     "segundos": 5.791157800005749
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 10.291803799918853
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 11.107321099960245
    }
   },
   "modulos/04-evals/con_api.py": {
@@ -439,7 +439,7 @@
    "claude": {
     "estado": "solo local",
     "detalle": "ollama,openai",
-    "segundos": 55.58226480009034
+    "segundos": 33.61993319995236
    }
   },
   "modulos/04-evals/datasets.py": {
@@ -454,9 +454,9 @@
     "segundos": 21.02901080006268
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 44.15162210003473
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 32.8048161000479
    }
   },
   "modulos/04-evals/evaluar.py": {
@@ -471,9 +471,9 @@
     "segundos": 35.98844330001157
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 48.35049490001984
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 37.01173180004116
    }
   },
   "modulos/04-evals/metricas.py": {
@@ -490,7 +490,7 @@
    "claude": {
     "estado": "sin modelos",
     "detalle": "",
-    "segundos": 2.2685808999231085
+    "segundos": 0.7640580999432132
    }
   },
   "modulos/04-evals/parece_que_funciona.py": {
@@ -505,9 +505,9 @@
     "segundos": 20.737781699979678
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 42.885579099995084
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 31.949572700075805
    }
   },
   "modulos/04-evals/por_etapas.py": {
@@ -522,9 +522,9 @@
     "segundos": 25.8186898001004
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 43.3783729999559
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 33.5297701000236
    }
   },
   "modulos/05-agentes/aguantar.py": {
@@ -539,9 +539,9 @@
     "segundos": 43.08850870002061
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 42.94549530011136
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 34.71808859996963
    }
   },
   "modulos/05-agentes/atacar.py": {
@@ -556,9 +556,9 @@
     "segundos": 97.4016333000036
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 42.74292950006202
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 33.36116990004666
    }
   },
   "modulos/05-agentes/bucle.py": {
@@ -573,9 +573,9 @@
     "segundos": 43.67087460006587
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 42.198288900079206
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 33.86518349999096
    }
   },
   "modulos/05-agentes/colaborar.py": {
@@ -590,9 +590,9 @@
     "segundos": 18.725176099920645
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 42.84192339994479
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 32.81182989990339
    }
   },
   "modulos/05-agentes/comite.py": {
@@ -607,9 +607,9 @@
     "segundos": 153.73126220004633
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 90.58570040005725
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 60.80389030009974
    }
   },
   "modulos/05-agentes/con_langgraph.py": {
@@ -624,9 +624,9 @@
     "segundos": 30.642700499971397
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 45.26711049990263
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 36.48380509996787
    }
   },
   "modulos/05-agentes/con_mcp.py": {
@@ -641,9 +641,9 @@
     "segundos": 149.88556049996987
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "| curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 96.8615993000567
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 77.79142759996466
    }
   },
   "modulos/05-agentes/con_skills.py": {
@@ -658,9 +658,9 @@
     "segundos": 38.75991839997005
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 43.63734999997541
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 34.76353019999806
    }
   },
   "modulos/05-agentes/delegar.py": {
@@ -675,9 +675,9 @@
     "segundos": 27.917830500053242
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 42.88244910002686
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 29.610217100009322
    }
   },
   "modulos/05-agentes/evals_agentes.py": {
@@ -692,9 +692,9 @@
     "segundos": 44.96591469994746
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 43.63372490007896
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 31.619839699938893
    }
   },
   "modulos/05-agentes/grafos.py": {
@@ -709,9 +709,9 @@
     "segundos": 25.450764899956994
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 43.2561854000669
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 32.001013400033116
    }
   },
   "modulos/05-agentes/medir_herramientas.py": {
@@ -728,7 +728,7 @@
    "claude": {
     "estado": "necesita previa",
     "detalle": "",
-    "segundos": 35.14556450000964
+    "segundos": 22.21155149990227
    }
   },
   "modulos/05-agentes/medir_modelos.py": {
@@ -743,9 +743,9 @@
     "segundos": 38.135767700034194
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 41.41972080001142
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 37.33072109997738
    }
   },
   "modulos/05-agentes/memoria_y_contexto.py": {
@@ -760,9 +760,9 @@
     "segundos": 48.071361000067554
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 47.03851649991702
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 39.917016500025056
    }
   },
   "modulos/05-agentes/planificar.py": {
@@ -777,9 +777,9 @@
     "segundos": 88.3418552998919
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 37.9653731000144
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 49.4402989000082
    }
   },
   "modulos/05-agentes/traza.py": {
@@ -794,9 +794,9 @@
     "segundos": 30.8219421999529
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 34.39047370001208
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 39.95544879999943
    }
   },
   "modulos/05-agentes/workflow_frente_agente.py": {
@@ -811,9 +811,9 @@
     "segundos": 20.582719199941494
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 39.691047900007106
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 40.88215739990119
    }
   },
   "modulos/06-produccion/amenazas.py": {
@@ -830,7 +830,7 @@
    "claude": {
     "estado": "funciona",
     "detalle": "",
-    "segundos": 43.099398100050166
+    "segundos": 37.54413400008343
    }
   },
   "modulos/06-produccion/defensas.py": {
@@ -847,7 +847,7 @@
    "claude": {
     "estado": "funciona",
     "detalle": "",
-    "segundos": 94.57334020000417
+    "segundos": 60.8225668000523
    }
   },
   "modulos/07-modelos-propios/datos_ajuste.py": {
@@ -864,7 +864,7 @@
    "claude": {
     "estado": "funciona",
     "detalle": "",
-    "segundos": 20.46034980006516
+    "segundos": 15.631493199965917
    }
   },
   "modulos/07-modelos-propios/decidir.py": {
@@ -879,9 +879,9 @@
     "segundos": 8.824197299894877
    },
    "claude": {
-    "estado": "sin clave",
-    "detalle": "curso_core.client.ErrorLLM: Falta la variable de entorno ANTHROPIC_API_KEY en .env",
-    "segundos": 9.697144099976867
+    "estado": "funciona",
+    "detalle": "",
+    "segundos": 9.084902200032957
    }
   }
  },
