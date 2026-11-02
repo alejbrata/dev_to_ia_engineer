@@ -1,0 +1,181 @@
+---
+title: "Requisitos mínimos"
+description: "Requisitos mínimos: desarrollo, evals, observabilidad, documentación y análisis de coste, comprobados sobre el asistente del curso"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
+## Objetivos
+
+Al terminar esta lección podrás:
+
+- Enumerar los requisitos mínimos del proyecto final y el módulo del curso del que sale cada uno.
+- Describir tu proyecto en un manifiesto (`proyecto.toml`) y comprobarlo con `comprobar_proyecto.py`.
+- Interpretar cada resultado del comprobador, incluidos los avisos que no son fallos y los fallos que no lo son.
+- Distinguir lo que se puede comprobar con un script de lo que necesita juicio (la rúbrica de la lección 03).
+
+## Teoría
+
+### Los requisitos, y de dónde salen
+
+Un proyecto final del curso tiene que demostrar los pilares del curso: que funciona, que está medido y que se puede operar. Cada requisito sale de un módulo:
+
+| Requisito | Qué se pide | Dónde se vio |
+| --- | --- | --- |
+| Especificación | Problema, usuarios, métrica, umbral, línea base y fuera de alcance | 8.01 |
+| Desarrollo | Código propio, prompts versionados, modelos en la configuración, tests | 0, 1, 2 |
+| Secretos | Ninguna clave en el repositorio; `.env` fuera de git | 6.04 |
+| Eval | Al menos 30 casos anclados a tus datos y resultados grabados al día con el sistema | 4 |
+| Observabilidad | Trazas de cada llamada al modelo y métricas del servicio | 6.02, 6.03 |
+| Coste | Tokens, latencia y dinero por petición, medidos | 1, 6.03 |
+| Documentación | README con problema, cómo ejecutarlo, resultados, decisiones, coste y límites | 8.04 |
+
+"Creado desde cero" quiere decir que el problema, los datos, el dataset de la eval y el sistema son tuyos. Puedes usar `curso_core` y lo que has construido en el curso: es una librería, como usarías la de tu empresa. Lo que no vale es entregar el asistente del curso con otros documentos.
+
+### Lo que se comprueba con un script y lo que no
+
+Una parte de los requisitos se puede comprobar mirando ficheros: si el dataset tiene 30 casos, si hay una clave en el código, si el README tiene sus secciones. Para eso está `comprobar_proyecto.py`. Otra parte necesita juicio: si el análisis de errores es bueno, si las decisiones están justificadas, si el sistema aguanta un fallo de su proveedor. Eso lo mira la rúbrica de la lección 03.
+
+El comprobador no se fía de que un fichero exista. Mira lo que contiene: cuenta los casos del dataset y calcula su intervalo, compara la fecha de los resultados con la del código, busca secretos con las reglas de la lección 6.04 y comprueba que los nombres de modelo de `config/models.toml` no aparezcan escritos en el código. Es como un `pre-commit` de requisitos.
+
+## Práctica
+
+El manifiesto del ejemplo resuelto, el asistente del curso, está en [`modulos/08-proyecto-final/ejemplo/proyecto.toml`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/08-proyecto-final/ejemplo/proyecto.toml). Apunta a piezas que ya existen en el repositorio: el dataset y los resultados del módulo 4, el sistema de los módulos 3 y 6, sus tests, sus trazas y sus métricas. Por ejemplo:
+
+```toml
+[evals]
+dataset = "modulos/04-evals/datos/casos.jsonl"
+resultados = "modulos/04-evals/resultados/vigente.jsonl"
+
+[codigo]
+sistema = [
+    "modulos/03-rag/generacion.py",
+    "modulos/04-evals/sistema.py",
+    "prompts/rag/con-citas-reglas.md",
+    # ...
+]
+tests = ["modulos/04-evals", "modulos/06-produccion"]
+
+[coste]
+medidas = ["modulos/06-produccion/resultados/metricas.json"]
+```
+
+El comprobador, con `--tests` para que ejecute también los tests:
+
+```sh
+uv run python modulos/08-proyecto-final/comprobar_proyecto.py modulos/08-proyecto-final/ejemplo/proyecto.toml --tests
+```
+
+La primera vez que se pasó por el asistente del curso, esto es lo que dijo:
+
+```text
+Proyecto: Asistente interno de documentación técnica
+   OK    especificación             métrica «Aciertos en las 58 preguntas del dataset del módulo 4, ancladas a fragmentos del corpus», umbral 0.8
+   OK    dataset de la eval         58 casos; con un 80% de aciertos, IC 95 % 67%-88%
+   AVISO resultados de la eval      52 de 58 (79%-95%): el umbral es 80% y el intervalo baja de él
+   OK    tests                      18 passed in 2.39s
+   OK    trazas                     modulos/06-produccion/observabilidad.py, packages/curso_core/src/curso_core/tracing.py
+   OK    métricas                   modulos/06-produccion/metricas_servicio.py
+   OK    coste medido               tokens, latencia y dinero en resultados grabados
+   FALTA secretos                   5, p. ej. modulos/06-produccion/amenazas.py: SECRETO = "sk-curso-0123456789abcdefghij"  # inventado: tien
+   OK    modelos en configuración   16 modelos, ninguno en el código
+   FALTA README                     no existe modulos/08-proyecto-final/ejemplo/README.md
+   7 OK, 1 avisos, 2 por hacer
+```
+
+Dos requisitos por hacer y un aviso. El README falta de verdad: el asistente se construyó a lo largo de varios módulos y no tiene un README de proyecto. Lo escribiremos en la lección 04. Los secretos son la anatomía de esta lección, y el aviso de los resultados se explica en "Mide y depura".
+
+## Mide y depura
+
+### 52 de 58, y aun así un aviso
+
+El sistema vigente acierta 52 de 58, un 90 %, y el umbral es el 80 %. Pero el intervalo del 95 % va del 79 % al 95 %, y su extremo inferior queda por debajo del umbral. Con 58 casos, la eval no puede asegurar que el sistema esté por encima del 80 %; solo que lo más probable es que sí.
+
+Por eso es un aviso y no un fallo: no dice que el sistema sea malo, dice que la evidencia no alcanza para afirmar que cumple. Tienes dos salidas honestas: más casos, que estrechan el intervalo, o contarlo así en el README ("90 %, con un intervalo del 79 % al 95 %"). La que no vale es escribir "supera el umbral del 80 %" sin más.
+
+### Resultados al día
+
+El comprobador compara la fecha del último commit de los resultados con la del último commit que tocó el código del sistema. Si el sistema cambió después, los resultados ya no lo describen y sale FALTA. Es una versión más tosca de la huella del módulo 4 (lección 4.07), que compara el contenido de los ficheros: no ve los cambios sin commit y salta aunque el cambio no afecte a las respuestas. A cambio, sirve para cualquier proyecto sin escribir nada más.
+
+En este repositorio ha saltado de verdad. Al añadir un rol nuevo a `config/models.toml` en la lección 7.03, la huella del módulo 4 cambió y hubo que repetir la eval vigente: mismas 52 respuestas, huella nueva.
+
+### Los tests, ejecutados
+
+Con `--tests`, el comprobador ejecuta los tests de las carpetas del manifiesto y muestra el resumen de pytest: aquí, 18 tests pasados. Sin la opción, solo cuenta los ficheros, porque ejecutar los tests puede tardar o necesitar servicios.
+
+## Errores frecuentes
+
+- **Tratar el comprobador como la nota.** Un OK en todo es el mínimo, no la calidad. Un README con las seis secciones vacías pasa la comprobación y suspende la rúbrica.
+- **Callar un aviso.** El del intervalo es información para el README, no algo que esconder.
+- **Resultados viejos.** Si cambias el prompt, el modelo o la búsqueda, repite la eval antes de citar sus números.
+- **Desactivar una comprobación que molesta.** Es la anatomía.
+
+### Anatomía de un error: cinco secretos que no lo eran
+
+**El síntoma.**
+
+```text
+   FALTA secretos                   5, p. ej. modulos/06-produccion/amenazas.py: SECRETO = "sk-curso-0123456789abcdefghij"  # inventado: tien
+```
+
+**Cómo leerlo.** El ejemplo que muestra lleva su propia explicación en el comentario: "inventado". Los cinco hallazgos son dos valores, repetidos: `sk-curso-0123456789abcdefghij` en la práctica de seguridad de la lección 6.04, en sus resultados grabados y en un test, y `supersecreta1234567` en otro test. Son claves falsas con forma de clave, puestas a propósito para comprobar que el escáner las detecta.
+
+**La causa.** El escáner busca formas (un prefijo `sk-` seguido de muchos caracteres, una asignación a `password` con un literal largo), no intenciones. No puede saber que esos valores son de prueba.
+
+**La solución.** No desactivar la comprobación ni ignorar ficheros enteros, porque mañana alguien pegará una clave de verdad en ese mismo test. Lo correcto es declarar cada valor falso, uno a uno y con su motivo, como hacen herramientas como gitleaks. En el manifiesto:
+
+```toml
+[secretos]
+# Valores falsos con forma de secreto, a propósito: la práctica de seguridad de la lección
+# 6.04 y sus tests los usan para comprobar que el escáner los detecta.
+de_prueba = ["sk-curso-0123456789abcdefghij", "supersecreta1234567"]
+```
+
+Y el comprobador sigue contándolos, para que se vea que existen:
+
+```text
+   OK    secretos                   160 ficheros, ninguno (5 con valores de prueba declarados)
+```
+
+Si mañana aparece un sexto hallazgo que no está en la lista, volverá a fallar.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'Tu proyecto pasa el comprobador con todo en OK. ¿Está terminado?',
+			opciones: [
+				{ texto: 'Sí: cumple los requisitos mínimos.', porque: 'Cumple lo que se puede comprobar con un script. La calidad del análisis y de las decisiones la mira la rúbrica ("Lo que se comprueba con un script y lo que no").' },
+				{ texto: 'Cumple el mínimo comprobable; falta la rúbrica: análisis de errores, decisiones y lo que no mide un script.', correcta: true, porque: 'Un README con las secciones vacías pasa el comprobador y suspende la rúbrica.' },
+			],
+		},
+		{
+			pregunta: 'Tu eval da 26 de 30 (87 %) con un umbral del 80 %, y el comprobador avisa de que el intervalo baja del umbral. ¿Qué escribes en el README?',
+			opciones: [
+				{ texto: '"Supera el umbral del 80 %".', porque: 'El intervalo baja del 80 %: la evidencia no alcanza para afirmarlo ("52 de 58, y aun así un aviso").' },
+				{ texto: '"87 %, con un intervalo del 95 % que va del 70 % al 95 %; con 30 casos no se puede asegurar que supere el 80 %".', correcta: true, porque: 'Es el dato con su límite. Si necesitas asegurarlo, más casos.' },
+			],
+		},
+		{
+			pregunta: 'El escáner de secretos marca una clave falsa que usas en un test. ¿Qué haces?',
+			opciones: [
+				{ texto: 'Excluir la carpeta de tests del escaneo.', porque: 'El día que alguien pegue una clave real en un test, no lo verás (anatomía).' },
+				{ texto: 'Declarar ese valor concreto como de prueba, con su motivo, y dejar el escaneo como está.', correcta: true, porque: 'Así el hallazgo sigue contándose y cualquier valor nuevo vuelve a fallar.' },
+			],
+		},
+		{
+			pregunta: 'Cambias el prompt de tu sistema y haces commit. El comprobador marca FALTA en "resultados de la eval". ¿Por qué?',
+			opciones: [
+				{ texto: 'Porque los resultados son anteriores al último cambio del sistema: ya no describen lo que hay.', correcta: true, porque: 'Repite la eval antes de citar sus números ("Resultados al día").' },
+				{ texto: 'Porque el nuevo prompt es peor.', porque: 'El comprobador no sabe si es peor: solo ve que el sistema cambió después de la última eval.' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- [Secret scanning](https://docs.github.com/en/code-security/secret-scanning/introduction/about-secret-scanning), de GitHub: el escaneo de secretos en los repositorios y qué hace con lo que encuentra.
+- [gitleaks](https://github.com/gitleaks/gitleaks): un escáner de secretos para usar en local y en CI, con listas de valores permitidos.
+- [Your AI Product Needs Evals](https://hamel.dev/blog/posts/evals/): por qué la eval es lo primero que se mira en un sistema con LLMs.

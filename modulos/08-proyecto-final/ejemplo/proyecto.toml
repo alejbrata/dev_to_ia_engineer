@@ -1,0 +1,46 @@
+# El asistente interno del curso (módulos 3, 4 y 6), descrito como proyecto final.
+# Es el ejemplo resuelto del módulo 8: las rutas apuntan a las piezas que ya existen.
+# Compruébalo con:
+#   uv run python modulos/08-proyecto-final/comprobar_proyecto.py modulos/08-proyecto-final/ejemplo/proyecto.toml
+
+[proyecto]
+nombre = "Asistente interno de documentación técnica"
+raiz = "../../.."  # la raíz del repositorio, relativa a este fichero
+readme = "modulos/08-proyecto-final/ejemplo/README.md"
+
+[especificacion]
+problema = "El equipo técnico pierde tiempo buscando en runbooks, postmortems y documentos de arquitectura cuando hay una incidencia, y la respuesta tiene que ser la de esos documentos, no una genérica."
+usuarios = "Ingenieros del equipo técnico de la plataforma, sobre todo los de guardia."
+metrica = "Aciertos en las 58 preguntas del dataset del módulo 4, ancladas a fragmentos del corpus"
+umbral = 0.8
+linea_base = "Sin documentación, el modelo de 7B acierta 2 de las 42 preguntas con respuesta (lección 7.01)."
+fuera_de_alcance = "Actuar sobre la plataforma (eso es el agente del módulo 5), datos personales y preguntas que no tratan de la plataforma."
+
+[evals]
+dataset = "modulos/04-evals/datos/casos.jsonl"
+resultados = "modulos/04-evals/resultados/vigente.jsonl"
+
+[codigo]
+sistema = [
+    "modulos/03-rag/generacion.py",
+    "modulos/04-evals/sistema.py",
+    "prompts/rag/con-citas-reglas.md",
+    "packages/curso_core/src/curso_core/rag.py",
+    "modulos/06-produccion/asistente.py",
+    "modulos/06-produccion/servicio.py",
+]
+tests = ["modulos/04-evals", "modulos/06-produccion"]
+raices = ["modulos/03-rag", "modulos/04-evals", "modulos/06-produccion", "prompts", "config", "packages/curso_core"]
+config_modelos = "config/models.toml"
+
+[observabilidad]
+trazas = ["modulos/06-produccion/observabilidad.py", "packages/curso_core/src/curso_core/tracing.py"]
+metricas = ["modulos/06-produccion/metricas_servicio.py"]
+
+[coste]
+medidas = ["modulos/06-produccion/resultados/metricas.json"]
+
+[secretos]
+# Valores falsos con forma de secreto, a propósito: la práctica de seguridad de la lección
+# 6.04 y sus tests los usan para comprobar que el escáner los detecta.
+de_prueba = ["sk-curso-0123456789abcdefghij", "supersecreta1234567"]
