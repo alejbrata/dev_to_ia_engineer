@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import tomllib
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from dotenv import load_dotenv
 from pydantic import BaseModel, ConfigDict
@@ -39,8 +39,10 @@ class Proveedor(BaseModel):
     # additionalProperties=false y todas sus propiedades en `required` (OpenAI, Claude).
     esquema_estricto: bool = False
     # Parámetros que se añaden a la petición con `razonar=False`, en proveedores cuyos
-    # modelos razonan por defecto (en OpenAI, `reasoning_effort = "none"`).
-    sin_razonar: dict[str, str] = {}
+    # modelos razonan por defecto (en OpenAI, `reasoning_effort = "none"`; en Claude,
+    # `output_config.effort = "low"`). Los diccionarios anidados se fusionan con los de
+    # la petición, no la sustituyen.
+    sin_razonar: dict[str, Any] = {}
     # Valor de `razonar` cuando la práctica no lo fija. Los modelos locales del curso no
     # razonan; un modelo de API que razona por defecto gasta en ello el `max_tokens` de
     # la práctica y devuelve la respuesta vacía. Con `false`, se comporta como el local.

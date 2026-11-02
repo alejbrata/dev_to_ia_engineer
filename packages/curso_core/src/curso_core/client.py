@@ -446,6 +446,16 @@ def esquema_estricto(esquema: dict) -> dict:
     return copia
 
 
+def _fusionar(cuerpo: dict, extra: dict) -> None:
+    """Añade `extra` a `cuerpo`; los diccionarios anidados se fusionan clave a clave (en
+    Claude, `output_config` puede llevar ya el formato de la salida estructurada)."""
+    for clave, valor in extra.items():
+        if isinstance(valor, dict) and isinstance(cuerpo.get(clave), dict):
+            _fusionar(cuerpo[clave], valor)
+        else:
+            cuerpo[clave] = valor
+
+
 def admite_estricto(esquema: dict) -> bool:
     """Si el esquema cabe en el modo estricto: no lo hace un objeto sin propiedades fijas
     (un `dict[str, Any]` de Pydantic), porque el modo estricto exige cerrar cada objeto."""
@@ -516,7 +526,9 @@ def _peticion_claude(modelo: str, mensajes: list[Mensaje], op: Opciones) -> dict
             {"name": h.nombre, "description": h.descripcion, "input_schema": h.parametros}
             for h in op.herramientas
         ]
-    if op.formato is not None:
+    # La salida estructurada de Claude exige cerrar cada objeto. Un objeto libre (un
+    # `dict[str, Any]`) no cabe: se pide el JSON solo con el prompt, y `extraer` lo valida.
+    if op.formato is not None and admite_estricto(op.formato):
         formato = {"type": "json_schema", "schema": esquema_estricto(op.formato)}
         cuerpo["output_config"] = {"format": formato}
     if modelo in CLAUDE_CON_RESERVA:
@@ -867,7 +879,7 @@ class ClienteLLM:
         for parametro in proveedor.omitir:
             cuerpo.pop(parametro, None)
         if opciones.razonar is False:
-            cuerpo |= proveedor.sin_razonar
+            _fusionar(cuerpo, proveedor.sin_razonar)
         if proveedor.esquema_estricto and "response_format" in cuerpo:
             formato = cuerpo["response_format"]["json_schema"]
             if admite_estricto(formato["schema"]):

@@ -577,3 +577,29 @@ def test_esquema_con_diccionario_libre_va_sin_modo_estricto() -> None:
     op = Opciones(formato=Paso.model_json_schema())
     formato = c._preparar("Hola", "remoto", op, False).cuerpo["response_format"]["json_schema"]
     assert formato["strict"] is False and "additionalProperties" not in formato["schema"]
+
+
+def test_sin_razonar_anidado_se_fusiona_con_la_peticion() -> None:
+    """En Claude, `output_config` puede llevar el formato y el esfuerzo a la vez."""
+    from curso_core.client import _fusionar
+
+    cuerpo = {"output_config": {"format": {"type": "json_schema"}}, "max_tokens": 50}
+    _fusionar(cuerpo, {"output_config": {"effort": "low"}})
+    assert cuerpo == {
+        "output_config": {"format": {"type": "json_schema"}, "effort": "low"},
+        "max_tokens": 50,
+    }
+    _fusionar(cuerpo, {"reasoning_effort": "none"})
+    assert cuerpo["reasoning_effort"] == "none"
+
+
+def test_claude_sin_esquema_si_hay_un_objeto_libre() -> None:
+    from curso_core.client import _peticion_claude
+
+    class Paso(BaseModel):
+        argumentos: dict[str, str]
+
+    cuerpo = _peticion_claude(
+        "m", [Mensaje(role="user", content="x")], Opciones(formato=Paso.model_json_schema())
+    )
+    assert "output_config" not in cuerpo

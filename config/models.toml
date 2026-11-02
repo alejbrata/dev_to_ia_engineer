@@ -243,10 +243,16 @@ admite_logprobs = false
 
 [providers.anthropic]
 # Opcional (anexo A). No usa el formato de OpenAI: curso_core lo llama con el SDK oficial,
-# sin temperatura (la API actual rechaza los parámetros de muestreo). Revisado: 2026-10.
+# sin temperatura (la API actual rechaza los parámetros de muestreo). Sus modelos actuales
+# deciden solos si razonan, y el razonamiento cuenta en max_tokens: con max_tokens=20,
+# Opus 5.5 lo gastó entero razonando y no respondió. No admite desactivarlo (400); con
+# el esfuerzo bajo (`effort = "low"`), respondió sin razonar. Revisado: 2026-11.
 tipo = "anthropic"
 base_url = "https://api.anthropic.com"
 api_key_env = "ANTHROPIC_API_KEY"
+sin_razonar = { output_config = { effort = "low" } }
+razonar_por_defecto = false
+admite_logprobs = false
 
 [precios."ollama/qwen2.5:1.5b"]
 # En local no se paga por token: el coste es tu hardware y tu electricidad.
