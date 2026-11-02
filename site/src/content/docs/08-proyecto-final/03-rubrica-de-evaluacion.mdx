@@ -1,0 +1,193 @@
+---
+title: "Rúbrica de evaluación"
+description: "Rúbrica de evaluación del proyecto final: ocho criterios con tres niveles, sin nota, y un script que contrasta tu autoevaluación con la evidencia"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
+## Objetivos
+
+Al terminar esta lección podrás:
+
+- Evaluar un proyecto con LLMs en ocho criterios y tres niveles, con evidencia para cada nivel.
+- Distinguir lo que hace "suficiente" a un proyecto de lo que lo hace "sólido".
+- Contrastar tu autoevaluación con la evidencia medida usando `rubrica.py`.
+- Reconocer una autoevaluación optimista antes de que la detecte otra persona.
+
+## Teoría
+
+### Una rúbrica sin nota
+
+El proyecto final no tiene nota ni nadie que lo corrija: lo evalúas tú, y después, si lo enseñas, lo evaluará quien te entreviste. Por eso la rúbrica no suma puntos. Describe, para cada criterio, cómo es un proyecto **insuficiente**, uno **suficiente** y uno **sólido**, y pide una **evidencia**: un fichero del proyecto que lo demuestre. Si no puedes señalar la evidencia, no tienes ese nivel.
+
+"Suficiente" es lo que pide el curso como mínimo. "Sólido" es lo que distingue un proyecto que enseña criterio de ingeniería: no hacer más cosas, sino medir y justificar las que haces.
+
+### Los ocho criterios
+
+La rúbrica completa, con su texto, está en [`modulos/08-proyecto-final/rubrica.toml`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/08-proyecto-final/rubrica.toml). En resumen:
+
+| Criterio | Suficiente | Sólido, además |
+| --- | --- | --- |
+| Problema y especificación | Las seis partes escritas antes de construir | La línea base medida y la técnica justificada con ella |
+| Desarrollo | Se ejecuta desde un clon limpio, tests, modelos en la configuración | Tests de casos límite y errores del proveedor tratados |
+| Seguridad y datos | Sin secretos y con los datos personales identificados | Entradas no confiables tratadas como tales y una prueba de inyección |
+| Evaluación | 30 casos anclados, resultados al día, métrica con intervalo | Cumple el umbral con su intervalo y los cambios se comparan caso a caso |
+| Análisis de errores | Fallos clasificados por causa, con ejemplos | Cada cambio sale del análisis y se mide su efecto |
+| Observabilidad | Trazas de cada llamada y métricas del servicio | SLO y comprobado qué señales detectan un fallo |
+| Coste | Tokens, latencia y dinero por petición, medidos | Proyección con el volumen esperado y una decisión de coste con datos |
+| Documentación | README con las seis secciones y los comandos que reproducen cada resultado | Cada decisión con la alternativa descartada y su dato, y los límites dichos |
+
+Fíjate en que ningún "sólido" pide una técnica concreta. Un proyecto con un prompt y una eval bien hecha puede ser sólido en todo, y uno con agentes, ajuste fino y Kubernetes, insuficiente en evaluación.
+
+### Lo que comprueba un script y lo que juzgas tú
+
+Cinco criterios tienen una parte que `comprobar_proyecto.py` puede verificar (lección 02): si hay una comprobación en FALTA, el nivel no puede pasar de insuficiente; si hay un AVISO, de suficiente. El análisis de errores no tiene ninguna parte automática. Y en todos, la diferencia entre suficiente y sólido es de juicio: el script dice lo que la evidencia **contradice**, no lo que demuestra.
+
+## Práctica
+
+En la carpeta de tu proyecto, junto a `proyecto.toml`, escribe `autoevaluacion.toml`: para cada criterio, el nivel que te das y la evidencia. La del asistente del curso, el ejemplo resuelto, empieza así ([`ejemplo/autoevaluacion.toml`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/08-proyecto-final/ejemplo/autoevaluacion.toml)):
+
+```toml
+[especificacion]
+nivel = "solido"
+evidencia = "modulos/07-modelos-propios/decidir.py"  # la línea base medida (lección 7.01)
+
+[analisis_errores]
+nivel = "solido"
+evidencia = "modulos/04-evals/analisis_errores.py"  # de ahí salió el prompt con reglas (4.06)
+
+[coste]
+nivel = "suficiente"  # medido con un precio de referencia, sin proyección de volumen
+evidencia = "modulos/06-produccion/resultados/metricas.json"
+```
+
+[`rubrica.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/08-proyecto-final/rubrica.py) pasa el comprobador y contrasta cada criterio: que la evidencia exista y que el nivel no supere lo que permite lo medido.
+
+```sh
+uv run python modulos/08-proyecto-final/rubrica.py modulos/08-proyecto-final/ejemplo/proyecto.toml
+```
+
+La primera versión de la autoevaluación del ejemplo dio esto:
+
+```text
+criterio                                  te das       permite
+   Problema y especificación                 sólido        sólido
+   Desarrollo                                sólido        sólido
+   Seguridad y datos                         sólido        sólido
+!! Evaluación                                sólido    suficiente
+      la evidencia permite como mucho «suficiente» (resultados de la eval en AVISO)
+   Análisis de errores e iteración           sólido        sólido
+   Observabilidad                            sólido        sólido
+   Coste                                 suficiente        sólido
+!! Documentación y decisiones                sólido  insuficiente
+      la evidencia permite como mucho «insuficiente» (README en FALTA)
+      no existe la evidencia «modulos/08-proyecto-final/ejemplo/README.md»
+   6 criterios coherentes con la evidencia, 2 por revisar
+```
+
+## Mide y depura
+
+### Seis de ocho, en una autoevaluación hecha con todo a la vista
+
+La autoevaluación del ejemplo se escribió con todo el curso a la vista, y aun así ponía "sólido" en dos criterios que la evidencia no sostiene. Es el sesgo normal de quien ha construido algo: recuerdas el trabajo, no lo que falta. Por eso el contraste lo hace un script con lo medido, no la memoria.
+
+### El nivel de la evaluación lo decide el intervalo
+
+En evaluación, el asistente tiene casi todo lo que pide "sólido": 58 casos anclados, resultados al día, comparaciones caso a caso con McNemar en todo el módulo 4. Pero "sólido" pide además que cumpla el umbral **con su intervalo**, y el intervalo baja hasta el 79 %. Lo honesto es "suficiente", con el motivo escrito:
+
+```toml
+[evals]
+# 52 de 58, pero el intervalo del 95 % (79 %-95 %) baja del umbral del 80 %: con 58 casos
+# no se puede asegurar que lo cumpla (lección 8.02).
+nivel = "suficiente"
+```
+
+Y la salida pasa a:
+
+```text
+criterio                                  te das       permite
+   Problema y especificación                 sólido        sólido
+   Desarrollo                                sólido        sólido
+   Seguridad y datos                         sólido        sólido
+   Evaluación                            suficiente    suficiente
+   Análisis de errores e iteración           sólido        sólido
+   Observabilidad                            sólido        sólido
+   Coste                                 suficiente        sólido
+!! Documentación y decisiones                sólido  insuficiente
+      la evidencia permite como mucho «insuficiente» (README en FALTA)
+      no existe la evidencia «modulos/08-proyecto-final/ejemplo/README.md»
+   7 criterios coherentes con la evidencia, 1 por revisar
+```
+
+La documentación sigue pendiente porque el README no existe todavía. Lo escribiremos en la lección 04.
+
+### Coste: suficiente, y por qué
+
+El coste del asistente está medido en la lección 6.03: unos 620 tokens de entrada por pregunta, latencias p50 y p95, y 0,025 $ por cada mil preguntas con un modelo comercial barato como referencia. Falta lo que pide "sólido": una proyección con un volumen real y una decisión tomada con ella. En un proyecto para una empresa concreta la tendrías; aquí no hay volumen real, y es mejor decirlo que inventarlo.
+
+## Errores frecuentes
+
+- **Darte el nivel por el esfuerzo.** La rúbrica mide lo que el proyecto demuestra, no lo que te costó.
+- **Evidencias que no prueban el nivel.** Un fichero que existe no es una evidencia si no muestra lo que dice el criterio. Señala el que lo demuestra: la salida de la eval, no el script vacío.
+- **Confundir técnica con nivel.** Añadir un agente no sube ningún criterio si no se mide.
+- **Tomar el script como juez.** Que `rubrica.py` no señale nada quiere decir que la evidencia no te contradice, no que tengas el nivel.
+- **La autoevaluación optimista.** Es la anatomía.
+
+### Anatomía de un error: la autoevaluación optimista
+
+**El síntoma.** Dos criterios marcados:
+
+```text
+!! Evaluación                                sólido    suficiente
+      la evidencia permite como mucho «suficiente» (resultados de la eval en AVISO)
+!! Documentación y decisiones                sólido  insuficiente
+      la evidencia permite como mucho «insuficiente» (README en FALTA)
+      no existe la evidencia «modulos/08-proyecto-final/ejemplo/README.md»
+```
+
+**Cómo leerlo.** Cada línea marcada dice qué nivel te diste, cuál permite la evidencia y qué comprobación lo limita. En la primera, el problema es de matiz: el sistema es bueno, pero lo medido no alcanza para afirmar el umbral. En la segunda es de hecho: la evidencia citada no existe.
+
+**La causa.** La autoevaluación se escribió desde el recuerdo del trabajo hecho a lo largo del curso, no desde los ficheros. Las lecciones del módulo 6 y 7 documentan muchas decisiones, y eso hizo pensar que el proyecto estaba documentado. Pero un proyecto de portafolio necesita su propio README, y ese no existía.
+
+**La solución.** Bajar el nivel donde lo medido no llega, con el motivo escrito, y hacer lo que falta donde sí se puede: el README. Y repetir `rubrica.py` cada vez que cambies la autoevaluación o el proyecto, igual que repites la eval cuando cambias el sistema.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'Tu proyecto usa un sistema multiagente con ajuste fino, pero la eval tiene 15 casos. ¿Qué nivel tiene en evaluación?',
+			opciones: [
+				{ texto: 'Sólido: la técnica es avanzada.', porque: 'Ningún criterio pide una técnica. Con 15 casos no llega al mínimo ("Los ocho criterios").' },
+				{ texto: 'Insuficiente: menos de 30 casos, por avanzado que sea el sistema.', correcta: true, porque: 'La evaluación mide la evidencia sobre el sistema, no su complejidad.' },
+			],
+		},
+		{
+			pregunta: 'rubrica.py no marca ningún criterio en tu autoevaluación. ¿Qué significa?',
+			opciones: [
+				{ texto: 'Que tienes todos los niveles que te has dado.', porque: 'El script solo detecta lo que la evidencia contradice ("Lo que comprueba un script y lo que juzgas tú").' },
+				{ texto: 'Que la evidencia medida no contradice tus niveles; la diferencia entre suficiente y sólido sigue siendo tu juicio.', correcta: true, porque: 'Por eso cada nivel lleva una evidencia que otra persona pueda revisar.' },
+			],
+		},
+		{
+			pregunta: 'Tu sistema acierta el 88 % y el umbral es el 80 %, pero el intervalo va del 76 % al 94 %. ¿Qué nivel te das en evaluación?',
+			opciones: [
+				{ texto: 'Sólido: el 88 % supera el umbral.', porque: 'El intervalo baja del umbral: no puedes asegurar que lo cumple ("El nivel de la evaluación lo decide el intervalo").' },
+				{ texto: 'Suficiente, con el motivo escrito, y más casos si quieres llegar a sólido.', correcta: true, porque: 'Es lo que hizo el ejemplo del asistente con 52 de 58.' },
+			],
+		},
+		{
+			pregunta: 'En coste tienes tokens, latencia y dinero por petición medidos, pero no sabes cuántas peticiones tendrá el sistema. ¿Qué nivel te das?',
+			opciones: [
+				{ texto: 'Sólido, estimando un volumen razonable.', porque: 'Un volumen inventado no es una proyección. Si lo usas, di que es una hipótesis ("Coste: suficiente, y por qué").' },
+				{ texto: 'Suficiente, y en el README, cuánto costaría con algunos volúmenes de ejemplo, dicho como hipótesis.', correcta: true, porque: 'Es útil para quien lo lea y no finge un dato que no tienes.' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- [Your AI Product Needs Evals](https://hamel.dev/blog/posts/evals/): lo que distingue un sistema medido de uno que "parece que funciona".
+- [What We Learned from a Year of Building with LLMs](https://applied-llms.org/): criterios de quienes han llevado estos sistemas a producción, útiles para juzgar el nivel "sólido".
+- [Service Level Objectives](https://sre.google/sre-book/service-level-objectives/), del libro de SRE de Google: para el criterio de observabilidad.

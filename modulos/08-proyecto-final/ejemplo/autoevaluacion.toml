@@ -1,0 +1,37 @@
+# Autoevaluación del asistente del curso con la rúbrica del módulo 8 (rubrica.toml).
+# Es un ejemplo: la hizo el curso sobre su propio sistema. Las rutas son relativas a la
+# raíz del proyecto (la del repositorio).
+
+[especificacion]
+nivel = "solido"
+evidencia = "modulos/07-modelos-propios/decidir.py"  # la línea base medida (lección 7.01)
+
+[desarrollo]
+nivel = "solido"
+evidencia = "modulos/06-produccion/test_produccion.py"
+
+[seguridad]
+nivel = "solido"
+evidencia = "modulos/06-produccion/defensas.py"  # inyección y guardrails medidos (6.04, 6.05)
+
+[evals]
+# 52 de 58, pero el intervalo del 95 % (79 %-95 %) baja del umbral del 80 %: con 58 casos
+# no se puede asegurar que lo cumpla (lección 8.02).
+nivel = "suficiente"
+evidencia = "modulos/04-evals/resultados/vigente.jsonl"
+
+[analisis_errores]
+nivel = "solido"
+evidencia = "modulos/04-evals/analisis_errores.py"  # de ahí salió el prompt con reglas (4.06)
+
+[observabilidad]
+nivel = "solido"
+evidencia = "modulos/06-produccion/incidentes.py"  # qué señales detectan cada fallo (6.07)
+
+[coste]
+nivel = "suficiente"  # medido con un precio de referencia, sin proyección de volumen
+evidencia = "modulos/06-produccion/resultados/metricas.json"
+
+[documentacion]
+nivel = "solido"
+evidencia = "modulos/08-proyecto-final/ejemplo/README.md"

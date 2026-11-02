@@ -1,0 +1,59 @@
+# Rúbrica del proyecto final (lección 8.03). Sin nota: tres niveles por criterio.
+# `requisitos` son las comprobaciones de comprobar_proyecto.py que aportan evidencia:
+# con alguna en FALTA, el nivel máximo es "insuficiente"; con alguna en AVISO, "suficiente".
+
+[especificacion]
+nombre = "Problema y especificación"
+requisitos = ["especificación"]
+insuficiente = "El problema es vago o no tiene métrica medible, umbral o línea base."
+suficiente = "Problema, usuarios, métrica, umbral, línea base y fuera de alcance escritos antes de construir."
+solido = "Además, la línea base está medida y la técnica elegida se justifica con ella."
+
+[desarrollo]
+nombre = "Desarrollo"
+requisitos = ["tests", "modelos en configuración"]
+insuficiente = "El código no se puede ejecutar desde un clon limpio, o no tiene tests."
+suficiente = "Se ejecuta con los comandos del README, tiene tests de la lógica y los modelos están en la configuración."
+solido = "Además, los tests cubren los casos límite y los errores del proveedor se tratan (reintentos, timeouts, respuestas mal formadas)."
+
+[seguridad]
+nombre = "Seguridad y datos"
+requisitos = ["secretos"]
+insuficiente = "Hay secretos en el repositorio o datos personales sin tratar."
+suficiente = "Sin secretos en el repositorio y con los datos personales identificados."
+solido = "Además, las entradas no confiables (usuarios, documentos) están tratadas como tales y hay una prueba de inyección."
+
+[evals]
+nombre = "Evaluación"
+requisitos = ["dataset de la eval", "resultados de la eval"]
+insuficiente = "Menos de 30 casos, sin anclar, o resultados que no corresponden al sistema actual."
+suficiente = "Al menos 30 casos anclados, resultados al día y la métrica con su intervalo."
+solido = "Además, el resultado cumple el umbral con su intervalo y los cambios se comparan caso a caso (McNemar)."
+
+[analisis_errores]
+nombre = "Análisis de errores e iteración"
+requisitos = []
+insuficiente = "No se sabe por qué falla el sistema."
+suficiente = "Los fallos están clasificados por causa, con ejemplos."
+solido = "Además, cada cambio del sistema sale de ese análisis y se mide su efecto."
+
+[observabilidad]
+nombre = "Observabilidad"
+requisitos = ["trazas", "métricas"]
+insuficiente = "No hay trazas ni métricas de las llamadas al modelo."
+suficiente = "Cada llamada deja traza con tokens, latencia y errores, y hay métricas del servicio."
+solido = "Además, hay objetivos de servicio (SLO) y se ha comprobado qué señales detectan un fallo."
+
+[coste]
+nombre = "Coste"
+requisitos = ["coste medido"]
+insuficiente = "El coste no está medido."
+suficiente = "Tokens, latencia y dinero por petición medidos."
+solido = "Además, hay una proyección con el volumen esperado y una decisión de coste tomada con datos."
+
+[documentacion]
+nombre = "Documentación y decisiones"
+requisitos = ["README"]
+insuficiente = "Falta el README o no explica cómo reproducir los resultados."
+suficiente = "README con las seis secciones y los resultados con el comando que los reproduce."
+solido = "Además, cada decisión importante cuenta la alternativa descartada y el dato que la decidió, y los límites están dichos."
