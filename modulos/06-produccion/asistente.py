@@ -65,9 +65,11 @@ class Cache:
     """Caché en memoria con caducidad. En producción, Redis o similar: compartida entre
     réplicas y que sobreviva a un reinicio."""
 
-    def __init__(self, version: str, ttl_s: float = 3600.0):
+    def __init__(self, version: str, ttl_s: float = 3600.0, datos: dict | None = None):
         self.version, self.ttl_s = version, ttl_s
-        self._datos: dict[str, tuple[float, Resultado]] = {}
+        # `datos` permite compartir el almacén entre asistentes, como un Redis compartido
+        # entre réplicas y versiones (lección 6.08).
+        self._datos: dict[str, tuple[float, Resultado]] = {} if datos is None else datos
         self.aciertos = self.fallos = 0
 
     def clave(self, pregunta: str) -> str:
@@ -116,7 +118,10 @@ class Asistente:
         for rol in roles_usados:
             _, proveedor, modelo = config.resolver(rol)
             self.modelos[rol] = f"{modelo} @ {proveedor.base_url}"
-        self.cache = Cache(self.version) if cache else None
+        # La clave de la caché lleva la huella y los modelos que de verdad responden: dos
+        # versiones con los mismos ficheros y otro modelo no comparten respuestas (6.08).
+        self.version_cache = f"{self.version}|{self.modelos[roles[0]]}"
+        self.cache = Cache(self.version_cache) if cache else None
 
     def responder(self, pregunta: str) -> Resultado:
         # Un span por pregunta (lección 6.02): las llamadas de curso_core cuelgan de él.
