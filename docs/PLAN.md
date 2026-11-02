@@ -104,7 +104,7 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 6. Evaluar el modelo ajustado frente al base
 - **Errores clave**: falta de memoria en GPU, plantilla de chat incorrecta, sobreajuste, mejoras que no lo son
 - **Decisiones** (2026-11-02, tomadas por Claude para que Alex las valide): el caso sigue siendo el asistente. La 7.01 mide que los fallos del modelo de 1,5B con RAG frente al de 7B son de comportamiento, así que la hipótesis de las lecciones 5 y 6 es ajustar el de 1,5B con LoRA usando las respuestas del de 7B (destilación) y medirlo con la eval del módulo 4. La idea de desplegar modelos propios como en empresa queda repartida entre el módulo 6 (servir) y este (descargar, cuantizar, ajustar)
-- **Estado** (2026-11-02): lecciones 1 a 4 escritas, con salidas reales
+- **Estado** (2026-11-02): las 6 lecciones escritas, con salidas reales; pendiente de la revisión de Alex. Resultado de la 7.06: el ajuste con LoRA (destilación del 7B) no compensa con estos datos (41 de 58 frente a 37 del base, p = 0,29; el maestro, 52)
 
 ## Módulo 8 — Proyecto final 🟨
 
@@ -134,5 +134,6 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 - **E. Recursos**: papers, blogs y cursos que merecen la pena
 - **F. Herramientas de evals**: Ragas, DeepEval, promptfoo e Inspect frente a lo construido en el módulo 4
 - **G. APIs comerciales**: usar OpenAI, Claude u otro proveedor en lugar del modelo local, como opción, con su coste medido
+  - **Decisiones** (Alex, 2026-11-02): cada lección con modelos tiene un recuadro «Con una API» con el comando (`CURSO_PROVEEDOR=openai|hf|claude`) en bash y PowerShell y el estado de sus prácticas, probado con `compatibilidad.py` (tres llamadas por práctica y proveedor). Las salidas de las lecciones siguen siendo las locales. Claude, sin probar hasta que Alex añada su clave
 - **H. El proceso del autor**: la rotación de Alex de backend Java a AI Engineering, módulo a módulo. Opcional y aparte del aprendizaje
 - **Estado** (2026-11-02): B, C, D, E, F y G escritos. Pendiente de Alex: las secciones personales de A (consejos desde el uso real y Claude Code), el hueco de C y el anexo H
