@@ -42,3 +42,14 @@ def test_la_api_valida_y_responde(monkeypatch):
         assert cliente.get("/salud").json()["estado"] == "ok"
         metricas = cliente.get("/metrics").text
         assert 'asistente_preguntas_total{resultado="principal"}' in metricas
+
+
+def test_privacidad_detecta_formas_y_valida_el_dni():
+    import privacidad
+
+    texto = "Soy Ana (ana@gmail.com, 612 345 678), DNI 12345678Z; versión 3.7.2"
+    assert {t for t, _ in privacidad.encontrar(texto)} == {"EMAIL", "TELEFONO", "DNI"}
+    assert privacidad.encontrar("El documento 12345678A no es válido") == []  # letra mala
+    assert "[EMAIL]" in privacidad.redactar(texto) and "ana@" not in privacidad.redactar(texto)
+    assert privacidad.buscar_secretos('KEY = "sk-curso-0123456789abcdefghij"')
+    assert not privacidad.buscar_secretos("normal = 1")

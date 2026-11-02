@@ -10,6 +10,8 @@ convertido en un servicio: el asistente de documentación interna.
 - `observar.py`: lee las trazas del servicio (cascada, dónde se va el tiempo, coste de trazar); con `--jaeger`, también en Jaeger (lección 02).
 - `metricas_servicio.py`: las métricas de Prometheus que el servicio expone en `GET /metrics` (preguntas por resultado, histograma de duración, llamadas, tokens y coste por rol).
 - `metricas_operativas.py`: tráfico normal y un pico, leídos de `/metrics`; p50/p95, tasas de caché y respaldo, coste por pregunta y SLO (lección 03).
+- `privacidad.py`: detecta y redacta datos personales (email, teléfono, DNI, NIE, IBAN, tarjeta) y secretos con expresiones regulares.
+- `amenazas.py`: inyección directa e indirecta (una página del runbook editada), datos personales y una clave en el historial de git, limpiada con `git filter-repo` (lección 04).
 - `test_produccion.py`: la caché y la API con un asistente falso, sin modelos.
 - `resultados/`: lo que midió cada práctica. Con `--grabadas`, se reutiliza sin llamar a nada.
 
