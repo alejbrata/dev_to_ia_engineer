@@ -85,6 +85,53 @@ Dos matices antes de usarlo:
 - **Es un workflow, no un prompt.** El grafo lo define y lo ejecuta tu código, y cada nodo es una llamada al modelo. Es la misma estructura que los grafos de estado de la lección 5.05: puedes montarlo con ese motor o con LangGraph.
 - **Compensa en tareas que se descomponen y se recomponen**: ordenar, fusionar documentos, combinar resultados de varias fuentes. Para preguntas normales, un modelo que razona (lección 1.07) da lo mismo con una llamada. Como siempre en el curso: mide la calidad y el número de llamadas frente a la opción simple antes de quedarte con la compleja.
 
+### Medido con el modelo local
+
+[`graph_of_thoughts.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/c-desarrollo-con-ia/graph_of_thoughts.py) repite el ejemplo del artículo con el modelo de 7B del curso: ordenar listas de dígitos del 0 al 9, con repetidos. Compara tres formas:
+
+- **Una llamada.** La lista entera, ordenada de una vez.
+- **Una y corregir.** Lo mismo y, si el código encuentra errores, una llamada más con los problemas. Sirve de control: separa el efecto de corregir del de descomponer.
+- **Graph of Thoughts.** Cuatro trozos ordenados por separado (generar), mezclados de dos en dos (agregar) y, tras cada paso con errores, una corrección con la realimentación del código (refinar).
+
+Los errores los cuenta el código: elementos que faltan o sobran frente a la original, más pares contiguos desordenados. Los prompts están en `prompts/razonamiento/`.
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/c-desarrollo-con-ia/graph_of_thoughts.py             # unos 50 minutos en CPU
+uv run python modulos/c-desarrollo-con-ia/graph_of_thoughts.py --grabadas  # la salida grabada
+```
+
+```text
+1. Ordenar 8 listas de dígitos de cada tamaño, con qwen2.5:7b
+   método             tamaño  errores  perfectas  llamadas  tokens  s/lista
+   una llamada            32      4.5      0 de 8       1.0     265     13.6
+   una y corregir         32      4.2      0 de 8       2.0     678     29.5
+   graph of thoughts      32      5.1      0 de 8       9.2    1924     75.7
+   una llamada            64     15.1      0 de 8       1.0     426     24.9
+   una y corregir         64     15.0      0 de 8       2.0    1078     51.6
+   graph of thoughts      64     20.0      0 de 8      11.0    3466    165.0
+   (errores, llamadas, tokens y segundos: media por lista)
+
+2. Respuestas sin JSON válido: 1
+
+3. Un caso de 64 dígitos
+   original:          7063812066503008913193442176104714285124000348559097765823694022
+   correcta:          0000000000011111112222222333333444444455555666666777778888899999
+   una llamada:       00000000001111111222233333444445555666667777888999  (14 errores)
+      faltan 0 (x1), 2 (x3), 3 (x1), 4 (x2), 5 (x1), 6 (x1), 7 (x1), 8 (x2), 9 (x2)
+   una y corregir:    000000000011111112222333334444455556666677778888999  (13 errores)
+      faltan 0 (x1), 2 (x3), 3 (x1), 4 (x2), 5 (x1), 6 (x1), 7 (x1), 8 (x1), 9 (x2)
+   graph of thoughts: 00000011111122222333344444555556666777788889999  (17 errores)
+      faltan 0 (x5), 1 (x1), 2 (x2), 3 (x2), 4 (x2), 6 (x2), 7 (x1), 8 (x1), 9 (x1)
+```
+
+Cómo leerlo:
+
+- **Con este modelo, el grafo no mejora: empeora.** Con 32 dígitos, 5,1 errores de media frente a 4,5 con una llamada; con 64, 20,0 frente a 15,1. Y cuesta entre 7 y 8 veces más tokens, y entre 5 y 7 veces más tiempo. Ninguna lista quedó perfecta con ningún método.
+- **El modelo no desordena: pierde elementos.** Sumando las 16 listas, de los errores de una llamada, 149 son dígitos que faltan, 8 que sobran y 0 pares desordenados. Siempre devuelve una lista ordenada, pero más corta, como en el caso de arriba: se salta repetidos. El grafo descompone justo lo que el modelo ya hacía bien (ordenar) y añade pasos de mezcla, y en cada mezcla vuelve a perder elementos: 195 faltan con el grafo.
+- **Corregir casi no arregla nada.** Con la lista de lo que falta delante, el modelo apenas recupera elementos: de 4,5 a 4,2 errores, y de 15,1 a 15,0. Refinar solo sirve si el modelo es capaz de hacer la corrección.
+
+No contradice el artículo, que usó otro modelo y un grafo con más ramas, sino que muestra su condición: Graph of Thoughts ayuda cuando el modelo hace bien cada paso pequeño y se equivoca en el grande. Si el modelo falla también en los pasos pequeños (aquí, mezclar dos listas sin perder elementos), descomponer multiplica los fallos. Y una advertencia sobre el ejemplo: ordenar es una tarea que el código hace perfecta en microsegundos. Sirve para medir la técnica porque se puntúa sola. En una tarea real, el patrón vale cuando cada paso es difícil de programar pero fácil de comprobar.
+
 ## Repositorios útiles
 
 - [anthropics/claude-code](https://github.com/anthropics/claude-code), [openai/codex](https://github.com/openai/codex), [Aider-AI/aider](https://github.com/Aider-AI/aider) y [continuedev/continue](https://github.com/continuedev/continue): agentes de código, con sus incidencias y sus registros de cambios, útiles para ver cómo evolucionan.
