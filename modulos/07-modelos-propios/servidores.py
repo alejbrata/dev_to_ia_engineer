@@ -72,17 +72,22 @@ class LlamaServer:
 
 
 class VLLM:
-    """vLLM con la imagen oficial para CPU, con la caché de Hugging Face montada."""
+    """vLLM con la imagen oficial para CPU, con la caché de Hugging Face montada y, si se
+    pasa `carpeta`, una carpeta local de modelos montada en /modelos."""
 
     IMAGEN = "vllm/vllm-openai-cpu:v0.33.0-x86_64"
 
-    def __init__(self, modelo: str, argumentos: list[str], puerto: int = 8000):
+    def __init__(
+        self, modelo: str, argumentos: list[str], puerto: int = 8000, carpeta: Path | None = None
+    ):
         self.nombre = "curso-vllm"
         cache = Path.home() / ".cache" / "huggingface"
+        montajes = ["-v", f"{cache}:/root/.cache/huggingface"]
+        if carpeta:
+            montajes += ["-v", f"{carpeta}:/modelos:ro"]
         self.orden = [
             "docker", "run", "-d", "--name", self.nombre,
-            "-p", f"127.0.0.1:{puerto}:8000", "--shm-size=4g",
-            "-v", f"{cache}:/root/.cache/huggingface",
+            "-p", f"127.0.0.1:{puerto}:8000", "--shm-size=4g", *montajes,
             self.IMAGEN, modelo, *argumentos,
         ]  # fmt: skip
         self.url = f"http://127.0.0.1:{puerto}"

@@ -32,6 +32,7 @@ dev = [
 hf = [
     "datasets>=5.1.0",
     "gradio-client>=2.7.2",
+    "peft>=0.21.2",
     "sacremoses>=0.2.0",
     "scikit-learn>=1.9.1",
     "sentencepiece>=0.2.2",
