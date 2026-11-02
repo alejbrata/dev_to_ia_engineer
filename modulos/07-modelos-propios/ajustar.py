@@ -25,7 +25,12 @@ from pathlib import Path
 
 AQUI = Path(__file__).resolve().parent
 RESULTADOS = AQUI / "resultados" / "ajuste"
-DATOS = RESULTADOS / "datos.jsonl"
+# Los datos de datos_ajuste.py, o los de corregir_datos.py (lección 06): fichero de datos y
+# sufijo de los adaptadores, los modelos fusionados y los resultados.
+VARIANTES = {
+    "original": ("datos.jsonl", ""),
+    "corregidos": ("datos-corregidos.jsonl", "-corregido"),
+}
 TRABAJO = Path.home() / ".cache" / "curso-ai-engineer" / "lora"
 EPOCAS = 2
 ACUMULAR = 8  # ejemplos por paso del optimizador (lotes de uno, gradientes acumulados)
@@ -52,11 +57,12 @@ def base() -> str:
     return snapshot_download(repo, revision=commit["hub"]["commit"], allow_patterns=patrones)
 
 
-def ejemplos(tokenizador) -> dict[str, list[dict]]:
+def ejemplos(tokenizador, variante: str = "original") -> dict[str, list[dict]]:
     """Cada ejemplo, tokenizado con la plantilla de chat; las etiquetas del prompt van a
     -100 para que la pérdida cuente solo la respuesta."""
     salida: dict[str, list[dict]] = {"entrenamiento": [], "validacion": []}
-    for linea in DATOS.read_text(encoding="utf-8").splitlines():
+    fichero = RESULTADOS / VARIANTES[variante][0]
+    for linea in fichero.read_text(encoding="utf-8").splitlines():
         e = json.loads(linea)
         if not e["objetivo"]:
             continue
@@ -89,7 +95,7 @@ def perdida(modelo, conjunto: list[dict]) -> float:
     return total / n
 
 
-def entrenar() -> dict:
+def entrenar(variante: str = "original") -> dict:
     import torch
     from peft import LoraConfig, get_peft_model
     from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -97,7 +103,8 @@ def entrenar() -> dict:
     torch.manual_seed(0)
     ruta = base()
     tokenizador = AutoTokenizer.from_pretrained(ruta)
-    datos = ejemplos(tokenizador)
+    datos = ejemplos(tokenizador, variante)
+    sufijo = VARIANTES[variante][1]
     modelo = AutoModelForCausalLM.from_pretrained(ruta, dtype=torch.float32)
     modelo = get_peft_model(modelo, LoraConfig(task_type="CAUSAL_LM", **LORA))
     entrenables = sum(p.numel() for p in modelo.parameters() if p.requires_grad)
@@ -140,7 +147,7 @@ def entrenar() -> dict:
                 )
                 acumulada, vistos = 0.0, 0
                 print(curva[-1], flush=True)
-        destino = TRABAJO / f"adaptador-epoca-{epoca + 1}"
+        destino = TRABAJO / f"adaptador{sufijo}-epoca-{epoca + 1}"
         modelo.save_pretrained(destino)
     return {
         "entrenables": entrenables,
@@ -149,11 +156,13 @@ def entrenar() -> dict:
         "pasos": pasos_totales,
         "curva": curva,
         "minutos": (time.perf_counter() - inicio) / 60,
-        "adaptador_bytes": sum(f.stat().st_size for f in (TRABAJO / "adaptador-epoca-1").iterdir()),
+        "adaptador_bytes": sum(
+            f.stat().st_size for f in (TRABAJO / f"adaptador{sufijo}-epoca-1").iterdir()
+        ),
     }
 
 
-def fusionar() -> dict:
+def fusionar(variante: str = "original") -> dict:
     """El modelo base con cada adaptador fusionado, en bfloat16 como el original, para
     servirlo con cualquier servidor que lea safetensors (vLLM, en la lección 06)."""
     import torch
@@ -161,12 +170,13 @@ def fusionar() -> dict:
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
     ruta = base()
+    sufijo = VARIANTES[variante][1]
     tamanos = {}
     for epoca in range(1, EPOCAS + 1):
         modelo = AutoModelForCausalLM.from_pretrained(ruta, dtype=torch.float32)
-        modelo = PeftModel.from_pretrained(modelo, TRABAJO / f"adaptador-epoca-{epoca}")
+        modelo = PeftModel.from_pretrained(modelo, TRABAJO / f"adaptador{sufijo}-epoca-{epoca}")
         fusionado = modelo.merge_and_unload().to(torch.bfloat16)
-        destino = TRABAJO / f"fusionado-epoca-{epoca}"
+        destino = TRABAJO / f"fusionado{sufijo}-epoca-{epoca}"
         fusionado.save_pretrained(destino)
         AutoTokenizer.from_pretrained(ruta).save_pretrained(destino)
         tamanos[str(epoca)] = sum(f.stat().st_size for f in destino.iterdir())
@@ -176,15 +186,16 @@ def fusionar() -> dict:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--grabadas", action="store_true", help="no entrena")
+    parser.add_argument("--datos", choices=VARIANTES, default="original")
     args = parser.parse_args()
-    ruta = RESULTADOS / "ajuste.json"
+    ruta = RESULTADOS / f"ajuste{VARIANTES[args.datos][1]}.json"
     if args.grabadas:
         r = json.loads(ruta.read_text(encoding="utf-8"))
     else:
-        r = entrenar()
+        r = entrenar(args.datos)
         # Se guarda antes de fusionar: si la fusión falla, no se pierden horas de entrenamiento.
         ruta.write_text(json.dumps(r, ensure_ascii=False, indent=1), encoding="utf-8")
-        r["fusionado_bytes"] = fusionar()
+        r["fusionado_bytes"] = fusionar(args.datos)
         ruta.write_text(json.dumps(r, ensure_ascii=False, indent=1), encoding="utf-8")
 
     print("1. LoRA sobre el modelo de 1,5B")

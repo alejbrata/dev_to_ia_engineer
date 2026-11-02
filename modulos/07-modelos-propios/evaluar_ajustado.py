@@ -50,13 +50,17 @@ def evaluar(nombre: str, modelo: str, extra: list[str]) -> None:
     informe.guardar(RESULTADOS / f"eval-{nombre}.jsonl")
 
 
-def medir() -> None:
+def medir(corregidos: bool) -> None:
     from dotenv import load_dotenv
 
     load_dotenv()
     commit = json.loads((AQUI / "resultados" / "preparar.json").read_text(encoding="utf-8"))
     from curso_core import config as cfg
 
+    if corregidos:  # solo los ajustados con los datos de corregir_datos.py
+        for epoca in (1, 2):
+            evaluar(f"corregido-epoca-{epoca}", f"/modelos/fusionado-corregido-epoca-{epoca}", [])
+        return
     repo = cfg.cargar().roles["chat"].hf_repo
     evaluar("base", repo, ["--revision", commit["hub"]["commit"]])
     for epoca in (1, 2):
@@ -71,9 +75,12 @@ def main() -> int:
 
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--grabadas", action="store_true", help="no arranca nada")
+    parser.add_argument(
+        "--corregidos", action="store_true", help="evalúa solo los ajustados con datos corregidos"
+    )
     args = parser.parse_args()
     if not args.grabadas:
-        medir()
+        medir(args.corregidos)
 
     casos = dataset.cargar()
     por_id = {c.id: c for c in casos}
@@ -84,10 +91,13 @@ def main() -> int:
             res.ok = dataset.puntuar(por_id[res.caso], res.salida)
         return informe
 
-    modelos = {
-        n: cargar(RESULTADOS / f"eval-{n}.jsonl")
-        for n in ("base", "ajustado-epoca-1", "ajustado-epoca-2")
-    }
+    # Los corregidos (lección 06, segunda parte), si ya se han evaluado.
+    nombres = ["base", "ajustado-epoca-1", "ajustado-epoca-2"] + [
+        n
+        for n in ("corregido-epoca-1", "corregido-epoca-2")
+        if (RESULTADOS / f"eval-{n}.jsonl").exists()
+    ]
+    modelos = {n: cargar(RESULTADOS / f"eval-{n}.jsonl") for n in nombres}
     modelos["maestro (7B)"] = cargar(MODULO_4 / "resultados" / "vigente.jsonl")
     base = modelos["base"]
 
@@ -121,7 +131,7 @@ def main() -> int:
     maestro, pequeno = modelos["maestro (7B)"].por_caso(), respaldo.por_caso()
     fallos_701 = [k for k in maestro if maestro[k].ok and not pequeno[k].ok]
     print(f"\n3. Los {len(fallos_701)} casos de la lección 01 (los acierta el 7B y no el 1,5B)")
-    for nombre in ("base", "ajustado-epoca-1", "ajustado-epoca-2"):
+    for nombre in nombres:
         res = modelos[nombre].por_caso()
         bien = [k for k in fallos_701 if res[k].ok]
         print(f"   {nombre:18} acierta {len(bien):>2}: {', '.join(bien)}")
