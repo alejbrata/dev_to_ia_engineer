@@ -28,7 +28,7 @@ Una estructura que sirve para casi todo, la misma de la lección 8.04: **context
 Lo que las guías señalan como respuestas flojas:
 
 - **Una lista de componentes sin decisiones.** "Pondría un vector store, un reranker y un agente" no dice por qué.
-- **Sistemas impresionantes para problemas pequeños.** Un agente donde basta un workflow, o un ajuste fino donde basta el prompt.
+- **Sistemas grandes para problemas pequeños.** Un agente donde basta un workflow, o un ajuste fino donde basta el prompt.
 - **Validar con demos.** "Lo probé con unas preguntas y funcionaba."
 - **El juez sin calibrar.** Proponer un LLM como juez sin hablar de sus sesgos, de su varianza ni de compararlo con etiquetas humanas.
 - **Fiarse de lo que dice el agente.** Que un agente diga que ha terminado no significa que lo haya hecho: se comprueba en el sistema.

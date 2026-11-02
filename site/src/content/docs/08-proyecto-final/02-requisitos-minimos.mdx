@@ -5,6 +5,10 @@ description: "Requisitos mínimos: desarrollo, evals, observabilidad, documentac
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
 
+:::note[Revisado: 2026-11]
+Las salidas son reales, de `comprobar_proyecto.py` sobre el asistente del curso, que es el ejemplo resuelto. Los requisitos salen de los módulos 1 a 7; si alguno cambia, cambia también su comprobación.
+:::
+
 ## Objetivos
 
 Al terminar esta lección podrás:
@@ -78,7 +82,7 @@ Proyecto: Asistente interno de documentación técnica
    OK    métricas                   modulos/06-produccion/metricas_servicio.py
    OK    coste medido               tokens, latencia y dinero en resultados grabados
    FALTA secretos                   5, p. ej. modulos/06-produccion/amenazas.py: SECRETO = "sk-curso-0123456789abcdefghij"  # inventado: tien
-   OK    modelos en configuración   16 modelos, ninguno en el código
+   OK    modelos en configuración   18 modelos, ninguno en el código
    FALTA README                     no existe modulos/08-proyecto-final/ejemplo/README.md
    7 OK, 1 avisos, 2 por hacer
 ```
@@ -134,7 +138,7 @@ de_prueba = ["sk-curso-0123456789abcdefghij", "supersecreta1234567"]
 Y el comprobador sigue contándolos, para que se vea que existen:
 
 ```text
-   OK    secretos                   160 ficheros, ninguno (5 con valores de prueba declarados)
+   OK    secretos                   162 ficheros, ninguno (5 con valores de prueba declarados)
 ```
 
 Si mañana aparece un sexto hallazgo que no está en la lista, volverá a fallar.
