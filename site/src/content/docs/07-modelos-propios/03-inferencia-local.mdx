@@ -138,7 +138,7 @@ Con una petición cada vez, llama.cpp da el primer token en 0,80 s y genera 50,7
 
 No saques de aquí que vLLM es lento. En esta máquina juega con tres desventajas: sirve los pesos originales en `bfloat16`, que esta CPU procesa muy despacio (en la lección 02, transformers tardó 18,1 s en el primer token por lo mismo); la CPU no tiene AVX-512, que vLLM recomienda; y va sin compilar el modelo (`--enforce-eager`). En una prueba aparte, compilando, no llegó a arrancar en 18 minutos. vLLM está diseñado para GPU, y es ahí donde hay que medirlo. Lo que sí enseña la prueba es a no dar por buena la comparación de otro: mide en el hardware donde vas a servir.
 
-Entre Ollama y llama.cpp hay casi el doble de velocidad, aunque los dos usan Q4_K_M. No es el mismo fichero: el de Ollama ocupa 0,99 GB y el oficial de Qwen 1,12 GB. Y cada servidor elige sus hilos y su motor. No lo hemos aislado: si la diferencia te importa, mídela con tus modelos.
+Entre Ollama y llama.cpp hay casi el doble de velocidad, aunque los dos usan Q4_K_M. No es el mismo fichero: el de Ollama ocupa 0,99 GB y el oficial de Qwen 1,12 GB. Y cada servidor elige sus hilos y su motor. No se ha aislado: si la diferencia te importa, mídela con tus modelos.
 
 En aciertos, vLLM saca 7 de 8 y los otros dos 6 de 8. Es una pregunta de diferencia, con pesos sin cuantizar frente a cuantizados. Con 8 preguntas no se puede concluir nada; la lección 04 lo mide con las 58.
 

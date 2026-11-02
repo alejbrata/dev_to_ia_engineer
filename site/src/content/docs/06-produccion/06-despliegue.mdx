@@ -160,7 +160,7 @@ El contenedor del servicio cabe en cualquier sitio: una VM con Docker (como la w
 | Tu propia GPU, en una VM o un Inference Endpoint | Por hora encendida | Hay tráfico constante, o los datos no pueden salir |
 | CPU, como en el curso | Por hora, y barato | Pocas peticiones y la latencia no importa |
 
-Una cuenta orientativa con los números del módulo: la GPU más pequeña de los Spaces de Hugging Face (T4) cuesta 0,40 $ la hora, unos 290 $ al mes encendida siempre. Con el modelo barato de OpenAI, cada mil preguntas sin caché costaban 0,081 $ (lección 03). A ese precio, la GPU empieza a compensar por encima de unos 3,6 millones de preguntas al mes, si puede con ellas, cosa que no hemos medido. Los precios cambian cada pocos meses; el método, no: tokens por pregunta medidos, por el precio de hoy, frente a horas de máquina.
+Una cuenta orientativa con los números del módulo: la GPU más pequeña de los Spaces de Hugging Face (T4) cuesta 0,40 $ la hora, unos 290 $ al mes encendida siempre. Con el modelo barato de OpenAI, cada mil preguntas sin caché costaban 0,081 $ (lección 03). A ese precio, la GPU empieza a compensar por encima de unos 3,6 millones de preguntas al mes, si puede con ellas, cosa que no se ha medido. Los precios cambian cada pocos meses; el método, no: tokens por pregunta medidos, por el precio de hoy, frente a horas de máquina.
 
 ## Errores frecuentes
 
@@ -188,7 +188,7 @@ En la parte 4, el mismo contenedor arrancado de dos formas:
 
 **Cómo leerlo.** El código 137 es 128 + 9: el proceso terminó por la señal 9, `SIGKILL`, que no se puede atender. No cerró él: lo mataron. Y el log lo confirma: uvicorn no escribió ni "Shutting down" ni "Finished server process".
 
-**Causa.** Dentro del contenedor, con `sh -c`, el proceso 1 es el shell (`/proc/1/exe -> /usr/bin/dash`) y uvicorn es su hijo (el proceso 7). `docker stop` manda `SIGTERM` al proceso 1, el shell, que no se la pasa a su hijo. Uvicorn no se entera de que lo están parando y acaba matado sin cerrar: las peticiones en curso se cortan y los spans que tenía en el búfer se pierden, como en la lección 6.02. (Que aquí tardara 1,5 s y no los 10 s del plazo por defecto de `docker stop` no lo hemos investigado: el resultado, un proceso matado, es el mismo.)
+**Causa.** Dentro del contenedor, con `sh -c`, el proceso 1 es el shell (`/proc/1/exe -> /usr/bin/dash`) y uvicorn es su hijo (el proceso 7). `docker stop` manda `SIGTERM` al proceso 1, el shell, que no se la pasa a su hijo. Uvicorn no se entera de que lo están parando y acaba matado sin cerrar: las peticiones en curso se cortan y los spans que tenía en el búfer se pierden, como en la lección 6.02. (Que aquí tardara 1,5 s y no los 10 s del plazo por defecto de `docker stop` no se ha investigado: el resultado, un proceso matado, es el mismo.)
 
 **Solución.** Que el servidor sea el proceso 1: la forma *exec* del `CMD`, con corchetes (`CMD ["uvicorn", ...]`), como en el `Dockerfile` de la práctica. La forma *shell* (`CMD uvicorn ...`) lanza el comando a través de `/bin/sh -c`, que es justo el caso que falla. Si de verdad necesitas un script de arranque, que termine con `exec uvicorn ...`, para que uvicorn sustituya al shell en lugar de ser su hijo.
 

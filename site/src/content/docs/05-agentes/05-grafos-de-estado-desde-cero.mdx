@@ -232,7 +232,7 @@ equipo
 
 **Causa.** El checkpoint se escribió con la versión anterior del estado, que no tenía `equipo`. Un checkpoint es un dato persistido, y cambiar su esquema es una migración, como añadir una columna `NOT NULL` a una tabla con filas. Con ejecuciones de minutos casi no se nota; con aprobaciones humanas, que pueden esperar horas, siempre hay alguna a medias cuando despliegas.
 
-**Solución.** Lo mismo que con la columna: un valor por defecto (`equipo: str = "sin asignar"`), y la ejecución parada se reanuda sin problema (lo hemos comprobado: ejecuta `abrir` y abre la incidencia). Si el cambio no admite un valor por defecto, migra los checkpoints antes de desplegar, o espera a que terminen las ejecuciones antiguas. Y guarda en el checkpoint la versión del estado, para saber con qué se escribió cada uno.
+**Solución.** Lo mismo que con la columna: un valor por defecto (`equipo: str = "sin asignar"`), y la ejecución parada se reanuda sin problema (comprobado: ejecuta `abrir` y abre la incidencia). Si el cambio no admite un valor por defecto, migra los checkpoints antes de desplegar, o espera a que terminen las ejecuciones antiguas. Y guarda en el checkpoint la versión del estado, para saber con qué se escribió cada uno.
 
 ## Comprueba lo que has entendido
 

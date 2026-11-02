@@ -47,7 +47,7 @@ El camino completo, con un modelo tuyo (por ejemplo, el que ajustarás en la lec
 1. **Convertir** los safetensors a GGUF en 16 bits con el script `convert_hf_to_gguf.py` del repositorio de llama.cpp. Usa la versión del script del mismo commit que tus binarios, y sus dependencias fijadas (`requirements/requirements-convert_hf_to_gguf.txt`), en un entorno aparte: el formato evoluciona y las versiones mezcladas fallan.
 2. **Cuantizar** ese GGUF con `llama-quantize` al nivel que quieras.
 
-Con un modelo publicado, muchas veces el autor ya ofrece el GGUF en 16 bits, o incluso los cuantizados. En la práctica partimos del GGUF en 16 bits del repositorio oficial de Qwen y cuantizamos nosotros, que es el paso que tendrás que repetir con un modelo ajustado.
+Con un modelo publicado, muchas veces el autor ya ofrece el GGUF en 16 bits, o incluso los cuantizados. La práctica parte del GGUF en 16 bits del repositorio oficial de Qwen y lo cuantiza, que es el paso que tendrás que repetir con un modelo ajustado.
 
 ### Cómo medir lo que se pierde
 
@@ -150,7 +150,7 @@ Q4_K_M no ocupa 4 bits por peso, sino 5,00. Las líneas de tipos de tensor dicen
 
 El GGUF en 16 bits ocupa 3,56 GB, 0,47 GB más que los safetensors de la lección 02. En el modelo original, la matriz de embeddings y la de salida son la misma (`"tie_word_embeddings": true` en `config.json`), y el GGUF las guarda por separado: 151.936 × 1.536 × 2 bytes son 0,47 GB.
 
-Y un detalle que tranquiliza: los seis ficheros que hemos cuantizado ocupan lo mismo que los oficiales de Qwen. El Q4_K_M, por ejemplo, tiene exactamente los mismos 1.117.320.736 bytes. Con el mismo fichero de partida y la misma herramienta, el resultado es reproducible.
+Y un detalle que tranquiliza: los seis ficheros cuantizados en la práctica ocupan lo mismo que los oficiales de Qwen. El Q4_K_M, por ejemplo, tiene exactamente los mismos 1.117.320.736 bytes. Con el mismo fichero de partida y la misma herramienta, el resultado es reproducible.
 
 ### ¿Un modelo grande cuantizado o uno pequeño sin cuantizar?
 

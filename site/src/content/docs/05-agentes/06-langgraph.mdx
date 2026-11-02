@@ -212,7 +212,7 @@ serde = JsonPlusSerializer(allowed_msgpack_modules=[("workflow", "Decision")])
 SqliteSaver(sqlite3.connect(ruta, check_same_thread=False), serde=serde)
 ```
 
-Con eso el aviso desaparece y el resultado es idéntico (lo comprobamos con nodos falsos: la decisión vuelve como `Decision`, con la misma severidad). Es lo que hace ya `con_langgraph.py`. Y la lección de fondo es la de la anatomía anterior: un checkpoint es un dato persistido, y su formato es un contrato, tanto con tu código como con la versión del framework. Fija la versión en el lockfile, lee los avisos, que suelen anunciar el siguiente error, y prueba a reanudar ejecuciones antiguas antes de actualizar.
+Con eso el aviso desaparece y el resultado es idéntico (comprobado con nodos falsos: la decisión vuelve como `Decision`, con la misma severidad). Es lo que hace ya `con_langgraph.py`. Y la lección de fondo es la de la anatomía anterior: un checkpoint es un dato persistido, y su formato es un contrato, tanto con tu código como con la versión del framework. Fija la versión en el lockfile, lee los avisos, que suelen anunciar el siguiente error, y prueba a reanudar ejecuciones antiguas antes de actualizar.
 
 ## Comprueba lo que has entendido
 
