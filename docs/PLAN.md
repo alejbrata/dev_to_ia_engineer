@@ -136,4 +136,6 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 - **G. APIs comerciales**: usar OpenAI, Claude u otro proveedor en lugar del modelo local, como opción, con su coste medido
   - **Decisiones** (Alex, 2026-11-02): cada lección con modelos tiene un recuadro «Con una API» con el comando (`CURSO_PROVEEDOR=openai|hf|claude`) en bash y PowerShell y el estado de sus prácticas, probado con `compatibilidad.py` (tres llamadas por práctica y proveedor). Las salidas de las lecciones siguen siendo las locales. Claude, sin probar hasta que Alex añada su clave
 - **H. El proceso del autor**: la rotación de Alex de backend Java a AI Engineering, módulo a módulo. Opcional y aparte del aprendizaje
-- **Estado** (2026-11-02): B, C, D, E, F y G escritos. Pendiente de Alex: las secciones personales de A (consejos desde el uso real y Claude Code), el hueco de C y el anexo H
+- **I. Preguntas de entrevista**: las preguntas que más se repiten en entrevistas de AI Engineer, qué buscan y cómo responderlas con lo medido en el curso
+  - **Decisiones** (Alex, 2026-11-02): anexo propio, enlazado desde la 8.04; respuestas escritas para el curso a partir de guías públicas, con enlace a la lección que tiene el dato
+- **Estado** (2026-11-02): B, C, D, E, F, G e I escritos. Pendiente de Alex: las secciones personales de A (consejos desde el uso real y Claude Code), el hueco de C y el anexo H
