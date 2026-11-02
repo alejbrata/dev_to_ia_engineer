@@ -92,7 +92,7 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 7. Lectura de incidentes: de la alerta a la causa raíz
 - **Errores clave**: secretos en el repo y cómo limpiar el historial, degradación silenciosa, costes descontrolados
 - **Decisiones** (2026-11-01, tomadas por Claude para que Alex las valide): el caso del módulo es el sistema vigente del módulo 4 servido como API (FastAPI), "lo que se despliega es lo que se midió"; trazas con OpenTelemetry (curso_core emite los spans con los atributos `gen_ai.*`; Jaeger opcional con Docker) y métricas en formato Prometheus, los dos estándares abiertos
-- **Estado** (2026-11-01): lecciones 1 a 3 escritas, con salidas reales; 4 a 7 pendientes
+- **Estado** (2026-11-02): lecciones 1 a 6 escritas, con salidas reales; 7 (lectura de incidentes) pendiente
 
 ## Módulo 7 — Modelos propios ⬜
 
