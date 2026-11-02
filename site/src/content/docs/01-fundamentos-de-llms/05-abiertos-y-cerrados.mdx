@@ -4,6 +4,7 @@ description: "Modelos abiertos frente a cerrados; primer contacto con Hugging Fa
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-10]
 Las medidas de esta lección son reales: tres tamaños de la familia Qwen2.5 en Ollama, en un equipo con 31 GB de RAM y sin GPU. Los datos del Hub (licencias, descargas) son los publicados en la fecha de revisión.
@@ -155,6 +156,10 @@ qwen2.5:0.5b        4 de 5           0.3 s      65.1   0.49 GB
 qwen2.5:1.5b        4 de 5           0.4 s      28.6   1.17 GB
 qwen2.5:7b          5 de 5           1.6 s       5.8   5.07 GB
 ```
+
+<ConUnaApi practicas={['modulos/01-fundamentos-de-llms/comparar_modelos.py']}>
+	<p>Con <code>CURSO_PROVEEDOR</code>, todos los roles que compara apuntan al mismo modelo del proveedor: la comparación pierde el sentido. Para comparar dos modelos de API, redirige cada rol con <code>CURSO_ROLES</code> (anexo G).</p>
+</ConUnaApi>
 
 ## Mide y depura
 

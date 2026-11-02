@@ -4,6 +4,7 @@ description: "Prompting, RAG o fine-tuning: qué problema resuelve cada uno, dec
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-11]
 Salidas reales con Qwen2.5 7B y 1,5B en Ollama sobre CPU, y el dataset de 58 preguntas del módulo 4. Las respuestas con RAG son las grabadas en el módulo 4 (7B) y en la lección 6.01 (1,5B).
@@ -71,6 +72,10 @@ uv run python modulos/07-modelos-propios/decidir.py
    7B: 11.5 s
    1,5B: 2.6 s
 ```
+
+<ConUnaApi practicas={['modulos/07-modelos-propios/decidir.py']}>
+	<p>Lo que guarda la práctica va a <code>resultados/&lt;proveedor&gt;/</code> y no pisa los resultados grabados con el modelo local.</p>
+</ConUnaApi>
 
 ## Mide y depura
 

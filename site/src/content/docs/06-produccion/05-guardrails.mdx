@@ -4,6 +4,7 @@ description: "Guardrails: comprobaciones en código antes y después del modelo,
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-11]
 Salidas reales con el asistente de la lección 01. Los ataques y las reglas son del curso, así que las cifras dicen cómo se comportan estas reglas con estos ataques, no cuánto protegen frente a cualquiera.
@@ -108,6 +109,10 @@ uv run python modulos/06-produccion/defensas.py
 
 3. Lo que cuestan: 26 µs por pregunta (mediana, entrada y salida)
 ```
+
+<ConUnaApi practicas={['modulos/06-produccion/defensas.py']}>
+	<p>Lo que guarda la práctica va a <code>resultados/&lt;proveedor&gt;/</code> y no pisa los resultados grabados con el modelo local.</p>
+</ConUnaApi>
 
 ## Mide y depura
 

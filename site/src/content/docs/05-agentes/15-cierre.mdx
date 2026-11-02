@@ -4,6 +4,7 @@ description: "Cierre del módulo: un comité de crisis multiagente (orquestador 
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-11]
 Las salidas son reales: con Qwen3 8B sin razonamiento (rol `agente`) en Ollama, sobre CPU, y con el modelo barato de OpenAI (rol `chat_openai`, GPT-6 Luna) por su API. La parte comercial es opcional: necesita tu propia clave en `.env` y cuesta unos céntimos. Sin clave, el script ejecuta solo la parte local.
@@ -120,6 +121,10 @@ uv run python modulos/05-agentes/comite.py
    agente único, agente, caida-black-friday: negocio: credito, comunicacion: pagina de estado
    agente único, chat_openai, brecha-datos: tecnico: retira el acceso publico
 ```
+
+<ConUnaApi practicas={['modulos/05-agentes/comite.py']}>
+	<p>Con <code>CURSO_PROVEEDOR</code> cambian todos los roles, también los embeddings de la búsqueda. Para cambiar solo el agente, las prácticas de este módulo aceptan <code>--rol</code> (anexo G). Lo que guarda la práctica va a <code>resultados/&lt;proveedor&gt;/</code> y no pisa los resultados grabados con el modelo local.</p>
+</ConUnaApi>
 
 ## Mide y depura
 

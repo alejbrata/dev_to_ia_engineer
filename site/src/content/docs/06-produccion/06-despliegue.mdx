@@ -4,6 +4,7 @@ description: "Despliegue: el asistente en un contenedor, medido de la construcci
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-11]
 Docker 28.5 con Docker Desktop en Windows, imagen base `python:3.12-slim-bookworm` y uv 0.12. Ollama y el reranker siguen en la máquina anfitriona, como en el resto del módulo. Los precios de la nube son los que publica Hugging Face por su API a noviembre de 2026.
@@ -114,6 +115,8 @@ uv run python modulos/06-produccion/desplegar.py
    uvicorn como proceso principal    0.6 s · código   0 · uvicorn cerró con orden
    a través de `sh -c`               1.5 s · código 137 · uvicorn no llegó a cerrar
 ```
+
+<ConUnaApi practicas={['modulos/06-produccion/desplegar.py']} />
 
 ## Mide y depura
 

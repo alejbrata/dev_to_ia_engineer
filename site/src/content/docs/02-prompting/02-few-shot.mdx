@@ -4,6 +4,7 @@ description: "Few-shot y técnicas que sí funcionan (y mitos que no)"
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-10]
 Las salidas son reales, con el modelo con el que se construyó el curso (Qwen2.5 1.5B Instruct en Ollama), temperatura 0. Las técnicas que funcionan con un modelo pueden no funcionar con otro: lo que se aprende aquí es a comprobarlo.
@@ -92,6 +93,8 @@ Tickets que son de rendimiento: 2 de 10
 ```
 
 Con `--detalle`, el script muestra ticket a ticket qué respondió cada variante.
+
+<ConUnaApi practicas={['modulos/02-prompting/few_shot.py']} />
 
 ## Mide y depura
 

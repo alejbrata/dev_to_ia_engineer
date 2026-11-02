@@ -4,6 +4,7 @@ description: "Panorama: los SDK de agentes, los protocolos MCP y A2A, las skills
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::caution[Revisado: 2026-11]
 Esta es la lección que más rápido caduca. Las versiones y el estado de cada proyecto son los de sus páginas oficiales a 1 de noviembre de 2026, con el enlace a cada una. Antes de decidir nada con ellas, mira la versión actual. Las salidas de la práctica son reales, con Qwen3 8B sin razonamiento (rol `agente`) en Ollama, sobre CPU.
@@ -115,6 +116,10 @@ uv run python modulos/05-agentes/con_skills.py
    skills, catalogo-replica-normal: abrió una incidencia que no hacía falta
    skills, usuarios-deadlocks: severidad alta (esperada media)
 ```
+
+<ConUnaApi practicas={['modulos/05-agentes/con_skills.py']}>
+	<p>Con <code>CURSO_PROVEEDOR</code> cambian todos los roles, también los embeddings de la búsqueda. Para cambiar solo el agente, las prácticas de este módulo aceptan <code>--rol</code> (anexo G). Lo que guarda la práctica va a <code>resultados/&lt;proveedor&gt;/</code> y no pisa los resultados grabados con el modelo local.</p>
+</ConUnaApi>
 
 ## Mide y depura
 

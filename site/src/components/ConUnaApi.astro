@@ -1,0 +1,155 @@
+---
+// "Con una API": cómo repetir las prácticas de una lección con OpenAI, Hugging Face o Claude
+// en lugar del modelo local, y si funcionan con cada uno. El estado sale de la prueba real
+// de `modulos/g-apis-comerciales/compatibilidad.py` (anexo G), no se escribe a mano.
+import { Code, TabItem, Tabs } from '@astrojs/starlight/components';
+import datos from '../../../modulos/g-apis-comerciales/resultados/compatibilidad.json';
+
+interface Props {
+	// Rutas desde la raíz del repo, como en el texto: `modulos/02-prompting/anatomia.py`.
+	practicas: string[];
+	// Argumentos del ejemplo del comando, si la práctica los necesita.
+	args?: string;
+}
+
+const { practicas, args } = Astro.props;
+type Resultado = { estado: string };
+const resultados = datos.resultados as Record<string, Record<string, Resultado>>;
+const locales = datos.locales as Record<string, string>;
+
+const PROVEEDORES = [
+	['openai', 'OpenAI'],
+	['hf', 'Hugging Face'],
+	['claude', 'Claude'],
+] as const;
+const ETIQUETAS: Record<string, string> = {
+	funciona: 'funciona',
+	'sin clave': 'sin probar',
+	'sin logprobs': 'no da logprobs',
+	'solo local': 'no lo usa',
+	'necesita previa': 'necesita la previa',
+	falla: 'falla',
+	'tiempo agotado': 'no termina',
+	pendiente: 'pendiente',
+};
+
+// Una práctica que aún no está en el JSON (la prueba no ha llegado a ella) se muestra
+// como pendiente, sin romper la página.
+const llamaAModelos = (p: string) =>
+	!resultados[p] || Object.values(resultados[p]).some((r) => r.estado !== 'sin modelos');
+const conModelos = practicas.filter((p) => !locales[p] && llamaAModelos(p));
+const soloLocales = practicas.filter((p) => locales[p]);
+const anexo = `${import.meta.env.BASE_URL.replace(/\/$/, '')}/anexos/g-apis-comerciales/`;
+const ejemplo = conModelos[0];
+const sufijo = args ? ` ${args}` : '';
+const bash = ejemplo && `CURSO_PROVEEDOR=openai uv run python ${ejemplo}${sufijo}`;
+const powershell =
+	ejemplo &&
+	`$env:CURSO_PROVEEDOR = "openai"\nuv run python ${ejemplo}${sufijo}\nRemove-Item Env:CURSO_PROVEEDOR  # vuelve al modelo local`;
+---
+
+<aside class="con-una-api not-content" aria-label="Con una API">
+	<p class="titulo"><strong>Con una API</strong> (opcional)</p>
+	{
+		ejemplo && (
+			<p>
+				Las salidas de esta lección son del modelo local. Para repetir la práctica con una API
+				comercial, la variable <code>CURSO_PROVEEDOR</code> (<code>openai</code>, <code>hf</code> o{' '}
+				<code>claude</code>) pasa todos sus modelos a ese proveedor, sin tocar el código. Necesitas
+				su clave en <code>.env</code> y saldo en la cuenta, y las cifras saldrán distintas: es otro
+				modelo. Detalles y precios en el <a href={anexo}>anexo G</a>.
+			</p>
+		)
+	}
+	{
+		ejemplo && (
+			<Tabs syncKey="terminal">
+				<TabItem label="bash">
+					<Code code={bash} lang="bash" />
+				</TabItem>
+				<TabItem label="PowerShell">
+					<Code code={powershell} lang="powershell" />
+				</TabItem>
+			</Tabs>
+		)
+	}
+	{
+		conModelos.length > 0 && (
+			<table>
+				<thead>
+					<tr>
+						<th>Práctica</th>
+						{PROVEEDORES.map(([, nombre]) => <th>{nombre}</th>)}
+					</tr>
+				</thead>
+				<tbody>
+					{conModelos.map((p) => (
+						<tr>
+							<td><code>{p.split('/').at(-1)}</code></td>
+							{PROVEEDORES.map(([clave]) => {
+								const estado = resultados[p]?.[clave]?.estado ?? 'pendiente';
+								return <td data-estado={estado}>{ETIQUETAS[estado] ?? estado}</td>;
+							})}
+						</tr>
+					))}
+				</tbody>
+			</table>
+		)
+	}
+	{
+		conModelos.length > 0 && (
+			<p class="nota">
+				Probado con las tres primeras llamadas de cada práctica a cada proveedor. «Sin probar»: falta
+				la clave de ese proveedor en el entorno donde se probó.
+			</p>
+		)
+	}
+	{
+		soloLocales.map((p) => (
+			<p class="nota">
+				<code>{p.split('/').at(-1)}</code> es local por definición ({locales[p]}): no tiene versión
+				con API.
+			</p>
+		))
+	}
+	<slot />
+</aside>
+
+<style>
+	.con-una-api {
+		border: 1px solid var(--sl-color-gray-5);
+		border-inline-start: 4px solid var(--sl-color-accent);
+		border-radius: 0.5rem;
+		padding: 0.75rem 1rem;
+		margin-block: 1.5rem;
+		background: var(--sl-color-gray-7, var(--sl-color-black));
+	}
+	.con-una-api > * + * {
+		margin-top: 0.75rem;
+	}
+	.titulo {
+		margin: 0;
+	}
+	table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: var(--sl-text-sm);
+	}
+	th,
+	td {
+		text-align: start;
+		padding: 0.25rem 0.5rem;
+		border-bottom: 1px solid var(--sl-color-gray-5);
+	}
+	td[data-estado='funciona'] {
+		color: var(--sl-color-green-high, inherit);
+	}
+	td[data-estado='falla'],
+	td[data-estado='tiempo agotado'] {
+		color: var(--sl-color-red-high, inherit);
+	}
+	.nota {
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-2);
+	}
+</style>

@@ -4,6 +4,7 @@ description: "Coste y latencia: cómo se calculan y cómo medirlos"
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-10]
 Las medidas son reales, con el modelo con el que se construyó el curso en un equipo sin GPU. Los precios son los que publicaba la API de Hugging Face en la fecha de revisión; la práctica consulta los de hoy.
@@ -138,6 +139,8 @@ Tres cosas que leer:
 - **`Retry-After` ahorra intentos y tiempo.** Con la cabecera, el cliente espera exactamente lo necesario: 2 intentos. Sin ella, va probando a ciegas con esperas crecientes: 5 intentos y el doble de tiempo. Cada intento de más es carga extra para un servidor que ya está saturado.
 
 Fíjate también en la primera petición de cada ronda: tarda 0,2 s y las siguientes, casi cero. Es el coste de abrir la conexión, que `curso_core` paga una vez y reutiliza.
+
+<ConUnaApi practicas={['modulos/01-fundamentos-de-llms/coste_y_latencia.py', 'modulos/01-fundamentos-de-llms/reintentos.py']} />
 
 ## Mide y depura
 

@@ -4,6 +4,7 @@ description: "Planificar: un agente que escribe el plan como un grafo de tareas 
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-10]
 Las salidas son reales, con Qwen3 8B sin razonamiento (rol `agente`) en Ollama, sobre CPU.
@@ -94,6 +95,10 @@ uv run python modulos/05-agentes/planificar.py
    catalogo-replica-normal: abrió una incidencia que no hacía falta
    usuarios-deadlocks: severidad alta (esperada media)
 ```
+
+<ConUnaApi practicas={['modulos/05-agentes/planificar.py']}>
+	<p>Con <code>CURSO_PROVEEDOR</code> cambian todos los roles, también los embeddings de la búsqueda. Para cambiar solo el agente, las prácticas de este módulo aceptan <code>--rol</code> (anexo G). Lo que guarda la práctica va a <code>resultados/&lt;proveedor&gt;/</code> y no pisa los resultados grabados con el modelo local.</p>
+</ConUnaApi>
 
 ## Mide y depura
 

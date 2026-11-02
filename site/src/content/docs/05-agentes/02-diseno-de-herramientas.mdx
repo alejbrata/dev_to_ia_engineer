@@ -4,6 +4,7 @@ description: "Diseño de herramientas: cómo describirlas para que un agente las
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-10]
 Las salidas son reales, con cuatro configuraciones locales en Ollama, sobre CPU: Qwen2.5 1.5B y 7B Instruct, y Qwen3 8B con y sin razonamiento. Puedes usar el modelo que quieras: cambia el rol `agente` en `config/models.toml` y vuelve a medir.
@@ -143,6 +144,10 @@ La salida, sin la parte 3 (el detalle de los fallos):
 ```
 
 La parte 3 de la salida lista los fallos que quedan con la versión 2. Salvo uno, son los dos de antes: no abrir la incidencia (seis veces) y la severidad `alta` donde tocaba `critica` o `media` (siete veces).
+
+<ConUnaApi practicas={['modulos/05-agentes/medir_modelos.py', 'modulos/05-agentes/medir_herramientas.py', 'modulos/05-agentes/traza.py']}>
+	<p>Con <code>CURSO_PROVEEDOR</code>, todos los roles que compara apuntan al mismo modelo del proveedor: la comparación pierde el sentido. Para comparar dos modelos de API, redirige cada rol con <code>CURSO_ROLES</code> (anexo G). <code>medir_herramientas.py</code> lee lo que guardó <code>medir_modelos.py</code>: ejecuta antes esa con el mismo proveedor. Lo que guarda la práctica va a <code>resultados/&lt;proveedor&gt;/</code> y no pisa los resultados grabados con el modelo local.</p>
+</ConUnaApi>
 
 ## Mide y depura
 

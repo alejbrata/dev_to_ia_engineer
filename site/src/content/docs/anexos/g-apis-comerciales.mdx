@@ -3,8 +3,10 @@ title: "G. APIs comerciales"
 description: "Usar OpenAI, Claude u otro proveedor en lugar del modelo local, como opción, con su coste medido"
 ---
 
-:::note[Revisado: 2026-10]
-Los modelos y precios citados son los publicados por cada proveedor en octubre de 2026 y cambian a menudo: los nombres viven en `config/models.toml`. Puedes usar el proveedor y el modelo que quieras o puedas.
+import TablaCompatibilidad from '../../../components/TablaCompatibilidad.astro';
+
+:::note[Revisado: 2026-11]
+Los modelos y precios citados son los publicados por cada proveedor en octubre y noviembre de 2026 y cambian a menudo: los nombres viven en `config/models.toml`. Puedes usar el proveedor y el modelo que quieras o puedas.
 :::
 
 El curso funciona entero con modelos abiertos en local, sin pagar por token. Es una decisión deliberada: cualquiera puede seguirlo, y medir con un modelo pequeño enseña más que con uno que lo hace casi todo bien. Pero en tu trabajo quizá necesites más calidad de la que da un modelo que cabe en un portátil, o no tengas máquina para el de 7B. Este anexo explica cómo cambiar cualquier práctica a una API comercial y cómo medir si compensa.
@@ -24,6 +26,40 @@ Lo que sí cambia:
 - **Dependes de un tercero**: su disponibilidad, sus límites de uso (los errores 429 del módulo 1) y sus cambios de modelos y precios.
 - **Los resultados no son comparables con los publicados en el curso.** Si cambias de modelo, vuelve a medir: es el método de todo el módulo 4.
 
+## Todo el curso con una API
+
+Cada lección con modelos tiene un recuadro **Con una API** con el comando para repetir su práctica contra OpenAI, Hugging Face o Claude. Todos usan la misma variable de entorno, `CURSO_PROVEEDOR`:
+
+```sh title="Terminal de VS Code · raíz del repo (bash)"
+CURSO_PROVEEDOR=openai uv run python modulos/02-prompting/anatomia.py
+```
+
+```powershell title="Terminal de VS Code · raíz del repo (PowerShell)"
+$env:CURSO_PROVEEDOR = "openai"
+uv run python modulos/02-prompting/anatomia.py
+Remove-Item Env:CURSO_PROVEEDOR  # vuelve al modelo local
+```
+
+Los valores son `openai`, `hf` y `claude`. Cada uno es una tabla `[alternativas.<proveedor>]` en `config/models.toml` que dice qué rol sustituye a cada rol local: con `openai`, quien pide `chat`, `agente` o `chat_grande` recibe `chat_openai`, el `judge` pasa al modelo intermedio y los `embeddings`, a los de OpenAI. Los roles que no están en la tabla (el reranker, los modelos de embeddings con los que se compara en el módulo 3) siguen siendo locales. El código de las prácticas no cambia: `curso_core` resuelve los roles al llamar.
+
+Tres cosas que conviene saber:
+
+- **No pisa los resultados del curso.** Las prácticas que guardan resultados lo hacen, con `CURSO_PROVEEDOR`, en `resultados/<proveedor>/`. Si una práctica lee lo que guardó otra anterior, ejecuta antes esa con el mismo proveedor; el recuadro de la lección lo dice.
+- **Para cambios más finos, `CURSO_ROLES`.** Redirige roles concretos y tiene prioridad: `CURSO_ROLES=chat=chat_openai,chat_grande=chat_hf` compara de verdad dos modelos de API en las prácticas que comparan roles. Con `CURSO_PROVEEDOR` solo, esas prácticas comparan un modelo consigo mismo.
+- **Embeddings.** OpenAI tiene los suyos (1536 dimensiones; bge-m3, el del curso, tiene 1024: un índice hecho con uno no sirve para consultar con el otro). Hugging Face sirve el mismo bge-m3 por su API de inferencia, que no es la compatible con OpenAI y tiene su propio tipo de proveedor, `hf_inference`. Claude no ofrece embeddings: con `claude`, siguen siendo los locales.
+
+### Qué funciona con cada proveedor
+
+[`compatibilidad.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/g-apis-comerciales/compatibilidad.py) ejecuta cada práctica con cada proveedor y la corta tras sus tres primeras llamadas de generación, con `CURSO_MAX_LLAMADAS=3`: así prueba sus prompts, sus esquemas y sus herramientas reales por unos céntimos, sin pagar la práctica entera. Además comprueba que las llamadas han ido de verdad al proveedor: si una práctica solo usa roles que siguen siendo locales, sale como «no lo usa». Y si lee lo que guardó otra práctica anterior con el mismo proveedor, como «necesita la previa»: con solo tres llamadas, la previa no llega a guardar nada. Esta es la tabla, generada a partir de su última ejecución:
+
+<TablaCompatibilidad />
+
+«Sin probar» es Claude sin clave en el entorno donde se generó la tabla. Las prácticas que no aparecen son locales por definición (servir, cuantizar o ajustar un modelo, el servicio de producción y su respaldo, el reranker) o no llaman a ningún modelo; `compatibilidad.py --grabadas` las lista con el motivo.
+
+Que una práctica pase sus tres primeras llamadas no garantiza que pase todas: una parte posterior puede pedir algo que el proveedor no admite. La conocida: la parte 4 de `bucle.py`, que hace razonar al agente en cada paso, falla con OpenAI (herramientas y razonamiento no van juntos en `/chat/completions`).
+
+`CURSO_MAX_LLAMADAS` también te sirve a ti: antes de lanzar una práctica larga contra una API, ejecútala con `CURSO_MAX_LLAMADAS=3` para ver que funciona sin pagarla entera.
+
 ## Configurar OpenAI
 
 1. Crea una clave en la consola de OpenAI y añade saldo a la cuenta: sin saldo, la clave es válida pero las llamadas fallan.
@@ -33,13 +69,23 @@ Lo que sí cambia:
 OPENAI_API_KEY=tu-clave
 ```
 
-3. Usa uno de los dos roles que ya están en `config/models.toml`: `chat_openai` (el modelo barato) o `chat_openai_grande` (el intermedio).
+3. Usa `CURSO_PROVEEDOR=openai` (arriba) o uno de los dos roles que ya están en `config/models.toml`: `chat_openai` (el modelo barato) o `chat_openai_grande` (el intermedio).
 
-"Compatible con OpenAI" no significa "idéntico". El proveedor `openai` de `config/models.toml` lleva tres ajustes que salieron de errores reales al montar este anexo:
+"Compatible con OpenAI" no significa "idéntico". El proveedor `openai` de `config/models.toml` lleva varios ajustes, y cada uno salió de un error real al montar este anexo o al probar el curso entero con `compatibilidad.py`:
 
 - `parametro_max_tokens = "max_completion_tokens"`. La API de OpenAI ha dejado `max_tokens` como obsoleto en favor de `max_completion_tokens`, que además no es compatible con sus modelos de razonamiento. Ollama, llama.cpp y vLLM siguen usando `max_tokens`.
 - `omitir = ["temperature"]`. Sus modelos actuales solo aceptan la temperatura por defecto: el curso pide temperatura 0 y la API responde 400 (es la anatomía de abajo).
 - `esquema_estricto = true`. Su salida estructurada estricta exige que cada objeto del esquema JSON tenga `additionalProperties: false` y todas sus propiedades obligatorias, y Pydantic no lo genera así. El cliente lo añade antes de enviar.
+
+- `razonar_por_defecto = false`. Sus modelos razonan por defecto, y el razonamiento cuenta dentro del límite de salida: con el `max_tokens=80` de una práctica pensada para un modelo local que no razona, el modelo gastó los 80 tokens en razonar y devolvió el texto vacío (`motivo_fin` = `length`). Con este ajuste, si la práctica no dice nada, no razona, como el local. Además, las herramientas en `/chat/completions` solo funcionan sin razonamiento.
+- `admite_logprobs = false`. Sus modelos actuales no devuelven la probabilidad de cada token (`'logprobs' is not supported with this model`). El cliente lo dice antes de llamar.
+
+Y dos diferencias que no se arreglan con configuración:
+
+- **El modelo intermedio razona siempre.** Rechaza `reasoning_effort="none"`, así que no admite herramientas en `/chat/completions`. Por eso tiene su propio proveedor, `openai_razonador`, sin `razonar_por_defecto`, y en `CURSO_PROVEEDOR=openai` solo hace de juez.
+- **`max_tokens=1` da 400** (`Could not finish the message because max_tokens or model output limit was reached`): no le deja terminar el mensaje. Dos prácticas del módulo 1 lo usaban para medir solo la entrada; ahora piden 16.
+
+Por último, el modo estricto de la salida estructurada no admite un objeto libre (un `dict[str, Any]` de Pydantic, como los argumentos de un paso en `planificar.py`). Con un esquema así, el cliente lo envía sin `strict`, y la API lo acepta.
 
 Ninguno cambia el código de las prácticas: son diferencias del proveedor, y viven en su configuración.
 
@@ -86,7 +132,7 @@ Cómo leerla:
 
 ## Claude
 
-Anthropic no usa el formato de OpenAI: tiene su propia API. `curso_core` la habla con su SDK oficial (proveedor de tipo `anthropic`), así que se usa igual, con el rol `chat_claude`: `con_api.py --rol chat_claude`. Los detalles, y lo que el cliente hace distinto con Claude, están en el [anexo A](../a-claude-y-claude-code/). Esa integración, herramientas incluidas, está probada con tests, pero aún no contra la API real.
+Anthropic no usa el formato de OpenAI: tiene su propia API. `curso_core` la habla con su SDK oficial (proveedor de tipo `anthropic`), así que se usa igual, con el rol `chat_claude` (`con_api.py --rol chat_claude`) o con `CURSO_PROVEEDOR=claude`. No ofrece embeddings ni logprobs. Los detalles, y lo que el cliente hace distinto con Claude, están en el [anexo A](../a-claude-y-claude-code/). Esa integración, herramientas incluidas, está probada con tests, pero aún no contra la API real.
 
 ## Otros proveedores
 

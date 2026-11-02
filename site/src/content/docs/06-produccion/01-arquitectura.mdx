@@ -4,6 +4,7 @@ description: "Arquitectura: el sistema RAG del módulo 4 servido como API, con c
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-11]
 Las salidas son reales, con el sistema vigente del módulo 4 (Qwen2.5 7B, rol `chat_grande`, con el reranker) y Qwen2.5 1,5B de respaldo (rol `chat`), en Ollama sobre CPU. FastAPI 0.162 y uvicorn 0.54.
@@ -118,6 +119,8 @@ uv run python modulos/06-produccion/arquitectura.py
    respaldo:     40 de 58, p50 2.6 s
    el respaldo gana 0, pierde 12, p = 0.000
 ```
+
+<ConUnaApi practicas={['modulos/06-produccion/arquitectura.py']} />
 
 ## Mide y depura
 

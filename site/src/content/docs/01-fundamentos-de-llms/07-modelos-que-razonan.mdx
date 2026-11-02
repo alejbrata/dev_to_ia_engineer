@@ -4,6 +4,7 @@ description: "Modelos que razonan: qué son los tokens de razonamiento, cuándo 
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-10]
 Las salidas son reales, con Qwen3 8B (rol `razonador`) en Ollama, sobre CPU. Es un modelo que razona antes de responder y que permite desactivarlo, y el mismo que usan los agentes del módulo 5: si ya lo tienes, no hay que descargar nada (si no, unos 5 GB con `ollama pull qwen3:8b`). Puedes usar otro modelo que razone: cambia el rol en `config/models.toml` y vuelve a medir.
@@ -88,6 +89,10 @@ uv run python modulos/01-fundamentos-de-llms/razonamiento.py
    | 
    | [...]
 ```
+
+<ConUnaApi practicas={['modulos/01-fundamentos-de-llms/razonamiento.py']}>
+	<p>Con <code>openai</code>, el modelo barato razona o no según se le pida, como el local. El de Hugging Face (<code>chat_hf</code>) es un modelo Instruct que no razona: pedirle que razone no cambia la petición. Con <code>claude</code>, <code>curso_core</code> no activa su razonamiento (extended thinking): las dos columnas salen sin razonar.</p>
+</ConUnaApi>
 
 ## Mide y depura
 

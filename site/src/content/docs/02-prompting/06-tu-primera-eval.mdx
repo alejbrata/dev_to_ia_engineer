@@ -5,6 +5,7 @@ description: "Tu primera eval: 10 casos, una aserción, un número"
 
 import TablaEval from '../../../components/TablaEval.astro';
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-10]
 Las salidas son reales, con el modelo con el que se construyó el curso (Qwen2.5 1.5B Instruct en Ollama), temperatura 0 y cada versión medida desde el mismo estado del servidor.
@@ -96,6 +97,8 @@ Cuando termines, deshaz el cambio:
 ```sh title="Terminal de VS Code · raíz del repo"
 git checkout -- prompts/tickets/few-shot-5.md
 ```
+
+<ConUnaApi practicas={['modulos/02-prompting/evaluar.py']} args="tickets/few-shot-5" />
 
 ## Mide y depura
 

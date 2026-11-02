@@ -5,6 +5,7 @@ description: "Cómo funciona un LLM sin matemáticas innecesarias: tokens, predi
 
 import VisorTokens from '../../../components/VisorTokens.astro';
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 
 :::note[Revisado: 2026-10]
@@ -136,6 +137,10 @@ El modelo dice que el cielo despejado es **blanco**. "Azul" (`az`) estaba en la 
 Fíjate también en el segundo token: una vez elegido `bl`, la continuación `anco` es casi segura. El primer token decidió la respuesta. Así funciona la generación: cada elección condiciona todo lo que viene después.
 
 Prueba otros prompts con `prediccion.py "tu prompt"`. Busca casos en los que la primera elección esté reñida.
+
+<ConUnaApi practicas={['modulos/01-fundamentos-de-llms/tokens.py', 'modulos/01-fundamentos-de-llms/prediccion.py']}>
+	<p><code>tokens.py</code> trocea con el tokenizador del modelo local (el <code>hf_repo</code> del rol <code>chat</code>) y lo compara con lo que cuenta el servidor: con una API, el servidor es otro modelo, con otro tokenizador. <code>prediccion.py</code>: Necesita la probabilidad de cada token (logprobs): la API de OpenAI no la da con sus modelos actuales y la de Claude no la ofrece. Hugging Face, sí.</p>
+</ConUnaApi>
 
 ## Mide y depura
 

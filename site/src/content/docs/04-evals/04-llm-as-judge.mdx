@@ -4,6 +4,7 @@ description: "Usar un modelo como juez: calibrarlo con etiquetas ancladas al cor
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-10]
 Las salidas son reales. Los jueces son Qwen2.5 7B Instruct (rol `judge`) y Qwen2.5 1.5B Instruct, en Ollama, sobre CPU. Las respuestas evaluadas son las del RAG de las lecciones anteriores.
@@ -115,6 +116,10 @@ uv run python modulos/04-evals/calibrar_juez.py
    juez-v2-7b      24   2   5  33     89%      83%        94%   0.78       16.7
    juez-v2-1.5b    13   7  16  28     64%      45%        80%   0.26        4.3
 ```
+
+<ConUnaApi practicas={['modulos/04-evals/calibrar_juez.py']}>
+	<p>Con <code>openai</code>, el juez es el modelo intermedio de OpenAI, que razona siempre. Lo que guarda la práctica va a <code>resultados/&lt;proveedor&gt;/</code> y no pisa los resultados grabados con el modelo local.</p>
+</ConUnaApi>
 
 ## Mide y depura
 

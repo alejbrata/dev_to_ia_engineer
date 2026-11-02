@@ -4,6 +4,7 @@ description: "Agentes que aguantan: herramientas que fallan y reintentos en cód
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-11]
 Las salidas son reales, con Qwen3 8B sin razonamiento (rol `agente`) en Ollama, sobre CPU. Los fallos de las herramientas son simulados, con una semilla fija para que se puedan repetir.
@@ -107,6 +108,10 @@ uv run python modulos/05-agentes/aguantar.py
        abrir_incidencia → La incidencia INC-1 para notificaciones ya estaba abierta; no se dupli
      incidencias al final: INC-1 (notificaciones, alta)
 ```
+
+<ConUnaApi practicas={['modulos/05-agentes/aguantar.py']}>
+	<p>Con <code>CURSO_PROVEEDOR</code> cambian todos los roles, también los embeddings de la búsqueda. Para cambiar solo el agente, las prácticas de este módulo aceptan <code>--rol</code> (anexo G). Lo que guarda la práctica va a <code>resultados/&lt;proveedor&gt;/</code> y no pisa los resultados grabados con el modelo local.</p>
+</ConUnaApi>
 
 ## Mide y depura
 

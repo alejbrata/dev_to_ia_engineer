@@ -4,6 +4,7 @@ description: "El mismo modelo servido con Ollama, llama.cpp y vLLM: latencia, re
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-11]
 Salidas reales con Qwen2.5 1,5B Instruct en Ollama 0.40, llama.cpp (compilación 11977) y vLLM 0.33 (imagen oficial para CPU), en una CPU sin GPU. Los servidores cambian rápido: las opciones y los valores por defecto de esta lección pueden haber cambiado. Puedes usar el modelo que quieras o puedas.
@@ -126,6 +127,8 @@ La salida, en la máquina del curso (Intel Core Ultra 7 de 16 núcleos, sin AVX-
    llama-server -c 4096 --kv-unified --parallel 8: n_slots = 8, n_ctx_slot = 4096, 0 con error
    llama-server -c 8192 --parallel 8: n_slots = 8, n_ctx_slot = 1024, 0 con error
 ```
+
+<ConUnaApi practicas={['modulos/07-modelos-propios/servir.py']} />
 
 ## Mide y depura
 

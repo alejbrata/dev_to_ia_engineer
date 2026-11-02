@@ -4,6 +4,7 @@ description: "Cómo construir un dataset de evaluación anclado al corpus, con t
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-10]
 Las salidas son reales, con el modelo con el que se construyó el curso (Qwen2.5 1.5B Instruct) y bge-m3 en Ollama. El sistema evaluado es el RAG del módulo 3 con el prompt de citas.
@@ -131,6 +132,10 @@ La salida es la de los resultados grabados en el repo, puntuados con el comproba
 ```
 
 "El dato esperado está en el contexto" es la versión sencilla de lo que herramientas como DeepEval o Ragas llaman *contextual recall*: si la información de la respuesta esperada llegó al contexto que vio el modelo.
+
+<ConUnaApi practicas={['modulos/04-evals/datasets.py']}>
+	<p>Lo que guarda la práctica va a <code>resultados/&lt;proveedor&gt;/</code> y no pisa los resultados grabados con el modelo local.</p>
+</ConUnaApi>
 
 ## Mide y depura
 

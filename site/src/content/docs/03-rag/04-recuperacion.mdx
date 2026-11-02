@@ -4,6 +4,7 @@ description: "Recuperación densa, léxica (BM25) e híbrida (RRF): cuándo gana
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-10]
 Las salidas son reales, con el modelo de embeddings bge-m3 en Ollama y la implementación de BM25 de `curso_core`. Con otro modelo de embeddings, los números cambian; el método para compararlos, no.
@@ -102,6 +103,10 @@ uv run python modulos/03-rag/recuperacion.py
      léxica (BM25)    runbook-usuarios-deadlocks#2  3.555  (contiene el identificador · resultados: 1)
      híbrida (RRF)    runbook-usuarios-deadlocks#2  0.033  (contiene el identificador · resultados: 3)
 ```
+
+<ConUnaApi practicas={['modulos/03-rag/recuperacion.py']}>
+	<p>Con <code>openai</code>, los embeddings pasan a ser los de OpenAI, de 1536 dimensiones frente a las 1024 de bge-m3; con <code>hf</code>, es el mismo bge-m3, servido por Hugging Face; Claude no ofrece embeddings, así que con <code>claude</code> siguen siendo los locales.</p>
+</ConUnaApi>
 
 ## Mide y depura
 

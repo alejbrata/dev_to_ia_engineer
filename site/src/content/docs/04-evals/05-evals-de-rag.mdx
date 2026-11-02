@@ -4,6 +4,7 @@ description: "Evals de RAG: medir la recuperación y la generación por separado
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-10]
 Las salidas son reales. El sistema es el RAG de las lecciones anteriores: bge-m3 para la búsqueda, el reranker bge-reranker-v2-m3 en `llama-server` y Qwen2.5 1.5B Instruct para generar. El juez es Qwen2.5 7B Instruct (rol `judge`). Todo sobre CPU.
@@ -86,6 +87,10 @@ uv run python modulos/04-evals/por_etapas.py
 ```
 
 La configuración densa-k3 da 28 de 42, lo mismo que en la lección 02: es el mismo sistema con el mismo dataset.
+
+<ConUnaApi practicas={['modulos/04-evals/por_etapas.py']}>
+	<p>Lo que guarda la práctica va a <code>resultados/&lt;proveedor&gt;/</code> y no pisa los resultados grabados con el modelo local.</p>
+</ConUnaApi>
 
 ## Mide y depura
 

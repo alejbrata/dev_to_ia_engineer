@@ -4,6 +4,7 @@ description: "Descargar un modelo abierto del Hub y prepararlo para servirlo: qu
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-11]
 Salidas reales con Qwen2.5 1,5B Instruct: los safetensors del Hub cargados con transformers 5 en CPU (Intel Core Ultra 7, sin GPU) y la versión Q4_K_M de Ollama. Puedes usar el modelo que quieras o puedas: el del rol `chat` en `config/models.toml`. Elegir modelo en el Hub está en el [anexo B.1](../../anexos/b1-el-hub-y-elegir-modelo/).
@@ -175,6 +176,8 @@ La salida, en la máquina del curso (CPU, sin GPU):
       transformers sin plantilla  No aparece en la documentación. Procedimiento: 1. Reiniciar PgBouncer de forma ordenada, una réplica
       Ollama                      Según el postmortem, la base de datos de cobros ha dejado de aceptar nuevas conexiones debido a un p
 ```
+
+<ConUnaApi practicas={['modulos/07-modelos-propios/preparar.py']} />
 
 ## Mide y depura
 

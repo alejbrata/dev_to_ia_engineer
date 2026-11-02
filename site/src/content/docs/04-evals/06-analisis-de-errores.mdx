@@ -4,6 +4,7 @@ description: "Leer los fallos uno a uno, agruparlos en categorías, atacar la m�
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-10]
 Las salidas son reales. El sistema es el de la lección 05 con reranker y 3 fragmentos. Los modelos de generación son Qwen2.5 1.5B Instruct (rol `chat`) y Qwen2.5 7B Instruct (rol `chat_grande`), en Ollama, sobre CPU.
@@ -101,6 +102,10 @@ La ejecución completa son unas 200 respuestas y, en la máquina del curso, medi
    reglas-7b  gana ['n-13', 'n-16', 's-05', 'g-03'], pierde ['m3-18'], p = 0.38
    m3-18 pasa a fallar: "No aparece en la documentación"
 ```
+
+<ConUnaApi practicas={['modulos/04-evals/analisis_errores.py']}>
+	<p><code>analisis_errores.py</code> lee lo que guardó <code>por_etapas.py</code>: ejecuta antes esa con el mismo proveedor. Lo que guarda la práctica va a <code>resultados/&lt;proveedor&gt;/</code> y no pisa los resultados grabados con el modelo local.</p>
+</ConUnaApi>
 
 ## Mide y depura
 

@@ -5,6 +5,7 @@ description: "Qué es un embedding, cómo se compara, por qué el modelo de inde
 
 import LabEmbeddings from '../../../components/LabEmbeddings.astro';
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-10]
 Las salidas son reales, con los modelos de embeddings bge-m3, nomic-embed-text y qwen3-embedding (0.6B) en Ollama, y PostgreSQL 18 con pgvector 0.8.7 en Docker. Puedes usar otros modelos: cámbialos en `config/models.toml` y vuelve a medir.
@@ -149,6 +150,10 @@ La primera vez indexa (`97 fragmentos indexados en 16.7 s`). Las siguientes reut
 ```
 
 (El script recorta el vector de 1024 números que aparece en el plan y lo deja en `'[...]'`.)
+
+<ConUnaApi practicas={['modulos/03-rag/embeddings.py', 'modulos/03-rag/indice_pgvector.py']}>
+	<p>Con <code>openai</code>, los embeddings pasan a ser los de OpenAI, de 1536 dimensiones frente a las 1024 de bge-m3; con <code>hf</code>, es el mismo bge-m3, servido por Hugging Face; Claude no ofrece embeddings, así que con <code>claude</code> siguen siendo los locales. En <code>embeddings.py</code> solo cambia el modelo principal; los que compara con él siguen siendo locales, y el apartado 3 muestra el error de dimensiones también con el tercero.</p>
+</ConUnaApi>
 
 ## Mide y depura
 

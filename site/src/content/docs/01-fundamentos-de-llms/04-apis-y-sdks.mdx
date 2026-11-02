@@ -5,6 +5,7 @@ description: "APIs y SDKs: llamada mínima, streaming, mensajes y roles"
 
 import ReproduccionStreaming from '../../../components/ReproduccionStreaming.astro';
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 
 :::note[Revisado: 2026-10]
@@ -202,6 +203,8 @@ uv run python modulos/01-fundamentos-de-llms/errores_api.py
 ```
 
 Los tres errores HTTP se resolvieron en un intento: no tiene sentido reintentarlos. El timeout, en cambio, se reintentó una vez antes de rendirse. Si tu cuenta tiene créditos, el primer caso funcionará y verás la respuesta.
+
+<ConUnaApi practicas={['modulos/01-fundamentos-de-llms/conversacion.py', 'modulos/01-fundamentos-de-llms/streaming.py', 'modulos/01-fundamentos-de-llms/errores_api.py', 'modulos/01-fundamentos-de-llms/tres_formas.py']} />
 
 ## Mide y depura
 

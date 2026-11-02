@@ -4,6 +4,7 @@ description: "Seguridad de agentes: inyección a través de lo que devuelven las
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-11]
 Las salidas son reales, con Qwen3 8B sin razonamiento (rol `agente`) en Ollama, sobre CPU. Los ataques son de laboratorio, sobre la plataforma inventada del curso: no los pruebes contra sistemas que no sean tuyos.
@@ -111,6 +112,10 @@ uv run python modulos/05-agentes/atacar.py
 3. La guardia sobre las acciones grabadas en los 14 escenarios normales
    incidencias abiertas: 10; bloqueadas por la guardia: 0
 ```
+
+<ConUnaApi practicas={['modulos/05-agentes/atacar.py']}>
+	<p><code>atacar.py</code> lee lo que guardó <code>memoria_y_contexto.py</code>: ejecuta antes esa con el mismo proveedor. Lo que guarda la práctica va a <code>resultados/&lt;proveedor&gt;/</code> y no pisa los resultados grabados con el modelo local.</p>
+</ConUnaApi>
 
 ## Mide y depura
 

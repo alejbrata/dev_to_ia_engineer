@@ -28,10 +28,9 @@ from pathlib import Path
 from statistics import median
 
 import httpx
-from curso_core import config as cfg
 
 AQUI = Path(__file__).resolve().parent
-RESULTADOS = cfg.carpeta_resultados(AQUI / "resultados")
+RESULTADOS = AQUI / "resultados"
 URL = "http://127.0.0.1:8100"
 # Un cliente HTTP para todas las peticiones: crear uno por petición cuesta unos 300 ms
 # en Windows, más que lo que tarda el servicio en responder desde la caché (lección 6.03).
@@ -190,6 +189,7 @@ class Colgado:
 
 
 def config_con(base_url: str):
+    from curso_core import config as cfg
 
     c = cfg.cargar()
     c.providers["caido"] = cfg.Proveedor(tipo="ollama", base_url=base_url)

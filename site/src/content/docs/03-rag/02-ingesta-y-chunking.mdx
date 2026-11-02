@@ -5,6 +5,7 @@ description: "Ingesta y chunking: estrategias y sus consecuencias"
 
 import LabChunking from '../../../components/LabChunking.astro';
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-10]
 Las medidas son reales, con el modelo de embeddings bge-m3 en Ollama y el corpus del módulo. Los tamaños de fragmento que funcionan mejor dependen de tu documentación: el método para elegirlos, no.
@@ -80,6 +81,10 @@ Evidencias partidas (ejemplos):
 ```
 
 La columna `tokens` estima lo que ocupan en el prompt los 3 fragmentos recuperados, de media.
+
+<ConUnaApi practicas={['modulos/03-rag/chunking.py']}>
+	<p>Con <code>openai</code>, los embeddings pasan a ser los de OpenAI, de 1536 dimensiones frente a las 1024 de bge-m3; con <code>hf</code>, es el mismo bge-m3, servido por Hugging Face; Claude no ofrece embeddings, así que con <code>claude</code> siguen siendo los locales.</p>
+</ConUnaApi>
 
 ## Mide y depura
 

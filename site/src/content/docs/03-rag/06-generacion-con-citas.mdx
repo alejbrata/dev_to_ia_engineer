@@ -4,6 +4,7 @@ description: "Pedir respuestas con citas, abstenerse cuando no hay respuesta, y 
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-10]
 Las salidas son reales. Genera Qwen2.5 1.5B Instruct, el modelo con el que se construyó el curso; juzga Qwen2.5 7B Instruct (rol `judge`); el contexto sale de bge-m3 con el reranker de la lección 05. Con otros modelos, los números cambian. Incluso con los mismos, puede variar alguna respuesta entre ejecuciones (módulo 1).
@@ -106,6 +107,10 @@ Sin el reranker, añade `--sin-reranker` (el contexto será peor y los números,
 ```
 
 La parte 4 es larga: 22 respuestas con lo que el juez considera sin apoyo. Las más útiles están en "Mide y depura".
+
+<ConUnaApi practicas={['modulos/03-rag/generacion.py']}>
+	<p>Con <code>openai</code>, los embeddings pasan a ser los de OpenAI, de 1536 dimensiones frente a las 1024 de bge-m3; con <code>hf</code>, es el mismo bge-m3, servido por Hugging Face; Claude no ofrece embeddings, así que con <code>claude</code> siguen siendo los locales.</p>
+</ConUnaApi>
 
 ## Mide y depura
 

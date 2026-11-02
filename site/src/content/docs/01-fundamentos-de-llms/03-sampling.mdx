@@ -5,6 +5,7 @@ description: "Sampling: temperature, top_p y determinismo (o su ausencia)"
 
 import Temperatura from '../../../components/Temperatura.astro';
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 
 :::note[Revisado: 2026-10]
@@ -142,6 +143,10 @@ Misma petición, misma semilla, mismo servidor, mismo modelo: **la primera llama
 La explicación más probable: en la primera llamada, Ollama procesa el prompt desde cero; en las siguientes, reutiliza parte del cálculo que guardó en una caché (lo verás en el campo `prompt_eval_cached_count` de su respuesta). Las dos rutas dan probabilidades casi iguales, pero no idénticas bit a bit, y con un sorteo de por medio "casi" basta para cambiar el resultado. Es una hipótesis coherente con los datos, no un comportamiento documentado. Lo importante es la conclusión: la semilla hace la salida reproducible a menudo, no siempre.
 
 Con temperatura 0 no hay sorteo, y en las mismas pruebas la respuesta fue idéntica en todas las llamadas, con el modelo recién cargado o no.
+
+<ConUnaApi practicas={['modulos/01-fundamentos-de-llms/sampling.py']}>
+	<p>Necesita la probabilidad de cada token (logprobs): la API de OpenAI no la da con sus modelos actuales y la de Claude no la ofrece. Hugging Face, sí.</p>
+</ConUnaApi>
 
 ## Mide y depura
 

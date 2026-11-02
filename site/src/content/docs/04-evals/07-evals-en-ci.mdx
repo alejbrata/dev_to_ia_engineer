@@ -4,6 +4,7 @@ description: "Llevar las evals a la integración continua: un control sin modelo
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-10]
 Las salidas son reales. El sistema vigente es el elegido en la lección 06: reranker, 3 fragmentos, el prompt `rag/con-citas-reglas` y Qwen2.5 7B Instruct (rol `chat_grande`), en Ollama, sobre CPU. El CI usa GitHub Actions.
@@ -95,6 +96,10 @@ En CI es un paso más del flujo de Python ([`python.yml`](https://github.com/ale
 La referencia se pasa por una variable de entorno, no interpolada dentro del comando. Es una buena costumbre en GitHub Actions: un valor interpolado en `run` se ejecuta como parte del script.
 
 La eval completa tiene su propio flujo, [`evals-completas.yml`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/.github/workflows/evals-completas.yml), que se lanza a mano (y cada noche si descomentas el `schedule`). Necesita un runner propio (*self-hosted*) con Ollama, los modelos y el reranker. Con un proveedor remoto, bastaría un runner de GitHub y la clave en los secretos del repositorio. Ese flujo no se ha ejecutado en el curso, porque requiere registrar un runner; el paso de `python.yml` sí corre en cada push.
+
+<ConUnaApi practicas={['modulos/04-evals/evaluar.py']}>
+	<p><code>evaluar.py</code> guarda en <code>resultados/&lt;proveedor&gt;/vigente.jsonl</code>: <code>regresion.py</code> y la CI siguen comparando con el vigente del modelo local.</p>
+</ConUnaApi>
 
 ## Mide y depura
 

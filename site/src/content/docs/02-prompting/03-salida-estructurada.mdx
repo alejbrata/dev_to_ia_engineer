@@ -4,6 +4,7 @@ description: "Salida estructurada: JSON Schema y Pydantic"
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-10]
 Las salidas son reales, con el modelo con el que se construyó el curso (Qwen2.5 1.5B Instruct en Ollama). La salida estructurada con esquema la admiten Ollama y muchas APIs compatibles con OpenAI, pero no todos los modelos ni todos los proveedores: compruébalo en la documentación del tuyo.
@@ -88,6 +89,8 @@ Lee las cuatro filas:
 2. **Prompt mínimo, con esquema.** Diez de diez válidas, con valores de la lista. Pero solo una correcta: el esquema no sabe qué es una severidad crítica.
 3. **Prompt completo, sin esquema.** Diez de diez válidas. Con un buen prompt, este modelo ya cumple el formato.
 4. **Prompt completo, con esquema.** El mismo resultado, pero ahora garantizado por el servidor, no por la buena voluntad del modelo.
+
+<ConUnaApi practicas={['modulos/02-prompting/salida_estructurada.py']} />
 
 ## Mide y depura
 

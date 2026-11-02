@@ -4,6 +4,7 @@ description: "Anatomía de un prompt: system, instrucciones, contexto, ejemplos"
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-10]
 Las salidas son reales, con el modelo con el que se construyó el curso (Qwen2.5 1.5B Instruct en Ollama), temperatura 0. Con otro modelo, las cifras cambian; el método para medirlas, no.
@@ -150,6 +151,8 @@ uv run python modulos/02-prompting/anatomia.py --detalle
   ...
   6 NULO esperado red/alta/notificaciones -> categoria: red / severidad: alta / servicio: despliegue
 ```
+
+<ConUnaApi practicas={['modulos/02-prompting/anatomia.py']} />
 
 ## Mide y depura
 

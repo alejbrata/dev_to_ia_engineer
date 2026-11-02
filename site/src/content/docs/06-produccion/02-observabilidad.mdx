@@ -4,6 +4,7 @@ description: "Observabilidad: trazas del asistente con OpenTelemetry y sus conve
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-11]
 OpenTelemetry 1.45 para Python y Jaeger 2.22. Las convenciones semánticas para IA generativa (`gen_ai.*`) siguen en desarrollo y han cambiado de nombre más de una vez: las de esta lección son las de su repositorio a noviembre de 2026.
@@ -112,6 +113,8 @@ uv run python modulos/06-produccion/observar.py --jaeger
 4. Lo que cuesta trazar (200 peticiones desde la caché, mediana)
    sin trazas 2.10 ms · con trazas 2.07 ms
 ```
+
+<ConUnaApi practicas={['modulos/06-produccion/observar.py']} />
 
 ## Mide y depura
 

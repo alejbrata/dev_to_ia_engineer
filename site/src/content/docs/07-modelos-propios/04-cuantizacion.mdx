@@ -4,6 +4,7 @@ description: "Cuantizar el modelo del asistente de 16 a 2 bits con llama-quantiz
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-11]
 Salidas reales con Qwen2.5 1,5B Instruct (GGUF oficial en 16 bits) cuantizado con llama.cpp (compilación 11977) en CPU, y la eval de 58 preguntas del módulo 4. Puedes usar el modelo que quieras o puedas: el del rol `chat_llamacpp` en `config/models.toml`.
@@ -122,6 +123,8 @@ La salida:
    1,5B en Ollama (lección 6.01)    0.99 GB  40 de 58
    7B en Ollama (sistema vigente)   4.68 GB  52 de 58
 ```
+
+<ConUnaApi practicas={['modulos/07-modelos-propios/cuantizar.py']} />
 
 ## Mide y depura
 

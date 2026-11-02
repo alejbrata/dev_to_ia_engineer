@@ -4,6 +4,7 @@ description: "Seguridad de un servicio de LLM: inyección directa e indirecta me
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-11]
 Salidas reales con el asistente de la lección 01 (Qwen2.5 7B, el sistema vigente del módulo 4). Los ataques, los datos personales y la clave son inventados, para poder medir sin riesgo. `git filter-repo` 2.47, ejecutado con `uvx` sin instalarlo en el proyecto.
@@ -106,6 +107,10 @@ uv run python modulos/06-produccion/amenazas.py
    la primera versión, ahora: OPENAI_API_KEY = "***CLAVE-ELIMINADA***"
    commits: ef0960a b0238ba → fb6edaa 528c435
 ```
+
+<ConUnaApi practicas={['modulos/06-produccion/amenazas.py']}>
+	<p>Lo que guarda la práctica va a <code>resultados/&lt;proveedor&gt;/</code> y no pisa los resultados grabados con el modelo local.</p>
+</ConUnaApi>
 
 ## Mide y depura
 

@@ -5,6 +5,7 @@ description: "\"Parece que funciona\" no es una métrica: el mismo cambio, proba
 
 import LabMuestras from '../../../components/LabMuestras.astro';
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-10]
 Las salidas son reales, con el modelo con el que se construyó el curso (Qwen2.5 1.5B Instruct) y bge-m3 en Ollama. Los resultados grabados en el repo son los de esa ejecución; con otro modelo, los tuyos serán distintos.
@@ -83,6 +84,10 @@ uv run python modulos/04-evals/parece_que_funciona.py --grabadas
 El laboratorio usa esos resultados grabados. Marca las preguntas que probarías tú, o pide una muestra al azar, y mira qué concluirías.
 
 <LabMuestras />
+
+<ConUnaApi practicas={['modulos/04-evals/parece_que_funciona.py']}>
+	<p>Lo que guarda la práctica va a <code>resultados/&lt;proveedor&gt;/</code> y no pisa los resultados grabados con el modelo local.</p>
+</ConUnaApi>
 
 ## Mide y depura
 

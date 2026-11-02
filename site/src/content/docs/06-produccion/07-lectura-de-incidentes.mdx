@@ -4,6 +4,7 @@ description: "Lectura de incidentes: dos fallos provocados en el asistente (el r
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-11]
 Salidas reales con el servicio del módulo, sus trazas y sus métricas. Los incidentes están provocados a propósito, cambiando la configuración por entorno, para poder repetirlos.
@@ -80,6 +81,8 @@ modelo cambiado
    modelos que generaron (trazas): {'qwen2.5:1.5b': 8}
    primera respuesta: Si pagos devuelve 'too many connections', debes revisar el número de conexiones activas en PgBouncer
 ```
+
+<ConUnaApi practicas={['modulos/06-produccion/incidentes.py']} />
 
 ## Mide y depura
 

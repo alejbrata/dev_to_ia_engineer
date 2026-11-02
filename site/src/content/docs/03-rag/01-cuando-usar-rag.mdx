@@ -4,6 +4,7 @@ description: "Cuándo usar RAG (y cuándo no)"
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-10]
 Las salidas son reales, con el modelo con el que se construyó el curso (Qwen2.5 1.5B Instruct) y el modelo de embeddings bge-m3, en Ollama. Los precios de la comparación son los publicados por la API de Hugging Face en la fecha de revisión.
@@ -103,6 +104,10 @@ Respuesta a '¿Cuál es la disponibilidad comprometida del servicio de notificac
   [3. todo, contexto 8192] 'La disponibilidad comprometida del servicio de notificaciones es del 99,5 %.'
   [4. RAG (top 3 secciones)] 'La disponibilidad comprometida del servicio de notificaciones es del 99,5 % mensual.'
 ```
+
+<ConUnaApi practicas={['modulos/03-rag/cuando_rag.py']}>
+	<p>Con <code>openai</code>, los embeddings pasan a ser los de OpenAI, de 1536 dimensiones frente a las 1024 de bge-m3; con <code>hf</code>, es el mismo bge-m3, servido por Hugging Face; Claude no ofrece embeddings, así que con <code>claude</code> siguen siendo los locales.</p>
+</ConUnaApi>
 
 ## Mide y depura
 

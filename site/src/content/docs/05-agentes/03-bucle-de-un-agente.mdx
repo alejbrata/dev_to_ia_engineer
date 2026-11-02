@@ -4,6 +4,7 @@ description: "El bucle de un agente desde cero (sin framework): cómo funciona p
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-10]
 Las salidas son reales, con Qwen3 8B (rol `agente`) en Ollama, sobre CPU, con las herramientas de la versión 2 de la lección 02.
@@ -107,6 +108,10 @@ uv run python modulos/05-agentes/bucle.py
 ```
 
 Para ver cualquier ejecución con todo su detalle (lo que devolvió cada herramienta y la respuesta final), usa `traza.py`, de la lección 02. Para ver un caso de una ejecución grabada, sin llamar al modelo, `ver_caso.py`, de la misma lección.
+
+<ConUnaApi practicas={['modulos/05-agentes/bucle.py']}>
+	<p>Con <code>CURSO_PROVEEDOR</code> cambian todos los roles, también los embeddings de la búsqueda. Para cambiar solo el agente, las prácticas de este módulo aceptan <code>--rol</code> (anexo G). Lo que guarda la práctica va a <code>resultados/&lt;proveedor&gt;/</code> y no pisa los resultados grabados con el modelo local.</p>
+</ConUnaApi>
 
 ## Mide y depura
 

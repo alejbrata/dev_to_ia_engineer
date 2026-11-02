@@ -4,6 +4,7 @@ description: "Ventana de contexto, límites y qué pasa cuando te pasas"
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-10]
 Las medidas de esta lección se tomaron con el modelo con el que se construyó el curso (Qwen2.5 1.5B Instruct) en Ollama 0.40.13, en un equipo sin GPU. El comportamiento al superar el contexto no está documentado por Ollama y puede cambiar entre versiones: ejecuta la práctica para ver el de la tuya.
@@ -126,6 +127,8 @@ OLLAMA_CONTEXT_LENGTH=8192 ollama serve
 ```
 
 En las aplicaciones de escritorio de Ollama también hay un ajuste para cambiarlo. Comprueba con `ollama ps` qué contexto tiene el modelo cargado: aparece en la columna `CONTEXT`.
+
+<ConUnaApi practicas={['modulos/01-fundamentos-de-llms/contexto.py', 'modulos/01-fundamentos-de-llms/contexto_llamacpp.py']} />
 
 ## Mide y depura
 

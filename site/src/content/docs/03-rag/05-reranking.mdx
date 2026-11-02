@@ -4,6 +4,7 @@ description: "Reordenar los candidatos de la búsqueda con un cross-encoder: cu�
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-10]
 Las salidas son reales, con el reranker bge-reranker-v2-m3 (GGUF Q8_0) en `llama-server` de llama.cpp, sobre CPU, y bge-m3 en Ollama para la búsqueda. Puedes usar otro reranker: cambia el rol `reranker` en `config/models.toml` y vuelve a medir.
@@ -84,6 +85,8 @@ uv run python modulos/03-rag/reranking.py
    umbral  -2.0: descarta 0 de 26 con respuesta, deja pasar 1 de 4 sin respuesta
    umbral   0.0: descarta 3 de 26 con respuesta, deja pasar 1 de 4 sin respuesta
 ```
+
+<ConUnaApi practicas={['modulos/03-rag/reranking.py']} />
 
 ## Mide y depura
 

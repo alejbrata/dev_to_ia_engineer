@@ -4,6 +4,7 @@ description: "Prompts como código: versionado y plantillas"
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-10]
 Las salidas son reales, con el modelo con el que se construyó el curso (Qwen2.5 1.5B Instruct en Ollama). El formato de los ficheros de prompt es el de este curso; las ideas valen para cualquier formato.
@@ -122,6 +123,8 @@ Para ver la historia de un prompt, como la de cualquier fichero:
 ```sh title="Terminal de VS Code · raíz del repo"
 git log -p -- prompts/tickets/few-shot-5.md
 ```
+
+<ConUnaApi practicas={['modulos/02-prompting/prompts_como_codigo.py']} />
 
 ## Mide y depura
 

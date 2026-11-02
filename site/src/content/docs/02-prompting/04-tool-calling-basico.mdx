@@ -4,6 +4,7 @@ description: "Tool calling básico"
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-10]
 Las salidas son reales, con el modelo con el que se construyó el curso (Qwen2.5 1.5B Instruct) y uno mayor de la misma familia (Qwen2.5 7B Instruct), en Ollama. La capacidad de usar herramientas varía mucho entre modelos: compruébala con el tuyo.
@@ -97,6 +98,10 @@ qwen2.5:7b       9/10         8/10        8/10   9/10
 ```
 
 Las columnas cuentan, de diez tickets: cuántas veces el modelo pidió la herramienta, cuántas con argumentos válidos, cuántas con el servicio correcto y cuántas clasificaciones finales fueron correctas en los tres campos.
+
+<ConUnaApi practicas={['modulos/02-prompting/herramientas.py']}>
+	<p>Con <code>CURSO_PROVEEDOR</code>, todos los roles que compara apuntan al mismo modelo del proveedor: la comparación pierde el sentido. Para comparar dos modelos de API, redirige cada rol con <code>CURSO_ROLES</code> (anexo G).</p>
+</ConUnaApi>
 
 ## Mide y depura
 

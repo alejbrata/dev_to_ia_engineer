@@ -4,6 +4,7 @@ description: "Métricas operativas: el asistente expone métricas en formato Pro
 ---
 
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
 
 :::note[Revisado: 2026-11]
 `prometheus-client` 0.26 para Python. Las salidas son reales, con el asistente de la lección 01 sobre CPU. Los precios con los que se calcula el coste hipotético son los de `config/models.toml`.
@@ -108,6 +109,8 @@ y el p95 de las preguntas que no salen de la caché:
 histogram_quantile(0.95,
   sum by (le) (rate(asistente_duracion_segundos_bucket{resultado=~"principal|respaldo"}[5m]))) > 30
 ```
+
+<ConUnaApi practicas={['modulos/06-produccion/metricas_operativas.py']} />
 
 ## Mide y depura
 
