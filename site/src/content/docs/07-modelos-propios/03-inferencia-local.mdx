@@ -1,0 +1,235 @@
+---
+title: "Inferencia local (Ollama, llama.cpp, vLLM)"
+description: "El mismo modelo servido con Ollama, llama.cpp y vLLM: latencia, rendimiento con peticiones simultáneas y la memoria que reserva cada servidor, medidos en CPU"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
+:::note[Revisado: 2026-11]
+Salidas reales con Qwen2.5 1,5B Instruct en Ollama 0.40, llama.cpp (compilación 11977) y vLLM 0.33 (imagen oficial para CPU), en una CPU sin GPU. Los servidores cambian rápido: las opciones y los valores por defecto de esta lección pueden haber cambiado. Puedes usar el modelo que quieras o puedas.
+:::
+
+## Objetivos
+
+Al terminar esta lección podrás:
+
+- Servir el mismo modelo con Ollama, llama.cpp y vLLM, y cambiar de uno a otro desde `config/models.toml`.
+- Medir el tiempo hasta el primer token, la velocidad, la latencia p50 y p95 y el rendimiento total con peticiones simultáneas.
+- Explicar por qué, con varias peticiones a la vez, el rendimiento total sube y la latencia de cada una también.
+- Configurar la memoria que reserva cada servidor (contexto por ranura, caché KV) con la cuenta de la lección 02.
+- Elegir servidor según el hardware y la carga, con datos medidos.
+
+## Teoría
+
+### Qué hace un servidor de inferencia
+
+Un servidor de inferencia convierte un modelo en una API. Es al modelo lo que un servidor de aplicaciones es a tu código Java: lo carga, recibe peticiones, reparte los recursos entre ellas y devuelve las respuestas. Por debajo hace cinco cosas:
+
+- **Carga los pesos** en el formato que entiende (GGUF, safetensors) y en la precisión que le pidas.
+- **Aplica la plantilla de chat** y tokeniza (lección 02).
+- **Planifica las peticiones**: cuántas atiende a la vez y cómo las agrupa.
+- **Gestiona la memoria de la caché KV** de cada petición en curso.
+- **Expone una API**, casi siempre compatible con la de OpenAI, así que cambiar de servidor es cambiar una URL en `config/models.toml`.
+
+### Tres servidores, tres enfoques
+
+- **Ollama** está pensado para que sea cómodo: `ollama pull`, un catálogo de modelos ya convertidos, y carga y descarga automática de modelos según se usan. Por debajo usa GGML, la librería de cálculo de llama.cpp, y modelos en formato GGUF. Es lo que usa el curso desde el módulo 1.
+- **llama.cpp** (`llama-server`) es ese motor sin la capa de comodidad. Sirve ficheros GGUF, funciona bien en CPU y en GPU, y te deja controlar cada detalle: tamaño de contexto, número de peticiones en paralelo (*slots* o ranuras), hilos. Lo usas cuando necesitas saber exactamente cómo está configurado.
+- **vLLM** está diseñado para sacar el máximo rendimiento de una GPU con muchas peticiones a la vez. Sirve los pesos del Hub directamente, sin convertirlos, y su pieza central es *PagedAttention*: guarda la caché KV en bloques, como la memoria virtual de un sistema operativo, para que muchas peticiones compartan la memoria sin desperdiciarla. Para eso **reserva la memoria al arrancar**. Tiene versión para CPU, pero es secundaria: solo Linux, y recomienda instrucciones AVX-512.
+
+Hay más (TGI de Hugging Face, SGLang, TensorRT-LLM de NVIDIA), con la misma idea de fondo. Los tres de esta lección cubren los casos típicos: desarrollo en tu máquina, control fino en CPU y rendimiento en GPU.
+
+### Latencia y rendimiento no son lo mismo
+
+Generar una respuesta tiene dos fases. Primero el modelo procesa el prompt entero de una vez (*prefill*): de ahí sale el **tiempo hasta el primer token**. Después genera token a token (*decode*): de ahí salen los **tokens por segundo** de esa petición. Son las métricas del módulo 1, vistas ahora desde el servidor.
+
+Generar token a token está limitado por la memoria, no por el cálculo: para cada token hay que leer todos los pesos. Si el servidor genera el siguiente token de **varias peticiones a la vez** (*batching*), lee los pesos una vez y los aprovecha para todas. Cada petición va algo más lenta, pero el total de tokens por segundo sube. Es la diferencia entre llevar a una persona en taxi y llevar a cuatro en el mismo coche: cada una tarda un poco más en llegar, pero el coche hace más trabajo por viaje.
+
+Por eso hay dos números que mirar, como en cualquier servicio: la **latencia** que ve cada usuario (p50, p95) y el **rendimiento** total (*throughput*) del servidor. Optimizar uno suele empeorar el otro.
+
+### Lo que el servidor reserva al arrancar
+
+La caché KV crece con el contexto (28 KB por token en este modelo, lección 02). Cada servidor decide de antemano cuánta memoria le da y cómo la reparte:
+
+- **llama-server** reserva el contexto que le pidas con `-c` y lo **reparte entre las ranuras** de `--parallel`. Con `-c 4096 --parallel 8`, cada petición tiene 512 tokens, no 4.096.
+- **vLLM** reserva, por defecto, una fracción grande de la memoria disponible para la caché KV, y no arranca si no la consigue.
+- **Ollama** decide su contexto y su paralelismo por su cuenta, según el modelo y la memoria. Es cómodo, pero conviene comprobar qué ha decidido.
+
+Son las mismas decisiones que dimensionar el *pool* de conexiones y el *heap* de un servidor de aplicaciones, y fallan de la misma forma: bien en desarrollo con una petición y mal en producción con varias.
+
+## Práctica
+
+El código está en [`modulos/07-modelos-propios/servir.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/07-modelos-propios/servir.py), y la parte que arranca y para servidores en [`servidores.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/07-modelos-propios/servidores.py). Sirve el modelo de 1,5B del asistente de tres formas:
+
+| Servidor | Pesos | Rol en `config/models.toml` |
+| --- | --- | --- |
+| Ollama | su versión Q4_K_M (`ollama pull`) | `chat` |
+| llama.cpp | el GGUF Q4_K_M oficial de Qwen, con 4 ranuras | `chat_llamacpp` |
+| vLLM | los safetensors originales del Hub (lección 02), en Docker | `chat_vllm` |
+
+Los tres hablan la API de OpenAI (Ollama, además, la suya), así que `curso_core` les habla igual: solo cambia el rol. Para ejecutarlo necesitas:
+
+- **llama.cpp**, con sus ejecutables en el PATH o su carpeta en `LLAMA_CPP_DIR` (en `.env`). En Windows lo instala `winget install ggml.llamacpp`; en Linux y macOS, los paquetes de la [guía de compilación](https://github.com/ggml-org/llama.cpp/blob/master/docs/build.md) o Homebrew.
+- **Docker** con la imagen de vLLM para CPU, unos 8 GB. El script usa una versión fijada (`vllm/vllm-openai-cpu:v0.33.0-x86_64`), no `latest`, por lo mismo que se fija el commit de un modelo.
+
+```sh
+docker pull vllm/vllm-openai-cpu:v0.33.0-x86_64
+uv run python modulos/07-modelos-propios/servir.py             # más de una hora
+uv run python modulos/07-modelos-propios/servir.py --grabadas  # la salida grabada
+```
+
+Cada petición va en *streaming* para medir el tiempo hasta el primer token, con la misma función de siempre:
+
+```python
+flujo = cliente.chat_stream(mensajes, rol=rol, opciones=Opciones(temperatura=0, max_tokens=150))
+texto = "".join(flujo)
+r = flujo.respuesta  # primer_token_s, tokens_salida, latencia_s...
+```
+
+Y la concurrencia es un *pool* de hilos que lanza las 8 preguntas de 4 en 4:
+
+```python
+with ThreadPoolExecutor(4) as grupo:
+    paralelo = list(grupo.map(lambda p: una_peticion(rol, p[1]), preguntas))
+```
+
+La salida, en la máquina del curso (Intel Core Ultra 7 de 16 núcleos, sin AVX-512, 31 GB de RAM y sin GPU):
+
+```text
+1. Una pregunta cada vez (8 preguntas, máximo 150 tokens, voraz)
+               primer token  tokens/s  respuesta  aciertos
+   Ollama             1.82s      29.0       3.0s    6 de 8
+   llama.cpp          0.80s      50.7       1.5s    6 de 8
+   vLLM              12.73s       9.3      16.5s    7 de 8
+   (medianas por petición; tokens/s: generación, sin contar el primer token)
+
+2. 4 preguntas a la vez (las mismas 8)
+               tokens/s en total  respuesta p50     p95  errores
+   Ollama                   28.8           7.0s    8.3s        0
+   llama.cpp                51.2           3.3s    6.8s        0
+   vLLM                      8.0          15.9s   36.1s        0
+   frente a una cada vez (tokens/s en total = tokens/s de una petición):
+   Ollama       14.2 →  28.8 (2.0x)
+   llama.cpp    29.7 →  51.2 (1.7x)
+   vLLM          2.7 →   8.0 (2.9x)
+
+3. Lo que reserva cada servidor al arrancar
+   vLLM sin límite de caché KV: falló a los 186 s
+      Available memory on node 0 (8.77/15.34 GiB) on kv cache allocation is less than requested memory for kv (10.03/14.11 GiB). Reduce CPU memory used by other processes.
+   vLLM con --kv-cache-memory-bytes 2147483648: arrancó en 1.0 min
+      Using LBHNC KV cache layout.
+      Explicitly set (2.0/15.34) GiB for KV cache on node 0.
+      CPU KV cache size: 74,880 tokens, Maximum concurrency for 4,096 tokens per request: 18.28x
+   llama-server -c 4096 --parallel 8: n_slots = 8, n_ctx_slot = 512
+      8 preguntas con el prompt del sistema vigente: 8 con error
+      400 Bad Request en http://127.0.0.1:8081/v1/chat/completions: {"error":{"code":400,"message":"request (642 tokens) exceeds the available context size (512 tokens), try increasing it","type":"exceed_co
+   llama-server -c 4096 --kv-unified --parallel 8: n_slots = 8, n_ctx_slot = 4096, 0 con error
+   llama-server -c 8192 --parallel 8: n_slots = 8, n_ctx_slot = 1024, 0 con error
+```
+
+## Mide y depura
+
+### En CPU, llama.cpp; vLLM está hecho para GPU
+
+Con una petición cada vez, llama.cpp da el primer token en 0,80 s y genera 50,7 tokens por segundo. Ollama, con el mismo nivel de cuantización, 1,82 s y 29,0. vLLM, 12,73 s y 9,3.
+
+No saques de aquí que vLLM es lento. En esta máquina juega con tres desventajas: sirve los pesos originales en `bfloat16`, que esta CPU procesa muy despacio (en la lección 02, transformers tardó 18,1 s en el primer token por lo mismo); la CPU no tiene AVX-512, que vLLM recomienda; y va sin compilar el modelo (`--enforce-eager`). En una prueba aparte, compilando, no llegó a arrancar en 18 minutos. vLLM está diseñado para GPU, y es ahí donde hay que medirlo. Lo que sí enseña la prueba es a no dar por buena la comparación de otro: mide en el hardware donde vas a servir.
+
+Entre Ollama y llama.cpp hay casi el doble de velocidad, aunque los dos usan Q4_K_M. No es el mismo fichero: el de Ollama ocupa 0,99 GB y el oficial de Qwen 1,12 GB. Y cada servidor elige sus hilos y su motor. No lo hemos aislado: si la diferencia te importa, mídela con tus modelos.
+
+En aciertos, vLLM saca 7 de 8 y los otros dos 6 de 8. Es una pregunta de diferencia, con pesos sin cuantizar frente a cuantizados. Con 8 preguntas no se puede concluir nada; la lección 04 lo mide con las 58.
+
+### Con cuatro a la vez, el servidor rinde más y cada usuario espera más
+
+Con cuatro peticiones simultáneas, llama.cpp pasa de 29,7 a 51,2 tokens por segundo en total (1,7 veces), pero la mediana de cada respuesta sube de 1,5 a 3,3 s y el p95 llega a 6,8 s. Ollama duplica su rendimiento total, y su mediana pasa de 3,0 a 7,0 s. vLLM es el que más gana en proporción (2,9 veces), que es justo para lo que está diseñado, aunque en esta CPU parta de muy abajo.
+
+Los tokens por segundo de "una cada vez" en la parte 2 (14,2 en Ollama) son más bajos que los de la parte 1 (29,0) porque incluyen el tiempo de procesar el prompt: es el rendimiento real de servir una petición tras otra.
+
+Es el compromiso del módulo 6 visto desde dentro del servidor. Con más concurrencia atiendes a más gente con la misma máquina, pero la latencia sube, y lo que decide hasta dónde subir es tu objetivo de servicio (SLO), no el rendimiento máximo.
+
+### Lo que reserva cada servidor, con la cuenta de la lección 02
+
+vLLM, con 2 GiB para la caché KV, dice que le caben 74.880 tokens: unos 28 KB por token, lo que calculamos en la lección 02 con `config.json`. Y "18,28x" es cuántas peticiones de 4.096 tokens caben a la vez (74.880 / 4.096). Esa línea del registro te dice cuántos usuarios simultáneos aguanta tu configuración antes de que lleguen.
+
+Sin límite, vLLM intentó reservar 10,03 GiB para la caché, solo había 8,77 libres en la máquina virtual de Docker, y falló a los tres minutos de empezar a arrancar. El modelo solo ocupaba 2,9 GiB: lo que no cabía era la reserva. Es su diseño (reservar de antemano para no fragmentar la memoria) y en una GPU dedicada tiene sentido. En una máquina compartida, fija el tamaño tú.
+
+## Errores frecuentes
+
+- **Comparar servidores con una sola petición.** El orden puede cambiar con carga. Mide la latencia y el rendimiento total con la concurrencia que esperas.
+- **Medir vLLM en CPU y descartarlo,** o medir llama.cpp en un portátil y extrapolarlo a una GPU. Cada uno brilla en un hardware.
+- **Dejar que el servidor decida la memoria en una máquina compartida.** vLLM reserva una fracción grande de la memoria disponible; Ollama decide su contexto y su paralelismo. Fíjalos.
+- **Usar la imagen `latest`.** Fija la versión del servidor como fijas el commit del modelo: un cambio de versión cambia el comportamiento, y la eval que hiciste ya no vale.
+- **Suponer que el mismo nombre de cuantización es el mismo fichero.** Q4_K_M de Ollama y de Qwen no ocupan lo mismo ni van igual de rápido.
+- **Pensar que `-c` es el contexto de cada petición.** Es la anatomía.
+
+### Anatomía de un error: 4.096 tokens de contexto que eran 512
+
+**El síntoma.** Arrancas llama-server con un contexto que te parece holgado y ocho ranuras para atender a más gente:
+
+```text
+llama-server -hf Qwen/Qwen2.5-1.5B-Instruct-GGUF:Q4_K_M -c 4096 --parallel 8
+```
+
+Y todas las peticiones del asistente fallan:
+
+```text
+   llama-server -c 4096 --parallel 8: n_slots = 8, n_ctx_slot = 512
+      8 preguntas con el prompt del sistema vigente: 8 con error
+```
+
+con un 400 como este:
+
+```text
+{"error":{"code":400,"message":"request (642 tokens) exceeds the available context size (512 tokens), try increasing it","type":"exceed_context_size_error","n_prompt_tokens":642,"n_ctx":512}}
+```
+
+**Cómo leerlo.** El mensaje dice 512 tokens, y tú pusiste 4.096: la pista está en esa diferencia. El registro del servidor lo confirma al arrancar (`n_slots = 8, n_ctx_slot = 512`). Fíjate también en el tipo, `exceed_context_size_error`: es un error de configuración, no del modelo ni de la petición.
+
+**La causa.** llama-server reparte el contexto de `-c` entre las ranuras de `--parallel`: 4.096 / 8 = 512 por petición. El prompt del sistema vigente, con sus reglas y tres fragmentos, ocupa entre 557 y 713 tokens, así que no cabe ninguno. Lo traicionero es que con el prompt más corto de la parte 1 (de 267 a 423 tokens) habría funcionado: el servidor pasa las pruebas y falla el día que alguien añade una regla al prompt.
+
+**La solución.** Dimensiona `-c` como ranuras × (prompt más largo + `max_tokens`): aquí, 8 × (713 + 150) ≈ 6.900, así que `-c 8192`. O usa `--kv-unified`, que comparte una sola caché entre todas las ranuras, de modo que una petición larga puede usar lo que no usan las demás. En esta versión solo se activa sola cuando el número de ranuras es automático. Las dos soluciones están medidas al final de la parte 3: con `--kv-unified`, cada ranura puede usar los 4.096 tokens; con `-c 8192`, tiene 1.024; y en los dos casos, ningún error. Como métrica, vigila los 400 de tipo `exceed_context_size_error` y compara el p95 de los tokens de entrada con el contexto por ranura: si se acercan, el próximo cambio de prompt romperá el servicio.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'Vas a servir el asistente en un servidor con CPU y sin GPU, para un equipo de unas 20 personas. ¿Qué servidor pruebas primero?',
+			opciones: [
+				{ texto: 'vLLM, porque es el que más rendimiento da.', porque: 'En GPU. En esta CPU dio 9,3 tokens por segundo frente a 50,7 de llama.cpp ("En CPU, llama.cpp; vLLM está hecho para GPU").' },
+				{ texto: 'llama.cpp, con la concurrencia y el contexto fijados, y midiendo con la carga que esperas.', correcta: true, porque: 'Es el que mejor funcionó en CPU y te deja fijar ranuras y contexto. Ollama vale para empezar, pero decide esas cosas por ti.' },
+				{ texto: 'Da igual: todos usan el mismo modelo.', porque: 'El mismo modelo dio entre 9,3 y 50,7 tokens por segundo según el servidor.' },
+			],
+		},
+		{
+			pregunta: 'Al pasar de una petición a cuatro a la vez, el rendimiento total de tu servidor sube 1,7 veces, pero la mediana por respuesta pasa de 1,5 a 3,3 s. Tu SLO es responder en menos de 3 s. ¿Qué haces?',
+			opciones: [
+				{ texto: 'Subir a 8 peticiones a la vez: más rendimiento.', porque: 'Con más concurrencia, la latencia sigue subiendo: incumplirías más el SLO ("Con cuatro a la vez...").' },
+				{ texto: 'Bajar la concurrencia por servidor hasta cumplir el SLO, y añadir réplicas si necesitas atender a más gente.', correcta: true, porque: 'El SLO decide la concurrencia; el rendimiento que falte se consigue con más máquinas.' },
+			],
+		},
+		{
+			pregunta: 'vLLM no arranca: "Available memory on node 0 (8.77/15.34 GiB) on kv cache allocation is less than requested memory for kv (10.03/14.11 GiB)". El modelo ocupa 2,9 GiB. ¿Qué pasa?',
+			opciones: [
+				{ texto: 'El modelo es demasiado grande para la máquina.', porque: 'El modelo cabía de sobra. Lo que no cabía era la reserva para la caché KV ("Lo que reserva cada servidor...").' },
+				{ texto: 'vLLM intenta reservar de antemano mucha memoria para la caché KV; hay que fijar cuánta con --kv-cache-memory-bytes.', correcta: true, porque: 'Con 2 GiB arrancó y le cabían 74.880 tokens, unas 18 peticiones de 4.096 tokens.' },
+			],
+		},
+		{
+			pregunta: 'Tienes llama-server con -c 4096 --parallel 8 funcionando bien. Un compañero añade dos reglas al prompt y empiezan a salir 400 "exceeds the available context size (512 tokens)". ¿Qué cambias?',
+			opciones: [
+				{ texto: 'Quitar las reglas del prompt.', porque: 'Arregla el síntoma, pero el servidor sigue con 512 tokens por petición y fallará con el próximo cambio.' },
+				{ texto: 'El contexto: -c con ranuras × (prompt más largo + max_tokens), o --kv-unified; y una alerta sobre los tokens de entrada frente al contexto por ranura.', correcta: true, porque: 'El contexto se reparte entre las ranuras (la anatomía).' },
+				{ texto: 'Más ranuras, para repartir mejor la carga.', porque: 'Más ranuras con el mismo -c dejan aún menos contexto a cada petición.' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- [Efficient Memory Management for Large Language Model Serving with PagedAttention](https://arxiv.org/abs/2309.06180): el artículo de vLLM y de la caché KV por bloques.
+- [Orca: A Distributed Serving System for Transformer-Based Generative Models](https://www.usenix.org/conference/osdi22/presentation/yu): el origen del *batching* continuo, que hoy usan todos estos servidores.
+- [Documentación de vLLM](https://docs.vllm.ai/en/stable/): instalación (también en CPU), opciones del servidor y memoria.
+- [llama-server](https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md): opciones de contexto, ranuras y caché.
+- [Preguntas frecuentes de Ollama](https://docs.ollama.com/faq): cómo decide la concurrencia y el contexto, y las variables para fijarlos.

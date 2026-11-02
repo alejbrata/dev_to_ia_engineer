@@ -49,6 +49,14 @@ model = "qwen2.5:1.5b"
 provider = "llamacpp"
 model = "Qwen/Qwen2.5-1.5B-Instruct-GGUF:Q4_K_M"
 
+[roles.chat_vllm]
+# El mismo modelo de 1,5B servido por vLLM, con los pesos originales del Hub (lección 03
+# del módulo 7). En CPU, con su imagen oficial de Docker; ver modulos/07-modelos-propios.
+# Revisado: 2026-11.
+provider = "vllm"
+model = "Qwen/Qwen2.5-1.5B-Instruct"
+hf_repo = "Qwen/Qwen2.5-1.5B-Instruct"
+
 [roles.simulador]
 # Un proveedor de mentira con límite de uso (modulos/01-fundamentos-de-llms/simulador.py),
 # para provocar errores 429 en la lección 06 del módulo 1. No es un modelo.
@@ -164,6 +172,11 @@ base_url = "http://127.0.0.1:8081/v1"
 tipo = "openai"
 base_url = "http://127.0.0.1:8082/v1"
 
+[providers.vllm]
+# vLLM (servidor compatible con OpenAI). No necesita clave.
+tipo = "openai"
+base_url = "http://127.0.0.1:8000/v1"
+
 [providers.simulador]
 tipo = "openai"
 base_url = "http://127.0.0.1:8099/v1"
@@ -206,6 +219,10 @@ entrada = 0.0
 salida = 0.0
 
 [precios."llamacpp/Qwen/Qwen2.5-1.5B-Instruct-GGUF:Q4_K_M"]
+entrada = 0.0
+salida = 0.0
+
+[precios."vllm/Qwen/Qwen2.5-1.5B-Instruct"]
 entrada = 0.0
 salida = 0.0
 

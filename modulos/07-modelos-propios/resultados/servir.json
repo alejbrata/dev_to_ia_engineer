@@ -1,0 +1,544 @@
+{
+ "servidores": {
+  "Ollama": {
+   "secuencial": {
+    "m3-01": {
+     "texto": "Si pagos devuelve 'too many connections', primero debes abrir el panel de PgBouncer y verificar el número de conexiones activas. Si el número de conexiones activas es alto, considera despliegue de pagos en la última hora. Si la mayoría de los incidentes de este tipo comenzaron con una versión del conector de pasarela que no devuelve las conexiones al pool, debes revisar si alguna consulta lleva más de 30 segundos ejecutándose.",
+     "primer_token_s": 0.47758629999589175,
+     "segundos": 4.327286100015044,
+     "tokens_entrada": 352,
+     "tokens_salida": 105
+    },
+    "m3-02": {
+     "texto": "El límite actual del pool de conexiones de pagos es de 200 conexiones.",
+     "primer_token_s": 2.4519087999360636,
+     "segundos": 3.235984000028111,
+     "tokens_entrada": 405,
+     "tokens_salida": 22
+    },
+    "m3-03": {
+     "texto": "El token de la API del banco caduca cada 90 días.",
+     "primer_token_s": 1.8883638000115752,
+     "segundos": 2.5537981999805197,
+     "tokens_entrada": 267,
+     "tokens_salida": 17
+    },
+    "m3-04": {
+     "texto": "El error invalid_grant se produce cuando el secreto de cliente de OAuth ha caducado o se ha rotado sin actualizar la configuración del servicio de usuarios. También puede deberse a que el reloj del servidor esté desincronizado más de cinco minutos.",
+     "primer_token_s": 2.362646699999459,
+     "segundos": 4.240529699949548,
+     "tokens_entrada": 332,
+     "tokens_salida": 58
+    },
+    "m3-05": {
+     "texto": "Según el postmortem, la base de datos de cobros ha dejado de aceptar nuevas conexiones debido a un problema con el pool de conexiones. Para solucionar este problema, debes:\n\n1. Restablecer la versión del conector de pasarela a la anterior, lo que es la solución más rápida si se ha realizado un despliegue reciente.\n2. Si no se ha realizado un despliegue reciente, reinicia PgBouncer de forma ordenada, una réplica cada vez, para liberar las conexiones bloqueadas.\n3. Mantén el límite del pool de conexiones en 200, ya que es el máximo permitido por PostgreSQL y",
+     "primer_token_s": 2.825261899968609,
+     "segundos": 8.11542000004556,
+     "tokens_entrada": 423,
+     "tokens_salida": 150
+    },
+    "m3-06": {
+     "texto": "El servicio de notificaciones envía emails a través del puerto 587.",
+     "primer_token_s": 1.7100939999800175,
+     "segundos": 2.2689553999807686,
+     "tokens_entrada": 308,
+     "tokens_salida": 18
+    },
+    "m3-07": {
+     "texto": "La disponibilidad comprometida del servicio de notificaciones es del 99,5 % mensual.",
+     "primer_token_s": 1.5357218999415636,
+     "segundos": 2.252831600024365,
+     "tokens_entrada": 282,
+     "tokens_salida": 23
+    },
+    "m3-08": {
+     "texto": "Según la documentación, para una incidencia crítica, la primera respuesta debe darse en 15 minutos, a cualquier hora.",
+     "primer_token_s": 1.7565618000226095,
+     "segundos": 2.6922964999685064,
+     "tokens_entrada": 313,
+     "tokens_salida": 29
+    }
+   },
+   "aciertos": 6,
+   "paralelo": {
+    "pared_s": 14.639683600049466,
+    "peticiones": [
+     {
+      "texto": "Si pagos devuelve 'too many connections', primero debes abrir el panel de PgBouncer y verificar el número de conexiones activas. Si el número de conexiones activas es alto, considera despliegue de pagos en la última hora. Si la mayoría de los incidentes de este tipo comenzaron con una versión del conector de pasarela que no devuelve las conexiones al pool, debes revisar si alguna consulta lleva más de 30 segundos ejecutándose.",
+      "primer_token_s": 0.7906301999464631,
+      "segundos": 4.084617099957541,
+      "tokens_entrada": 352,
+      "tokens_salida": 105
+     },
+     {
+      "texto": "El límite actual del pool de conexiones de pagos es de 200 conexiones.",
+      "primer_token_s": 6.027763399994001,
+      "segundos": 6.733878699946217,
+      "tokens_entrada": 405,
+      "tokens_salida": 22
+     },
+     {
+      "texto": "El token de la API del banco caduca cada 90 días.",
+      "primer_token_s": 6.772571900044568,
+      "segundos": 7.282279899925925,
+      "tokens_entrada": 267,
+      "tokens_salida": 17
+     },
+     {
+      "texto": "El error invalid_grant se produce cuando el secreto de cliente de OAuth ha caducado o se ha rotado sin actualizar la configuración del servicio de usuarios. También puede deberse a que el reloj del servidor esté desincronizado más de cinco minutos.",
+      "primer_token_s": 4.122745999949984,
+      "segundos": 5.981349800014868,
+      "tokens_entrada": 332,
+      "tokens_salida": 58
+     },
+     {
+      "texto": "Según el postmortem, la base de datos de cobros ha dejado de aceptar nuevas conexiones debido a un problema con el pool de conexiones. Para solucionar este problema, debes:\n\n1. Restablecer la versión del conector de pasarela a la anterior, lo cual es la solución más rápida si se ha realizado un despliegue reciente.\n2. Si no se ha realizado un despliegue reciente, reinicia PgBouncer de forma ordenada, una réplica cada vez, para liberar las conexiones bloqueadas.\n3. Mantén el límite del pool de conexiones en 200, ya que es el límite máximo recomendado para",
+      "primer_token_s": 3.2822303000139073,
+      "segundos": 8.264819500036538,
+      "tokens_entrada": 423,
+      "tokens_salida": 150
+     },
+     {
+      "texto": "El servicio de notificaciones envía emails a través del puerto 587.",
+      "primer_token_s": 6.404400800005533,
+      "segundos": 6.953178299940191,
+      "tokens_entrada": 308,
+      "tokens_salida": 18
+     },
+     {
+      "texto": "La disponibilidad comprometida del servicio de notificaciones es del 99,5 % mensual.",
+      "primer_token_s": 6.244494599988684,
+      "segundos": 6.9478327999822795,
+      "tokens_entrada": 282,
+      "tokens_salida": 23
+     },
+     {
+      "texto": "Según la documentación, para una incidencia crítica, la primera respuesta debe darse en 15 minutos, a cualquier hora.",
+      "primer_token_s": 6.43786760000512,
+      "segundos": 7.3270281999139115,
+      "tokens_entrada": 313,
+      "tokens_salida": 29
+     }
+    ]
+   }
+  },
+  "llama.cpp": {
+   "secuencial": {
+    "m3-01": {
+     "texto": "Si pagos devuelve 'too many connections', primero abro el panel de PgBouncer y miro el número de conexiones activas. Si el número de conexiones activas es alto, podría ser un indicativo de que hay un problema con la conexión a la base de datos. Además, reviso si ha habido un despliegue de pagos en la última hora, ya que esto es una causa común de este tipo de errores. Finalmente, reviso si alguna consulta lleva más de 30 segundos ejecutándose, ya que esto también puede ser un indicativo de un problema con la conexión a la base de datos.",
+     "primer_token_s": 0.5018250000430271,
+     "segundos": 3.3930594000266865,
+     "tokens_entrada": 352,
+     "tokens_salida": 135
+    },
+    "m3-02": {
+     "texto": "El límite del pool de conexiones de pagos es de 200 conexiones.",
+     "primer_token_s": 1.0213055999483913,
+     "segundos": 1.4169231000123546,
+     "tokens_entrada": 405,
+     "tokens_salida": 21
+    },
+    "m3-03": {
+     "texto": "El token de la API del banco caduca cada 90 días.",
+     "primer_token_s": 0.7824969000648707,
+     "segundos": 1.099722099956125,
+     "tokens_entrada": 267,
+     "tokens_salida": 17
+    },
+    "m3-04": {
+     "texto": "El error invalid_grant en el inicio de sesión con Google ocurre cuando el secreto de cliente OAuth ha caducado o se ha rotado sin actualizar la configuración del servicio de usuarios. También puede deberse a que el reloj del servidor esté desincronizado más de cinco minutos.",
+     "primer_token_s": 0.8079709999728948,
+     "segundos": 2.067144099972211,
+     "tokens_entrada": 332,
+     "tokens_salida": 64
+    },
+    "m3-05": {
+     "texto": "Si la base de datos de cobros ha dejado de aceptar nuevas conexiones, sigue estos pasos:\n\n1. Reinicia PgBouncer de forma ordenada, una réplica cada vez, para liberar las conexiones bloqueadas.\n2. Si no hubo despliegue reciente, reinicia el proceso de PgBouncer de forma ordenada.\n3. Si el pool supera el 80% de uso, sube el límite del pool de 100 a 200 conexiones.\n4. Añade una alerta cuando el pool supera el 80% de uso.",
+     "primer_token_s": 0.982021400006488,
+     "segundos": 3.5941280000843108,
+     "tokens_entrada": 423,
+     "tokens_salida": 134
+    },
+    "m3-06": {
+     "texto": "El servicio de notificaciones envía emails a través del puerto 587 porque es el puerto predeterminado para el protocolo SMTP (Simple Mail Transfer Protocol) en el servidor SMTP propio.",
+     "primer_token_s": 0.8790422000456601,
+     "segundos": 1.6522725999820977,
+     "tokens_entrada": 308,
+     "tokens_salida": 41
+    },
+    "m3-07": {
+     "texto": "La disponibilidad comprometida del servicio de notificaciones es del 99,5%.",
+     "primer_token_s": 0.7842278000898659,
+     "segundos": 1.1499234999064356,
+     "tokens_entrada": 282,
+     "tokens_salida": 20
+    },
+    "m3-08": {
+     "texto": "Según el acuerdo de nivel de servicio (SLA), para una incidencia crítica, la primera respuesta debe darse en 15 minutos, a cualquier hora.",
+     "primer_token_s": 0.7317900001071393,
+     "segundos": 1.4326113000279292,
+     "tokens_entrada": 313,
+     "tokens_salida": 37
+    }
+   },
+   "aciertos": 6,
+   "paralelo": {
+    "pared_s": 8.848089099978097,
+    "peticiones": [
+     {
+      "texto": "Si pagos devuelve 'too many connections', primero abro el panel de PgBouncer para ver el número de conexiones activas. Luego, comprobaré si ha habido un despliegue de pagos en la última hora, ya que es común que los incidentes de este tipo comiencen con una versión que no devuelve las conexiones al pool. Finalmente, revisaré si alguna consulta lleva más de 30 segundos ejecutándose.",
+      "primer_token_s": 2.2540374000091106,
+      "segundos": 6.796678300015628,
+      "tokens_entrada": 352,
+      "tokens_salida": 101
+     },
+     {
+      "texto": "El límite del pool de conexiones de pagos es de 200 conexiones.",
+      "primer_token_s": 2.253830899950117,
+      "segundos": 3.9572482999647036,
+      "tokens_entrada": 405,
+      "tokens_salida": 21
+     },
+     {
+      "texto": "El token de la API del banco caduca cada 90 días.",
+      "primer_token_s": 2.2492702999152243,
+      "segundos": 2.7367859000805765,
+      "tokens_entrada": 267,
+      "tokens_salida": 17
+     },
+     {
+      "texto": "El error invalid_grant en el inicio de sesión con Google ocurre cuando el secreto de cliente OAuth ha caducado o se ha rotado sin actualizar la configuración del servicio de usuarios. También puede deberse a que el reloj del servidor esté desincronizado más de cinco minutos.",
+      "primer_token_s": 2.239342899993062,
+      "segundos": 5.294433600036427,
+      "tokens_entrada": 332,
+      "tokens_salida": 64
+     },
+     {
+      "texto": "Si la base de datos de cobros ha dejado de aceptar nuevas conexiones, procederás con el siguiente paso:\n\n1. Reinicia PgBouncer de forma ordenada, una réplica cada vez, para liberar las conexiones bloqueadas.\n\n2. Si no hubo despliegue reciente, reinicia PgBouncer de forma ordenada, una réplica cada vez, para liberar las conexiones bloqueadas.\n\n3. Si no se ha hecho el despliegue reciente, reinicia PgBouncer de forma ordenada, una réplica cada vez, para liberar las conexiones bloqueadas.\n\n4. Si no se ha hecho el despliegue reciente y no",
+      "primer_token_s": 1.149524600012228,
+      "segundos": 6.092870300053619,
+      "tokens_entrada": 423,
+      "tokens_salida": 150
+     },
+     {
+      "texto": "El servicio de notificaciones envía emails a través del puerto 587 porque es el puerto predeterminado para el protocolo SMTP (Simple Mail Transfer Protocol) en la versión 2.0.",
+      "primer_token_s": 0.40570550004485995,
+      "segundos": 1.887541800038889,
+      "tokens_entrada": 308,
+      "tokens_salida": 43
+     },
+     {
+      "texto": "La disponibilidad comprometida del servicio de notificaciones es del 99,5%.",
+      "primer_token_s": 0.5014477999648079,
+      "segundos": 1.122100800042972,
+      "tokens_entrada": 282,
+      "tokens_salida": 20
+     },
+     {
+      "texto": "Según el acuerdo de nivel de servicio (SLA), para una incidencia crítica, la primera respuesta debe darse en 15 minutos, a cualquier hora.",
+      "primer_token_s": 0.5163119999924675,
+      "segundos": 2.1080972999334335,
+      "tokens_entrada": 313,
+      "tokens_salida": 37
+     }
+    ]
+   }
+  },
+  "vLLM": {
+   "secuencial": {
+    "m3-01": {
+     "texto": "Si pagos devuelve 'too many connections', sigue estos pasos:\n\n1. Verifica el número de conexiones activas en PgBouncer.\n2. Busca si hay un despliegue reciente de pagos.\n3. Analiza si alguna consulta tarda más de 30 segundos en ejecutarse.",
+     "primer_token_s": 4.623663600068539,
+     "segundos": 11.99399300001096,
+     "tokens_entrada": 352,
+     "tokens_salida": 68
+    },
+    "m3-02": {
+     "texto": "El límite actual del pool de conexiones de pagos es de 200 conexiones.",
+     "primer_token_s": 16.499770399997942,
+     "segundos": 18.759448700002395,
+     "tokens_entrada": 405,
+     "tokens_salida": 22
+    },
+    "m3-03": {
+     "texto": "Según el documento proporcionado, el token de la API del banco caducará cada 90 días.",
+     "primer_token_s": 11.132822500076145,
+     "segundos": 13.540409600012936,
+     "tokens_entrada": 267,
+     "tokens_salida": 24
+    },
+    "m3-04": {
+     "texto": "El error invalid_grant ocurre cuando el secreto de cliente de OAuth ha caducado o se ha rotado sin actualizarse la configuración del servicio de usuarios. Esto podría ser debido a que el reloj del servidor esté desincronizado más de cinco minutos.",
+     "primer_token_s": 14.772955300053582,
+     "segundos": 21.126498300000094,
+     "tokens_entrada": 332,
+     "tokens_salida": 60
+    },
+    "m3-05": {
+     "texto": "Según el postmortem mencionado, si la base de datos de cobros ha dejado de aceptar nuevas conexiones, primero debes volver a la versión anterior del conector de pasarela, ya que esto podría ser la solución más rápida. Si no fue este el motivo, puedes intentar reiniciar PgBouncer de forma ordenada, uno por vez, para liberar las conexiones bloqueadas. Recuerda que no subas el límite del pool por encima de los 200 conexiones, ya que puede sobrecargar otros procesos.",
+     "primer_token_s": 18.666347999940626,
+     "segundos": 32.263378600007854,
+     "tokens_entrada": 423,
+     "tokens_salida": 122
+    },
+    "m3-06": {
+     "texto": "Según la información proporcionada en la documentación, el servicio de notificaciones utiliza el puerto 587 para enviar emails a través de un servidor SMTP propio.",
+     "primer_token_s": 12.640161199960858,
+     "segundos": 16.38539650000166,
+     "tokens_entrada": 308,
+     "tokens_salida": 35
+    },
+    "m3-07": {
+     "texto": "Según el documento de acuerdos de nivel de servicio (SLA), la disponibilidad comprometida para el servicio de notificaciones es de 99,5%.",
+     "primer_token_s": 12.597063199966215,
+     "segundos": 16.484811599948443,
+     "tokens_entrada": 282,
+     "tokens_salida": 37
+    },
+    "m3-08": {
+     "texto": "Según los acuerdos de nivel de servicio (SLA), para una incidencia crítica debe darse la primera respuesta en 15 minutos, a cualquier hora.",
+     "primer_token_s": 12.813552799983881,
+     "segundos": 16.593240199959837,
+     "tokens_entrada": 313,
+     "tokens_salida": 36
+    }
+   },
+   "aciertos": 7,
+   "paralelo": {
+    "pared_s": 49.30514059995767,
+    "peticiones": [
+     {
+      "texto": "Si pagos devuelve 'too many connections', sigue estos pasos:\n\n1. Verifica el número de conexiones activas en PgBouncer.\n2. Busca si hay un despliegue reciente de pagos.\n3. Analiza si alguna consulta tarda más de 30 segundos en ejecutarse.",
+      "primer_token_s": 4.839694300084375,
+      "segundos": 36.13018340000417,
+      "tokens_entrada": 352,
+      "tokens_salida": 68
+     },
+     {
+      "texto": "El límite actual del pool de conexiones de pagos es de 200 conexiones.",
+      "primer_token_s": 9.501382899936289,
+      "segundos": 15.690097499988042,
+      "tokens_entrada": 405,
+      "tokens_salida": 22
+     },
+     {
+      "texto": "Según el documento proporcionado, el token de la API del banco caducará cada 90 días.",
+      "primer_token_s": 9.49620719999075,
+      "segundos": 16.16641810000874,
+      "tokens_entrada": 267,
+      "tokens_salida": 24
+     },
+     {
+      "texto": "El error invalid_grant ocurre cuando el secreto de cliente de OAuth ha caducado o se ha rotado sin actualizarse la configuración del servicio de usuarios. Esto podría ser debido a que el reloj del servidor esté desincronizado más de cinco minutos.",
+      "primer_token_s": 9.494659300078638,
+      "segundos": 30.751678199972957,
+      "tokens_entrada": 332,
+      "tokens_salida": 60
+     },
+     {
+      "texto": "Según el postmortem mencionado, si la base de datos de cobros ha dejado de aceptar nuevas conexiones, primero debes volver a la versión anterior del conector de pasarela, ya que esto podría ser la solución más rápida. Si no fue este el motivo, puedes intentar reiniciar PgBouncer de forma ordenada, uno por vez, para liberar las conexiones bloqueadas. Recuerda que no subas el límite del pool por encima de los 200 conexiones, ya que puede sobrecargar otros procesos.",
+      "primer_token_s": 2.7434947999427095,
+      "segundos": 33.59821369999554,
+      "tokens_entrada": 423,
+      "tokens_salida": 122
+     },
+     {
+      "texto": "Según la información proporcionada en la documentación, el servicio de notificaciones utiliza el puerto 587 para enviar emails a través de un servidor SMTP propio.",
+      "primer_token_s": 4.8653319999575615,
+      "segundos": 14.840494400006719,
+      "tokens_entrada": 308,
+      "tokens_salida": 35
+     },
+     {
+      "texto": "Según el documento, la disponibilidad comprometida del servicio de notificaciones es del 99,5%.",
+      "primer_token_s": 2.366355000063777,
+      "segundos": 10.994460799964145,
+      "tokens_entrada": 282,
+      "tokens_salida": 25
+     },
+     {
+      "texto": "Según los acuerdos de nivel de servicio (SLA), para una incidencia crítica debe darse la primera respuesta en 15 minutos, a cualquier hora.",
+      "primer_token_s": 4.817423600004986,
+      "segundos": 13.105731399962679,
+      "tokens_entrada": 313,
+      "tokens_salida": 36
+     }
+    ]
+   }
+  }
+ },
+ "arranque": {
+  "vllm_sin_limite": {
+   "error": "Available memory on node 0 (8.77/15.34 GiB) on kv cache allocation is less than requested memory for kv (10.03/14.11 GiB). Reduce CPU memory used by other processes.",
+   "segundos": 186.0677091999678
+  },
+  "vllm_s": 60.68076929997187,
+  "vllm_kv": [
+   "Using LBHNC KV cache layout.",
+   "Explicitly set (2.0/15.34) GiB for KV cache on node 0.",
+   "CPU KV cache size: 74,880 tokens, Maximum concurrency for 4,096 tokens per request: 18.28x"
+  ],
+  "llama_8_ranuras": {
+   "argumentos": "-c 4096 --parallel 8",
+   "ranuras": "n_slots = 8, n_ctx_slot = 512",
+   "respuestas": [
+    {
+     "error": "400 Bad Request en http://127.0.0.1:8081/v1/chat/completions: {\"error\":{\"code\":400,\"message\":\"request (642 tokens) exceeds the available context size (512 tokens), try increasing it\",\"type\":\"exceed_context_size_error\",\"n_prompt_tokens\":642,\"n_ctx\":512}}",
+     "segundos": 0.8121372999157757
+    },
+    {
+     "error": "400 Bad Request en http://127.0.0.1:8081/v1/chat/completions: {\"error\":{\"code\":400,\"message\":\"request (695 tokens) exceeds the available context size (512 tokens), try increasing it\",\"type\":\"exceed_context_size_error\",\"n_prompt_tokens\":695,\"n_ctx\":512}}",
+     "segundos": 0.8267059000208974
+    },
+    {
+     "error": "400 Bad Request en http://127.0.0.1:8081/v1/chat/completions: {\"error\":{\"code\":400,\"message\":\"request (557 tokens) exceeds the available context size (512 tokens), try increasing it\",\"type\":\"exceed_context_size_error\",\"n_prompt_tokens\":557,\"n_ctx\":512}}",
+     "segundos": 0.8349861999740824
+    },
+    {
+     "error": "400 Bad Request en http://127.0.0.1:8081/v1/chat/completions: {\"error\":{\"code\":400,\"message\":\"request (622 tokens) exceeds the available context size (512 tokens), try increasing it\",\"type\":\"exceed_context_size_error\",\"n_prompt_tokens\":622,\"n_ctx\":512}}",
+     "segundos": 0.8500531000318006
+    },
+    {
+     "error": "400 Bad Request en http://127.0.0.1:8081/v1/chat/completions: {\"error\":{\"code\":400,\"message\":\"request (713 tokens) exceeds the available context size (512 tokens), try increasing it\",\"type\":\"exceed_context_size_error\",\"n_prompt_tokens\":713,\"n_ctx\":512}}",
+     "segundos": 0.8401997999753803
+    },
+    {
+     "error": "400 Bad Request en http://127.0.0.1:8081/v1/chat/completions: {\"error\":{\"code\":400,\"message\":\"request (598 tokens) exceeds the available context size (512 tokens), try increasing it\",\"type\":\"exceed_context_size_error\",\"n_prompt_tokens\":598,\"n_ctx\":512}}",
+     "segundos": 0.8663341000210494
+    },
+    {
+     "error": "400 Bad Request en http://127.0.0.1:8081/v1/chat/completions: {\"error\":{\"code\":400,\"message\":\"request (572 tokens) exceeds the available context size (512 tokens), try increasing it\",\"type\":\"exceed_context_size_error\",\"n_prompt_tokens\":572,\"n_ctx\":512}}",
+     "segundos": 0.8461302999639884
+    },
+    {
+     "error": "400 Bad Request en http://127.0.0.1:8081/v1/chat/completions: {\"error\":{\"code\":400,\"message\":\"request (603 tokens) exceeds the available context size (512 tokens), try increasing it\",\"type\":\"exceed_context_size_error\",\"n_prompt_tokens\":603,\"n_ctx\":512}}",
+     "segundos": 0.8330541999312118
+    }
+   ]
+  },
+  "con_kv_unified": {
+   "argumentos": "-c 4096 --kv-unified --parallel 8",
+   "ranuras": "n_slots = 8, n_ctx_slot = 4096",
+   "respuestas": [
+    {
+     "texto": "{\"respuesta\":",
+     "primer_token_s": 1.7095023000147194,
+     "segundos": 6.209244000026956,
+     "tokens_entrada": 0,
+     "tokens_salida": 0
+    },
+    {
+     "texto": "{\"respuesta",
+     "primer_token_s": 4.209399800049141,
+     "segundos": 6.209456300013699,
+     "tokens_entrada": 0,
+     "tokens_salida": 0
+    },
+    {
+     "texto": "",
+     "primer_token_s": null,
+     "segundos": 6.204329299973324,
+     "tokens_entrada": 0,
+     "tokens_salida": 0
+    },
+    {
+     "texto": "{\"respuesta",
+     "primer_token_s": 4.205908600008115,
+     "segundos": 6.205891799996607,
+     "tokens_entrada": 0,
+     "tokens_salida": 0
+    },
+    {
+     "texto": "{\"respuesta",
+     "primer_token_s": 4.1971610999898985,
+     "segundos": 6.195966999977827,
+     "tokens_entrada": 0,
+     "tokens_salida": 0
+    },
+    {
+     "texto": "",
+     "primer_token_s": null,
+     "segundos": 6.202623300021514,
+     "tokens_entrada": 0,
+     "tokens_salida": 0
+    },
+    {
+     "texto": "{\"",
+     "primer_token_s": 5.482335800072178,
+     "segundos": 6.196508700028062,
+     "tokens_entrada": 0,
+     "tokens_salida": 0
+    },
+    {
+     "texto": "{\"",
+     "primer_token_s": 5.830613100086339,
+     "segundos": 6.199759699986316,
+     "tokens_entrada": 0,
+     "tokens_salida": 0
+    }
+   ]
+  },
+  "con_c_8192": {
+   "argumentos": "-c 8192 --parallel 8",
+   "ranuras": "n_slots = 8, n_ctx_slot = 1024",
+   "respuestas": [
+    {
+     "texto": "{\"respuesta\": \"Si pagos devuelve 'too many connections', primero abro el panel de PgBouncer y mira el número de conexiones activas. Luego, compruebo si ha habido un despliegue de pagos en la última hora: la mayoría de incidentes de este tipo empiezan con una versión que no devuelve las conexiones al pool. Finalmente, reviso si alguna consulta lleva más de 30 segundos ejecutándose.\", \"citas\": [1, 2, 3]}",
+     "primer_token_s": 1.8090198999270797,
+     "segundos": 12.702620500000194,
+     "tokens_entrada": 642,
+     "tokens_salida": 113
+    },
+    {
+     "texto": "{\"respuesta\": \"El límite del pool de conexiones de pagos es de 200 conexiones.\", \"citas\": [1]}",
+     "primer_token_s": 4.588163499953225,
+     "segundos": 9.47895849996712,
+     "tokens_entrada": 695,
+     "tokens_salida": 32
+    },
+    {
+     "texto": "{\"respuesta\": \"El token de la API del banco caduca cada 90 días.\", \"citas\": [1, 2]}",
+     "primer_token_s": 7.375215100008063,
+     "segundos": 9.475039599929005,
+     "tokens_entrada": 557,
+     "tokens_salida": 31
+    },
+    {
+     "texto": "{\"respuesta\": \"El error invalid_grant se refiere a un secreto de cliente OAuth que ha caducado o se ha rotado sin actualizar la configuración del servicio de usuarios.\", \"citas\": [1]}",
+     "primer_token_s": 4.582938999985345,
+     "segundos": 10.573397799977101,
+     "tokens_entrada": 622,
+     "tokens_salida": 47
+    },
+    {
+     "texto": "{\"respuesta\": \"Si hubo un despliegue reciente, vuelve a la versión anterior: es la mitigación más rápida. Si no lo hubo, reinicia PgBouncer de forma ordenada, una réplica cada vez, para liberar las conexiones bloqueadas.\", \"citas\": [2]}",
+     "primer_token_s": 7.366281699971296,
+     "segundos": 11.755829700035974,
+     "tokens_entrada": 713,
+     "tokens_salida": 69
+    },
+    {
+     "texto": "{\"respuesta\": \"Los emails se envían a través del puerto 587 porque es el puerto predeterminado para el protocolo SMTP (Simple Mail Transfer Protocol) en el servidor SMTP propio.\", \"citas\": [1]}",
+     "primer_token_s": 7.8323808999266475,
+     "segundos": 10.840976300067268,
+     "tokens_entrada": 598,
+     "tokens_salida": 49
+    },
+    {
+     "texto": "{\"respuesta\": \"La disponibilidad comprometida del servicio de notificaciones es 99,5%.\", \"citas\": [2]}",
+     "primer_token_s": 7.373165700002573,
+     "segundos": 9.472379100043327,
+     "tokens_entrada": 572,
+     "tokens_salida": 31
+    },
+    {
+     "texto": "{\"respuesta\": \"La primera respuesta a una incidencia crítica debe darse en 15 minutos, a cualquier hora.\", \"citas\": [1]}",
+     "primer_token_s": 4.573623199947178,
+     "segundos": 9.553772800019942,
+     "tokens_entrada": 603,
+     "tokens_salida": 33
+    }
+   ]
+  }
+ }
+}

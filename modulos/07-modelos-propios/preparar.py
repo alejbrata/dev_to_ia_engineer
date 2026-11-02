@@ -122,9 +122,9 @@ def ollama(modelo: str, base_url: str) -> dict:
     }
 
 
-def casos() -> list[tuple[str, PromptRenderizado]]:
-    """Cinco preguntas con respuesta y los mensajes del prompt de RAG, con los fragmentos que
-    recuperó el sistema vigente del módulo 4 (así no hace falta el índice)."""
+def casos(n: int = N, prompt: str = "rag/con-contexto") -> list[tuple[str, PromptRenderizado]]:
+    """Las primeras `n` preguntas con respuesta y los mensajes de un prompt de RAG, con los
+    fragmentos que recuperó el sistema vigente del módulo 4 (así no hace falta el índice)."""
     import dataset
     import sistema
     from curso_core import prompts
@@ -132,9 +132,9 @@ def casos() -> list[tuple[str, PromptRenderizado]]:
     fragmentos = sistema.fragmentos()
     lineas = (MODULO_4 / "resultados" / "vigente.jsonl").read_text(encoding="utf-8").splitlines()
     vigente = {r["caso"]: r for r in map(json.loads, lineas[1:])}
-    plantilla = prompts.cargar("rag/con-contexto")
+    plantilla = prompts.cargar(prompt)
     salida = []
-    for c in [c for c in dataset.cargar() if c.debe_responder][:N]:
+    for c in [c for c in dataset.cargar() if c.debe_responder][:n]:
         recuperados = [fragmentos[i] for i in vigente[c.id]["detalle"]["recuperados"]]
         ctx = "\n\n".join(f"[{i}] {f.titulo}\n{f.texto}" for i, f in enumerate(recuperados, 1))
         salida.append((c.id, prompts.renderizar(plantilla, contexto=ctx, pregunta=c.pregunta)))
