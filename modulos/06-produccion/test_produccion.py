@@ -27,7 +27,7 @@ def test_la_api_valida_y_responde(monkeypatch):
     from fastapi.testclient import TestClient
 
     class Falso:
-        version, roles, cache = "v", ("a",), None
+        version, roles, cache, modelos = "v", ("a",), None, {"a": "m"}
 
         def responder(self, pregunta: str) -> Resultado:
             return Resultado(texto=f"eco: {pregunta}", rol="a")

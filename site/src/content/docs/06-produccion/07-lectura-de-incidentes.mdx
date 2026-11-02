@@ -1,0 +1,182 @@
+---
+title: "Lectura de incidentes"
+description: "Lectura de incidentes: dos fallos provocados en el asistente (el reranker caído y el modelo cambiado sin pasar la eval), leídos con las señales del módulo, de la alerta a la causa raíz, y el método para hacerlo"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
+:::note[Revisado: 2026-11]
+Salidas reales con el servicio del módulo, sus trazas y sus métricas. Los incidentes están provocados a propósito, cambiando la configuración por entorno, para poder repetirlos.
+:::
+
+## Objetivos
+
+Al terminar esta lección podrás:
+
+- Seguir un método para investigar un incidente: impacto, qué cambió, señales, hipótesis, mitigación y causa raíz.
+- Leer juntas las métricas, las trazas y la salud del servicio, y desconfiar de la que se contradice con las demás.
+- Reconocer los incidentes de un servicio de LLM que no dan errores, y qué señal los delata.
+- Cerrar un incidente con una corrección que impida el siguiente, no solo con la vuelta a la normalidad.
+
+## Teoría
+
+### Un método, no una intuición
+
+Cuando salta una alerta, la tentación es abrir el código y buscar. Funciona mejor un orden fijo, el mismo que en cualquier servicio backend:
+
+1. **Impacto.** Qué ven los usuarios y cuántos. Decide la prisa.
+2. **Qué ha cambiado.** Un despliegue, un cambio de configuración, una dependencia, el tráfico. La mayoría de incidentes empiezan con un cambio.
+3. **Señales, de lo general a lo concreto.** Las métricas dicen dónde (qué componente falla y desde cuándo); las trazas, qué peticiones y en qué etapa; los logs, el detalle.
+4. **Hipótesis, de una en una.** Cada una se confirma o se descarta con una señal, no con una sensación.
+5. **Mitigar antes de entenderlo todo.** Volver a la versión anterior, desactivar lo que falla, degradar con orden. La causa raíz se busca con el servicio ya estable.
+6. **Causa raíz y corrección.** Qué permitió que pasara y qué cambio impide que se repita. Se escribe en un postmortem sin culpas, que busca fallos del sistema, no de personas.
+
+### Lo que cambia con un LLM
+
+Dos cosas. La primera, que muchos incidentes no dan errores: el servicio responde, con 200 y texto razonable, pero peor. Un modelo cambiado, un documento borrado del índice o un prompt editado bajan la calidad sin que salte ninguna alarma de errores. Las señales de esos incidentes son indirectas: la tasa de respaldo, las abstenciones, los tokens por pregunta, la latencia... o una mejora que nadie esperaba.
+
+La segunda, que el sistema tiene más piezas que pueden cambiar sin un despliegue: el modelo detrás de un rol, el proveedor, la documentación indexada. Saber "qué está desplegado" incluye saber qué modelo y qué datos hay detrás.
+
+## Práctica
+
+[`incidentes.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/06-produccion/incidentes.py) arranca el servicio tres veces, con trazas y métricas, y le hace las mismas 8 preguntas del dataset del módulo 4:
+
+- **Normal**, como referencia.
+- **El reranker caído**: su URL apunta a un puerto donde no escucha nadie (`CURSO_URL_LLAMACPP_RERANK`).
+- **El modelo cambiado**: `CURSO_ROLES=chat_grande=chat`, como si alguien hubiera cambiado el modelo principal por el pequeño en la configuración, sin pasar la eval.
+
+De cada situación recoge lo que vería quien opera el servicio: `/salud`, las métricas, las trazas (spans con error y modelos que generaron) y, aparte, la calidad con el dataset. Para esta lección, `/salud` dice además qué modelo resuelve cada rol; la anatomía cuenta por qué. Tarda unos 10 minutos; con `--grabadas`, un segundo.
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/06-produccion/incidentes.py
+```
+
+```text
+Las mismas 8 preguntas, en tres situaciones
+                                             normal    reranker caído   modelo cambiado
+   versión en /salud                   54e7cf273ba5      54e7cf273ba5      54e7cf273ba5
+   modelo principal en /salud            qwen2.5:7b        qwen2.5:7b      qwen2.5:1.5b
+   respondidas por el principal                   8                 0                 8
+   respondidas por el respaldo                    0                 0                 0
+   degradadas                                     0                 8                 0
+   llamadas fallidas: reranker                    0                16                 0
+   llamadas fallidas: modelos                     0                 0                 0
+   mediana por pregunta                      12.6 s             4.2 s             4.8 s
+   aciertos (dataset del módulo 4)            7 de 8            0 de 8            6 de 8
+
+normal
+   spans con error: ninguno
+   modelos que generaron (trazas): {'qwen2.5:7b': 8}
+   primera respuesta: Usa el runbook: pagos sin conexiones a la base de datos.
+
+reranker caído
+   spans con error: {'rerank gpustack/bge-reranker-v2-m3-GGUF:Q8_0': 16, 'asistente.responder': 8}
+   modelos que generaron (trazas): ninguno
+   error en la respuesta: chat_grande: No se pudo conectar con http://127.0.0.1:55866/v1/: ConnectError('[WinError 10061] No s
+   primera respuesta: Ahora mismo no puedo responder: el servicio de modelos no está disponible. Inténtalo en unos minutos
+
+modelo cambiado
+   spans con error: ninguno
+   modelos que generaron (trazas): {'qwen2.5:1.5b': 8}
+   primera respuesta: Si pagos devuelve 'too many connections', debes revisar el número de conexiones activas en PgBouncer
+```
+
+## Mide y depura
+
+### El reranker caído: una señal que culpa a quien no es
+
+**Impacto.** Las 8 preguntas acaban en la respuesta degradada. El SLO "ninguna degradada" de la lección 03 salta. El impacto es total: nadie recibe respuesta.
+
+**Señales.** Aquí está lo instructivo, porque no todas dicen lo mismo:
+
+- La respuesta degradada dice "el servicio de modelos no está disponible", y el error que lleva dentro es `chat_grande: No se pudo conectar con http://127.0.0.1:55866/v1/`. Leído así, parece que el modelo principal está caído.
+- Las métricas dicen otra cosa: cero llamadas fallidas a los modelos y 16 al reranker.
+- Las trazas lo confirman: 16 spans `rerank` con error y ningún span de generación. Los modelos ni se llegaron a llamar.
+
+**Causa.** El reranker no responde. Las 16 llamadas son 2 por pregunta: el asistente intenta el modelo principal, que necesita buscar, falla al reordenar, prueba el de respaldo, que también busca, y vuelve a fallar. El error lleva la etiqueta `chat_grande` porque el asistente captura el fallo alrededor de todo `sistema.responder`, que incluye la búsqueda. Y el texto degradado culpa a los modelos porque así se escribió. La URL del error, `/v1/` en un puerto que no es el de Ollama, era la pista.
+
+**Mitigación y corrección.** Mientras se arregla el reranker, el servicio podría degradar con orden a la búsqueda densa sin reordenar, que en el módulo 4 encontraba el fragmento correcto en 28 de 42 preguntas, frente a 33 con reranker: peor, pero mucho mejor que nada. Y dos correcciones para el siguiente incidente: separar en el asistente los fallos de búsqueda de los de generación, y que la respuesta degradada no diga una causa que no sabe.
+
+### El modelo cambiado: más rápido, sin errores y peor
+
+**Impacto.** Ninguna alerta salta. No hay errores, ni respaldo, ni degradadas. Y la mediana baja de 12,6 s a 4,8 s: en un panel de latencia, parece una mejora.
+
+**Señales.** La versión de `/salud` es la misma que en la situación normal. Lo que lo delata son las trazas, que dicen qué modelo generó cada respuesta: `qwen2.5:1.5b` en las 8. Y, con la corrección de esta lección, `/salud`, que ahora dice qué modelo resuelve cada rol.
+
+**Calidad.** Con 8 preguntas, 6 aciertos frente a 7: con tan pocos casos, eso no demuestra nada. Pero ese modelo ya se midió en la lección 01 con las 58 preguntas del módulo 4: 40 aciertos frente a 52. Un cambio de configuración que nadie evaluó le habría costado al servicio casi una de cada cuatro respuestas buenas.
+
+**La lección.** Una mejora que nadie esperaba también es un cambio. Una bajada de latencia de golpe, igual que una subida, merece la pregunta de siempre: ¿qué ha cambiado?
+
+## Errores frecuentes
+
+**Creer el mensaje de error sin contrastarlo.** El de la respuesta culpaba al modelo principal; las métricas y las trazas, al reranker. Cuando una señal contradice a las demás, la que miente suele ser la que interpreta (un mensaje escrito por alguien) y no la que cuenta (una métrica).
+
+**Buscar la causa raíz antes de mitigar.** Con el servicio caído, primero volver a un estado estable (la versión anterior, la búsqueda sin reranker) y después investigar.
+
+**Vigilar solo errores y latencia.** El modelo cambiado no dio ni un error y bajó la latencia. Los incidentes de calidad necesitan sus propias señales: el modelo que responde, la tasa de respaldo, las abstenciones, una eval periódica.
+
+**Saber qué código está desplegado y no qué configuración.** Con LLMs, el modelo, el proveedor y los datos indexados cambian sin desplegar código. Exponlos y vigílalos.
+
+**Cerrar el incidente con la vuelta a la normalidad.** Sin una corrección del sistema (una alerta nueva, un dato más en `/salud`, una comprobación en el despliegue), el siguiente será igual.
+
+### Anatomía de un error: el modelo que cambió sin que cambiara la versión
+
+En la situación "modelo cambiado", la primera ejecución de la práctica enseñaba esto:
+
+```text
+                                             normal    reranker caído   modelo cambiado
+   versión en /salud                   54e7cf273ba5      54e7cf273ba5      54e7cf273ba5
+   respondidas por el principal                   8                 0                 8
+```
+
+**Cómo leerlo.** La misma versión en las tres situaciones, y el principal respondiendo las 8 preguntas en la normal y en la del modelo cambiado. Para `/salud` y para las métricas, nada había cambiado. Solo las trazas decían otra cosa: `{'qwen2.5:1.5b': 8}` en lugar de `{'qwen2.5:7b': 8}`.
+
+**Causa.** La versión es la huella del módulo 4: un resumen de los ficheros que deciden las respuestas, incluido `config/models.toml`. Pero `CURSO_ROLES` (anexo G) y `CURSO_URL_*` (lección 06) cambian la configuración sin tocar ningún fichero: por diseño, para poder cambiar de modelo o de URL por entorno. La huella no los ve. Y "principal" en las métricas es un papel (el primero de la lista), no un modelo: sigue siendo el principal aunque detrás haya otro modelo.
+
+**Solución.** Que el servicio diga lo que de verdad usa, no solo lo que hay en los ficheros. `/salud` devuelve ahora, además de la versión, qué modelo y en qué URL responde cada rol:
+
+```text
+   modelo principal en /salud            qwen2.5:7b        qwen2.5:7b      qwen2.5:1.5b
+```
+
+Con eso, el cambio se ve en el panel y se puede alertar sobre él: si el modelo de un rol no es el que pasó la eval, avisar. Dos mejoras más que quedan como ejercicio: poner el modelo como etiqueta en las métricas de llamadas, para ver en un panel quién responde, y hacer que el despliegue compare los modelos de `/salud` con los que guardó la eval y se pare si no coinciden. La lección general: la versión de un sistema de LLM no es solo su código. Son también el modelo, el proveedor y los datos que tiene detrás.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'La respuesta degradada dice "el modelo no está disponible", pero las métricas muestran cero fallos en los modelos y muchos en el reranker. ¿A quién crees?',
+			opciones: [
+				{ texto: 'Al mensaje: es más concreto.', porque: 'El mensaje lo escribió alguien con una suposición; aquí culpaba al modelo por cómo se capturaba el error ("El reranker caído: una señal que culpa a quien no es").' },
+				{ texto: 'A las métricas y a las trazas: cuentan lo que pasó; el mensaje lo interpreta.', correcta: true, porque: 'Cuando las señales se contradicen, la que interpreta suele ser la equivocada. Aquí, las trazas confirmaban: spans de rerank con error y ninguno de generación.' },
+			],
+		},
+		{
+			pregunta: 'La latencia de tu asistente baja de 13 s a 5 s de un día para otro, sin que nadie haya desplegado nada. ¿Qué haces?',
+			opciones: [
+				{ texto: 'Nada: es una buena noticia.', porque: 'Una mejora inesperada también es un cambio. Aquí, era un modelo más pequeño que perdía casi una de cada cuatro respuestas buenas ("El modelo cambiado").' },
+				{ texto: 'Preguntar qué ha cambiado: mirar qué modelo responde en las trazas o en /salud, y la calidad.', correcta: true, porque: 'Con LLMs, la configuración cambia sin desplegar código. El modelo de cada rol tiene que estar a la vista.' },
+			],
+		},
+		{
+			pregunta: 'El servicio está caído porque falla el reranker. Sabes la causa, pero arreglarlo llevará horas. ¿Qué haces primero?',
+			opciones: [
+				{ texto: 'Investigar por qué falla el reranker.', porque: 'Eso va después. Con el servicio caído, primero se mitiga.' },
+				{ texto: 'Mitigar: degradar a la búsqueda sin reranker, que responde peor pero responde.', correcta: true, porque: 'En el módulo 4, la búsqueda densa encontraba el fragmento en 28 de 42 preguntas, frente a 33 con reranker. Peor, pero mucho mejor que una respuesta degradada para todos.' },
+			],
+		},
+		{
+			pregunta: '¿Por qué la huella del sistema no detectó el cambio de modelo hecho con CURSO_ROLES?',
+			opciones: [
+				{ texto: 'Porque la huella está mal calculada.', porque: 'Calcula bien lo que cubre: los ficheros. CURSO_ROLES cambia la configuración por entorno, sin tocar ningún fichero (la anatomía).' },
+				{ texto: 'Porque la huella resume ficheros, y CURSO_ROLES cambia la configuración sin tocar ninguno.', correcta: true, porque: 'Por eso /salud dice ahora qué modelo resuelve cada rol: la versión de un sistema de LLM incluye el modelo y los datos, no solo el código.' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- Google, [Site Reliability Engineering](https://sre.google/sre-book/managing-incidents/): los capítulos de gestión de incidentes, [resolución de problemas](https://sre.google/sre-book/effective-troubleshooting/) y [cultura de postmortems](https://sre.google/sre-book/postmortem-culture/).
+- El [workbook de SRE](https://sre.google/workbook/postmortem-culture/), con ejemplos de postmortems sin culpas.

@@ -108,6 +108,14 @@ class Asistente:
             rol: ClienteLLM(config, timeout=timeout_s, reintentos=reintentos) for rol in roles
         }
         self.version = evaluar.huella()
+        # La huella cubre los ficheros (prompt, models.toml, corpus, código), no lo que se
+        # cambia por entorno (CURSO_ROLES, CURSO_URL_*). Lo que de verdad se usa, aparte
+        # (lección 6.07): qué modelo y en qué URL responde cada rol.
+        roles_usados = [*roles, "embeddings", "reranker"]
+        self.modelos = {}
+        for rol in roles_usados:
+            _, proveedor, modelo = config.resolver(rol)
+            self.modelos[rol] = f"{modelo} @ {proveedor.base_url}"
         self.cache = Cache(self.version) if cache else None
 
     def responder(self, pregunta: str) -> Resultado:

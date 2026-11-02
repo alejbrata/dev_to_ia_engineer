@@ -16,6 +16,7 @@ convertido en un servicio: el asistente de documentación interna.
 - `defensas.py`: los guardrails con las 58 respuestas del módulo 4 (falsos positivos) y con nueve ataques en vivo (lección 05).
 - `Dockerfile` y `compose.yaml`: la imagen del servicio (dos etapas, uv, usuario sin privilegios, healthcheck) y su arranque. Construcción desde la raíz: `docker build -f modulos/06-produccion/Dockerfile -t asistente .`. El `.dockerignore` está en la raíz.
 - `desplegar.py`: construir, inspeccionar, arrancar y parar el contenedor, medido (lección 06).
+- `incidentes.py`: dos incidentes provocados (el reranker caído y el modelo cambiado con `CURSO_ROLES`) leídos con `/salud`, métricas, trazas y calidad (lección 07).
 - `test_produccion.py`: la caché y la API con un asistente falso, sin modelos.
 - `resultados/`: lo que midió cada práctica. Con `--grabadas`, se reutiliza sin llamar a nada.
 

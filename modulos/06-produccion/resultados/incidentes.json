@@ -1,0 +1,72 @@
+{
+ "normal": {
+  "version": "54e7cf273ba5ea58",
+  "modelo_principal": "qwen2.5:7b",
+  "preguntas": {
+   "principal": 8.0,
+   "respaldo": 0.0,
+   "degradada": 0.0
+  },
+  "llamadas_fallidas": {
+   "embeddings": 0.0,
+   "reranker": 0.0,
+   "chat_grande": 0.0,
+   "chat": 0.0
+  },
+  "spans_con_error": {},
+  "modelos_que_generaron": {
+   "qwen2.5:7b": 8
+  },
+  "mediana_s": 12.558,
+  "aciertos": 7,
+  "ejemplo": "Usa el runbook: pagos sin conexiones a la base de datos.",
+  "error_ejemplo": ""
+ },
+ "reranker caído": {
+  "version": "54e7cf273ba5ea58",
+  "modelo_principal": "qwen2.5:7b",
+  "preguntas": {
+   "principal": 0.0,
+   "respaldo": 0.0,
+   "degradada": 8.0
+  },
+  "llamadas_fallidas": {
+   "embeddings": 0.0,
+   "reranker": 16.0,
+   "chat_grande": 0.0,
+   "chat": 0.0
+  },
+  "spans_con_error": {
+   "rerank gpustack/bge-reranker-v2-m3-GGUF:Q8_0": 16,
+   "asistente.responder": 8
+  },
+  "modelos_que_generaron": {},
+  "mediana_s": 4.2255,
+  "aciertos": 0,
+  "ejemplo": "Ahora mismo no puedo responder: el servicio de modelos no está disponible. Inténtalo en unos minutos o consulta directamente la documentación.",
+  "error_ejemplo": "chat_grande: No se pudo conectar con http://127.0.0.1:55866/v1/: ConnectError('[WinError 10061] No se puede establecer una conexión y"
+ },
+ "modelo cambiado": {
+  "version": "54e7cf273ba5ea58",
+  "modelo_principal": "qwen2.5:1.5b",
+  "preguntas": {
+   "principal": 8.0,
+   "respaldo": 0.0,
+   "degradada": 0.0
+  },
+  "llamadas_fallidas": {
+   "embeddings": 0.0,
+   "reranker": 0.0,
+   "chat_grande": 0.0,
+   "chat": 0.0
+  },
+  "spans_con_error": {},
+  "modelos_que_generaron": {
+   "qwen2.5:1.5b": 8
+  },
+  "mediana_s": 4.7845,
+  "aciertos": 6,
+  "ejemplo": "Si pagos devuelve 'too many connections', debes revisar el número de conexiones activas en PgBouncer y asegurarte de que no haya un despliegue de pagos reciente que no devuelva las conexiones al pool.",
+  "error_ejemplo": ""
+ }
+}

@@ -108,4 +108,10 @@ def consultar(id: str) -> Trabajo:
 def salud() -> dict:
     a = estado["asistente"]
     cache = {"aciertos": a.cache.aciertos, "fallos": a.cache.fallos} if a.cache else None
-    return {"estado": "ok", "version": a.version, "roles": a.roles, "cache": cache}
+    return {
+        "estado": "ok",
+        "version": a.version,
+        "modelos": a.modelos,
+        "roles": a.roles,
+        "cache": cache,
+    }
