@@ -117,7 +117,7 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 
 ---
 
-## Anexos ⬜
+## Anexos 🟨
 
 - **A. Claude y Claude Code**: consejos prácticos desde el uso real (sin copiar documentación oficial)
 - **B. Hugging Face**: el ecosistema más usado en empresa, como laboratorio: elegir modelo, arquitecturas, clasificación, datasets e infraestructura del Hub
@@ -128,8 +128,11 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
   - **B.5 El Hub como infraestructura**: Inference Providers, buckets, Spaces, Inference Endpoints y planes de empresa
   - **Decisiones** (Alex, 2026-11-01): varias páginas; dependencias en un grupo opcional (`uv sync --group hf`, torch para CPU); repos de ejemplo privados en la cuenta de Alex; elegir modelo vive aquí y la lección 7.2 lo enlaza
 - **C. Herramientas y estrategias de desarrollo con IA**: agentes de código, graph prompting, flujos de trabajo y repos útiles
+  - **Decisiones** (Alex, 2026-11-02): «graph prompting» es Graph of Thoughts; lo escribe Claude sin contenido personal, con un hueco TODO(alex) para la experiencia de Alex
 - **D. Glosario**
+  - Generado con una comprobación de que cada lección enlazada contiene el término
 - **E. Recursos**: papers, blogs y cursos que merecen la pena
 - **F. Herramientas de evals**: Ragas, DeepEval, promptfoo e Inspect frente a lo construido en el módulo 4
 - **G. APIs comerciales**: usar OpenAI, Claude u otro proveedor en lugar del modelo local, como opción, con su coste medido
 - **H. El proceso del autor**: la rotación de Alex de backend Java a AI Engineering, módulo a módulo. Opcional y aparte del aprendizaje
+- **Estado** (2026-11-02): B, C, D, E, F y G escritos. Pendiente de Alex: las secciones personales de A (consejos desde el uso real y Claude Code), el hueco de C y el anexo H
