@@ -18,10 +18,12 @@ El modelo sale del rol (por defecto, `chat`) en `config/models.toml`.
 
 from __future__ import annotations
 
+import atexit
 import json
 import math
 import os
 import random
+import sys
 import time
 from collections.abc import Callable, Generator, Iterator
 from pathlib import Path
@@ -171,6 +173,40 @@ class ErrorLLM(Exception):
         self.status = status
         self.cuerpo = cuerpo
         self.intentos = intentos
+
+
+class LimiteDePrueba(BaseException):
+    """Se alcanzó CURSO_MAX_LLAMADAS: para probar una práctica entera con pocas llamadas.
+
+    Hereda de BaseException para que el `except Exception` de una práctica no la trague.
+    """
+
+
+# Llamadas de generación hechas en este proceso, para CURSO_MAX_LLAMADAS. Las de
+# embeddings se cuentan aparte y sin límite: indexar un corpus son muchas.
+_llamadas_hechas = 0
+_embeddings_hechos = 0
+# Los proveedores a los que se ha llamado: con CURSO_PROVEEDOR, para saber si la práctica
+# ha usado de verdad el proveedor o solo roles que siguen siendo locales.
+_proveedores_usados: set[str] = set()
+
+
+def _informar_llamadas() -> None:
+    print(f"CURSO_LLAMADAS_HECHAS={_llamadas_hechas}", file=sys.stderr)
+    print(f"CURSO_EMBEDDINGS_HECHOS={_embeddings_hechos}", file=sys.stderr)
+    print(f"CURSO_PROVEEDORES_USADOS={','.join(sorted(_proveedores_usados))}", file=sys.stderr)
+
+
+if os.environ.get("CURSO_MAX_LLAMADAS"):
+    atexit.register(_informar_llamadas)
+
+
+def _contar_llamada() -> None:
+    global _llamadas_hechas
+    maximo = os.environ.get("CURSO_MAX_LLAMADAS")
+    if maximo and _llamadas_hechas >= int(maximo):
+        raise LimiteDePrueba(f"CURSO_MAX_LLAMADAS={maximo} alcanzado")
+    _llamadas_hechas += 1
 
 
 class PromptRenderizado(BaseModel):
@@ -408,6 +444,18 @@ def esquema_estricto(esquema: dict) -> dict:
         copia["additionalProperties"] = False
         copia["required"] = list(copia["properties"])
     return copia
+
+
+def admite_estricto(esquema: dict) -> bool:
+    """Si el esquema cabe en el modo estricto: no lo hace un objeto sin propiedades fijas
+    (un `dict[str, Any]` de Pydantic), porque el modo estricto exige cerrar cada objeto."""
+    if isinstance(esquema, list):
+        return all(admite_estricto(e) for e in esquema)
+    if not isinstance(esquema, dict):
+        return True
+    if esquema.get("type") == "object" and "properties" not in esquema:
+        return False
+    return all(admite_estricto(v) for v in esquema.values())
 
 
 # --- Claude (SDK oficial de Anthropic) -----------------------------------------
@@ -661,18 +709,23 @@ class ClienteLLM:
 
     def embeber(self, textos: list[str], *, rol: str = "embeddings") -> Embeddings:
         """Convierte textos en vectores con el modelo de embeddings del rol."""
+        global _embeddings_hechos
         nombre, proveedor, modelo = self.config.resolver(rol)
         if proveedor.tipo == "anthropic":
             raise ValueError(f"El proveedor '{nombre}' no ofrece embeddings")
+        _embeddings_hechos += 1
+        _proveedores_usados.add(nombre)
         if proveedor.tipo == "ollama":
             ruta, cuerpo = "/api/embed", {"model": modelo, "input": textos}
+        elif proveedor.tipo == "hf_inference":
+            ruta, cuerpo = f"/{modelo}/pipeline/feature-extraction", {"inputs": textos}
         else:
             ruta, cuerpo = "/embeddings", {"model": modelo, "input": textos}
         llamada = _Llamada(
             nombre,
             proveedor,
             modelo,
-            DIALECTOS[proveedor.tipo],
+            DIALECTOS.get(proveedor.tipo, DIALECTOS["openai"]),
             ruta,
             cuerpo,
             dict(rol=rol, proveedor=nombre, modelo=modelo, operacion="embeddings"),
@@ -687,6 +740,8 @@ class ClienteLLM:
             raise
         if proveedor.tipo == "ollama":
             vectores, tokens = datos["embeddings"], datos.get("prompt_eval_count", 0)
+        elif proveedor.tipo == "hf_inference":
+            vectores, tokens = datos, 0  # una lista de vectores; no informa de los tokens
         else:
             vectores = [d["embedding"] for d in sorted(datos["data"], key=lambda d: d["index"])]
             tokens = datos.get("usage", {}).get("prompt_tokens", 0)
@@ -793,9 +848,17 @@ class ClienteLLM:
         elif isinstance(mensajes, str):
             mensajes = [Mensaje(role="user", content=mensajes)]
         nombre, proveedor, modelo = self.config.resolver(rol)
+        _contar_llamada()
+        _proveedores_usados.add(nombre)
         opciones = opciones or Opciones()
+        if opciones.alternativas is not None and not proveedor.admite_logprobs:
+            raise ErrorLLM(f"El proveedor '{nombre}' de curso_core no admite logprobs")
+        if opciones.razonar is None and proveedor.razonar_por_defecto is not None:
+            opciones = opciones.model_copy(update={"razonar": proveedor.razonar_por_defecto})
         if proveedor.tipo == "anthropic":
             dialecto, ruta, cuerpo = None, "", _peticion_claude(modelo, mensajes, opciones)
+        elif proveedor.tipo not in DIALECTOS:
+            raise ValueError(f"El proveedor '{nombre}' solo ofrece embeddings, no chat")
         else:
             dialecto = DIALECTOS[proveedor.tipo]
             ruta, cuerpo = dialecto.peticion(modelo, mensajes, opciones, stream)
@@ -807,7 +870,10 @@ class ClienteLLM:
             cuerpo |= proveedor.sin_razonar
         if proveedor.esquema_estricto and "response_format" in cuerpo:
             formato = cuerpo["response_format"]["json_schema"]
-            formato["schema"] = esquema_estricto(formato["schema"])
+            if admite_estricto(formato["schema"]):
+                formato["schema"] = esquema_estricto(formato["schema"])
+            else:
+                formato["strict"] = False
         traza = dict(
             rol=rol,
             proveedor=nombre,

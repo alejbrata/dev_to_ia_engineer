@@ -503,3 +503,77 @@ def test_el_razonamiento_de_ollama_llega_aparte_del_texto(tmp_path: Path) -> Non
     assert r.tokens_salida == 400 and r.motivo_fin == "length"
     normal = cliente(lambda _: httpx.Response(200, json=OLLAMA_OK), tmp_path).chat("hola")
     assert normal.razonamiento is None
+
+
+def test_embeddings_con_la_inferencia_de_hugging_face(tmp_path: Path) -> None:
+    config = cfg.Config.model_validate(
+        {
+            "roles": {"embeddings": {"provider": "hf", "model": "org/modelo"}},
+            "providers": {"hf": {"tipo": "hf_inference", "base_url": "http://hf.test/models"}},
+        }
+    )
+    peticiones = []
+
+    def manejador(request: httpx.Request) -> httpx.Response:
+        peticiones.append((request.url.path, json.loads(request.content)))
+        return httpx.Response(200, json=[[0.1, 0.2], [0.3, 0.4]])
+
+    c = ClienteLLM(config, trazas=tmp_path / "t.jsonl", transport=httpx.MockTransport(manejador))
+    e = c.embeber(["a", "b"])
+    ruta = "/models/org/modelo/pipeline/feature-extraction"
+    assert peticiones == [(ruta, {"inputs": ["a", "b"]})]
+    assert e.vectores == [[0.1, 0.2], [0.3, 0.4]]
+    with pytest.raises(ValueError, match="solo ofrece embeddings"):
+        c.chat("hola", rol="embeddings")
+
+
+def test_curso_max_llamadas_corta_tras_n_llamadas(tmp_path: Path, monkeypatch) -> None:
+    from curso_core import client as modulo
+
+    monkeypatch.setattr(modulo, "_llamadas_hechas", 0)
+    monkeypatch.setenv("CURSO_MAX_LLAMADAS", "2")
+    c = cliente(lambda request: httpx.Response(200, json=OLLAMA_OK), tmp_path)
+    c.chat("uno")
+    c.chat("dos")
+    with pytest.raises(modulo.LimiteDePrueba):
+        c.chat("tres")
+
+
+def test_razonar_por_defecto_del_proveedor() -> None:
+    """Un modelo de API que razona por defecto se comporta como el local si la práctica
+    no dice nada; si lo pide, razona."""
+    config = CONFIG.model_copy(deep=True)
+    config.providers["nube"].sin_razonar = {"reasoning_effort": "none"}
+    config.providers["nube"].razonar_por_defecto = False
+    c = ClienteLLM(config)
+    assert c._preparar("Hola", "remoto", Opciones(), False).cuerpo["reasoning_effort"] == "none"
+    cuerpo = c._preparar("Hola", "remoto", Opciones(razonar=True), False).cuerpo
+    assert "reasoning_effort" not in cuerpo
+
+
+def test_proveedor_sin_logprobs_da_un_error_claro() -> None:
+    config = CONFIG.model_copy(deep=True)
+    config.providers["nube"].admite_logprobs = False
+    with pytest.raises(ErrorLLM, match="no admite logprobs"):
+        ClienteLLM(config)._preparar("Hola", "remoto", Opciones(alternativas=3), False)
+
+
+def test_esquema_con_diccionario_libre_va_sin_modo_estricto() -> None:
+    """Un `dict[str, Any]` no cabe en el modo estricto: se manda el esquema sin cerrar."""
+    from curso_core.client import admite_estricto
+
+    class Paso(BaseModel):
+        herramienta: str
+        argumentos: dict[str, str]
+
+    class Cerrado(BaseModel):
+        herramienta: str
+
+    assert not admite_estricto(Paso.model_json_schema())
+    assert admite_estricto(Cerrado.model_json_schema())
+    config = CONFIG.model_copy(deep=True)
+    config.providers["nube"].esquema_estricto = True
+    c = ClienteLLM(config)
+    op = Opciones(formato=Paso.model_json_schema())
+    formato = c._preparar("Hola", "remoto", op, False).cuerpo["response_format"]["json_schema"]
+    assert formato["strict"] is False and "additionalProperties" not in formato["schema"]

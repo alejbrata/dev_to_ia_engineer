@@ -136,3 +136,32 @@ def test_curso_url_cambia_la_url_de_un_proveedor(monkeypatch) -> None:
     assert config.providers["ollama"].base_url == "http://host.docker.internal:11434"
     monkeypatch.delenv("CURSO_URL_OLLAMA")
     assert "127.0.0.1" in cfg.cargar(RAIZ / cfg.FICHERO).providers["ollama"].base_url
+
+
+def test_curso_proveedor_cambia_todos_los_roles_de_la_tabla(monkeypatch) -> None:
+    config = cfg.Config.model_validate(
+        {
+            "roles": {
+                "chat": {"provider": "local", "model": "a"},
+                "embeddings": {"provider": "local", "model": "e"},
+                "chat_nube": {"provider": "nube", "model": "b"},
+                "chat_otra": {"provider": "nube", "model": "c"},
+            },
+            "providers": {
+                "local": {"tipo": "ollama", "base_url": "http://l"},
+                "nube": {"tipo": "openai", "base_url": "http://n"},
+            },
+            "alternativas": {"nube": {"chat": "chat_nube"}},
+        }
+    )
+    monkeypatch.delenv("CURSO_ROLES", raising=False)
+    monkeypatch.setenv("CURSO_PROVEEDOR", "nube")
+    assert config.resolver("chat")[2] == "b"
+    # Los roles que la tabla no cambia se quedan como están.
+    assert config.resolver("embeddings")[2] == "e"
+    # CURSO_ROLES manda sobre CURSO_PROVEEDOR.
+    monkeypatch.setenv("CURSO_ROLES", "chat=chat_otra")
+    assert config.resolver("chat")[2] == "c"
+    monkeypatch.setenv("CURSO_PROVEEDOR", "inexistente")
+    with pytest.raises(KeyError, match="CURSO_PROVEEDOR"):
+        config.resolver("embeddings")

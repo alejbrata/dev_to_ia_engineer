@@ -23,8 +23,10 @@ class Proveedor(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     # Dialecto de la API: el nativo de Ollama, el compatible con OpenAI (que hablan
-    # OpenAI, Hugging Face, vLLM, llama.cpp y muchos otros) o el de Claude, con su SDK.
-    tipo: Literal["ollama", "openai", "anthropic"]
+    # OpenAI, Hugging Face, vLLM, llama.cpp y muchos otros), el de Claude, con su SDK, o
+    # el de la inferencia de Hugging Face para embeddings (`feature-extraction`), que no
+    # tiene versión compatible con OpenAI.
+    tipo: Literal["ollama", "openai", "anthropic", "hf_inference"]
     base_url: str
     api_key_env: str | None = None
     # Nombre del límite de tokens de salida en la API compatible con OpenAI. OpenAI ha
@@ -39,6 +41,12 @@ class Proveedor(BaseModel):
     # Parámetros que se añaden a la petición con `razonar=False`, en proveedores cuyos
     # modelos razonan por defecto (en OpenAI, `reasoning_effort = "none"`).
     sin_razonar: dict[str, str] = {}
+    # Valor de `razonar` cuando la práctica no lo fija. Los modelos locales del curso no
+    # razonan; un modelo de API que razona por defecto gasta en ello el `max_tokens` de
+    # la práctica y devuelve la respuesta vacía. Con `false`, se comporta como el local.
+    razonar_por_defecto: bool | None = None
+    # Si el proveedor devuelve la probabilidad de cada token (logprobs).
+    admite_logprobs: bool = True
 
 
 class Rol(BaseModel):
@@ -64,15 +72,29 @@ class Config(BaseModel):
     providers: dict[str, Proveedor] = {}
     # Clave: "<proveedor>/<modelo>".
     precios: dict[str, Precio] = {}
+    # Para CURSO_PROVEEDOR: por cada proveedor alternativo, qué rol sustituye a cada rol
+    # local. Los roles que no aparecen se quedan como están.
+    alternativas: dict[str, dict[str, str]] = {}
 
     def resolver(self, rol: str) -> tuple[str, Proveedor, str]:
         """Devuelve (nombre del proveedor, proveedor, modelo) para un rol.
 
-        La variable de entorno CURSO_ROLES redirige roles sin tocar el código ni el toml:
-        con `CURSO_ROLES=agente=chat_claude`, quien pide el rol `agente` recibe el de
-        `chat_claude`. Varias, separadas por comas. Así se repite una práctica con otro modelo.
+        Dos variables de entorno cambian el modelo sin tocar el código:
+        - CURSO_PROVEEDOR (`openai`, `hf`, `claude`...) pasa todos los roles de una
+          práctica al proveedor indicado, según la tabla [alternativas] de models.toml.
+        - CURSO_ROLES redirige roles concretos: con `CURSO_ROLES=agente=chat_claude`, quien
+          pide el rol `agente` recibe el de `chat_claude`. Varias, separadas por comas.
+          Tiene prioridad sobre CURSO_PROVEEDOR.
         """
-        rol = alias().get(rol, rol)
+        if rol in (redirigidos := alias()):
+            rol = redirigidos[rol]
+        elif proveedor := os.environ.get("CURSO_PROVEEDOR"):
+            if proveedor not in self.alternativas:
+                raise KeyError(
+                    f"CURSO_PROVEEDOR={proveedor}: no está en [alternativas] de models.toml"
+                    f" (hay: {', '.join(self.alternativas) or 'ninguno'})"
+                )
+            rol = self.alternativas[proveedor].get(rol, rol)
         if rol not in self.roles:
             raise KeyError(f"El rol '{rol}' no está en models.toml")
         datos = self.roles[rol]
@@ -84,6 +106,15 @@ class Config(BaseModel):
 
     def precio(self, proveedor: str, modelo: str) -> Precio | None:
         return self.precios.get(f"{proveedor}/{modelo}")
+
+
+def carpeta_resultados(carpeta: Path) -> Path:
+    """Dónde guarda una práctica sus resultados. Con CURSO_PROVEEDOR, en una subcarpeta con
+    su nombre (`resultados/openai/`), para no pisar los grabados con el modelo local, que
+    son los de las lecciones y los de la regresión del módulo 4."""
+    if proveedor := os.environ.get("CURSO_PROVEEDOR"):
+        return carpeta / proveedor
+    return carpeta
 
 
 def buscar_fichero(desde: Path | None = None) -> Path:
