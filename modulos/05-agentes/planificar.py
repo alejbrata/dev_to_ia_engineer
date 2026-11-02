@@ -19,9 +19,10 @@ import agente
 import planificador
 import plataforma
 from curso_core import ClienteLLM
+from curso_core import config as cfg
 from curso_core.evals import Informe, ResultadoCaso, comparar, prueba_mcnemar
 
-RESULTADOS = Path(__file__).resolve().parent / "resultados"
+RESULTADOS = cfg.carpeta_resultados(Path(__file__).resolve().parent / "resultados")
 EJEMPLO = "pagos-pool-despliegue"
 
 

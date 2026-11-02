@@ -21,9 +21,10 @@ import agente
 import plataforma
 import skills
 from curso_core import ClienteLLM
+from curso_core import config as cfg
 from curso_core.evals import Informe, ResultadoCaso
 
-RESULTADOS = Path(__file__).resolve().parent / "resultados"
+RESULTADOS = cfg.carpeta_resultados(Path(__file__).resolve().parent / "resultados")
 ROL = "agente"
 # Toda la documentación no cabe con holgura en el contexto por defecto de Ollama (4096
 # tokens) y se recortaría sin avisar (lección 1.02). Las tres variantes usan 8192.

@@ -25,11 +25,12 @@ from statistics import median
 
 import crisis
 from curso_core import ClienteLLM
+from curso_core import config as cfg
 from curso_core.evals import Informe, ResultadoCaso
 from grafo import Checkpoints
 
 AQUI = Path(__file__).resolve().parent
-RESULTADOS = AQUI / "resultados"
+RESULTADOS = cfg.carpeta_resultados(AQUI / "resultados")
 CHECKPOINTS = Checkpoints(AQUI / "checkpoints")
 LOCAL, COMERCIAL = "agente", "chat_openai"
 EJEMPLO = "brecha-datos"

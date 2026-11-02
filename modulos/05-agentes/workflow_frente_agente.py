@@ -22,9 +22,10 @@ import agente
 import plataforma
 import workflow
 from curso_core import ClienteLLM
+from curso_core import config as cfg
 from curso_core.evals import Informe, ResultadoCaso, comparar, prueba_mcnemar
 
-RESULTADOS = Path(__file__).resolve().parent / "resultados"
+RESULTADOS = cfg.carpeta_resultados(Path(__file__).resolve().parent / "resultados")
 ROL = "agente"
 OPCIONES_AGENTE = agente.OPCIONES.model_copy(update={"razonar": False})
 

@@ -22,10 +22,11 @@ import agente
 import multiagente
 import plataforma
 from curso_core import ClienteLLM
+from curso_core import config as cfg
 from curso_core.evals import Informe, ResultadoCaso, comparar, prueba_mcnemar
 from multiagente import Evaluacion, Pizarra, Propuesta, Revision
 
-RESULTADOS = Path(__file__).resolve().parent / "resultados"
+RESULTADOS = cfg.carpeta_resultados(Path(__file__).resolve().parent / "resultados")
 EJEMPLO = "pagos-token-banco"
 VARIANTES = ["investigador solo", "con revisor", "revisor sin evidencias", "revisor a ciegas"]
 

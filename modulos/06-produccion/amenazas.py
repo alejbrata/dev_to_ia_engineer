@@ -23,9 +23,10 @@ import tempfile
 from pathlib import Path
 
 import privacidad
+from curso_core import config as cfg
 
 AQUI = Path(__file__).resolve().parent
-RESULTADOS = AQUI / "resultados"
+RESULTADOS = cfg.carpeta_resultados(AQUI / "resultados")
 sys.path.insert(0, str(AQUI.parent / "04-evals"))
 
 ATACANTE = "cobros-externo.com"

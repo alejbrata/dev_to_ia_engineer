@@ -23,11 +23,12 @@ import dataset
 import jueces
 import sistema
 from curso_core import ClienteLLM
+from curso_core import config as cfg
 from curso_core.evals import Informe, ResultadoCaso, comparar, intervalo_wilson, prueba_mcnemar
 from curso_core.rag import Resultado
 from sistema import corpus, generacion
 
-RESULTADOS = Path(__file__).resolve().parent / "resultados"
+RESULTADOS = cfg.carpeta_resultados(Path(__file__).resolve().parent / "resultados")
 CONFIGURACIONES = {
     "densa-k3": {"reranker": False, "k": 3},
     "reranker-k3": {"reranker": True, "k": 3},

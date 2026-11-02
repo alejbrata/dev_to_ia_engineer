@@ -19,9 +19,10 @@ from statistics import median
 import agente
 import plataforma
 from curso_core import ClienteLLM
+from curso_core import config as cfg
 from curso_core.evals import Informe, ResultadoCaso
 
-RESULTADOS = Path(__file__).resolve().parent / "resultados"
+RESULTADOS = cfg.carpeta_resultados(Path(__file__).resolve().parent / "resultados")
 # nombre: (rol, razonar)
 CONFIGURACIONES = {
     "qwen2.5-1.5b": ("chat", None),

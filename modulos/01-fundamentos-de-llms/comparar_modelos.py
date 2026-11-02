@@ -75,7 +75,8 @@ def memoria_gb(base_url: str, modelo: str) -> float:
 
 def evaluar(cliente: ClienteLLM, rol: str, base_url: str, modelo: str) -> Resultado:
     # Una llamada de calentamiento para no medir la carga del modelo en la primera pregunta.
-    cliente.chat("Hola.", rol=rol, opciones=Opciones(max_tokens=1))
+    # Con 16 tokens y no 1: la API de OpenAI rechaza max_tokens=1.
+    cliente.chat("Hola.", rol=rol, opciones=Opciones(max_tokens=16))
     aciertos, latencias, tokens, tiempo_generacion = 0, [], 0, 0.0
     print(f"\n[{modelo}]")
     for pregunta in PREGUNTAS:

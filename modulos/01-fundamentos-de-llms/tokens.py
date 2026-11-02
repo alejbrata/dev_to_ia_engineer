@@ -62,10 +62,11 @@ def main() -> int:
     for etiqueta, texto in ejemplos:
         mostrar(tokenizer, etiqueta, texto)
 
-    # Lo que cuenta el servidor: pedimos un solo token de salida para no esperar.
+    # Lo que cuenta el servidor: pocos tokens de salida para no esperar (no uno: la API de
+    # OpenAI rechaza max_tokens=1 porque no le deja terminar el mensaje).
     pregunta = ejemplos[0][1]
     propios = len(tokenizer.encode(pregunta).ids)
-    servidor = ClienteLLM().chat(pregunta, opciones=Opciones(max_tokens=1)).tokens_entrada
+    servidor = ClienteLLM().chat(pregunta, opciones=Opciones(max_tokens=16)).tokens_entrada
     print(f"\nTu pregunta: {propios} tokens. El servidor ({modelo}) procesó {servidor}.")
     print(f"Diferencia: {servidor - propios} tokens que no escribiste tú.")
     return 0

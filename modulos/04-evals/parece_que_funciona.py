@@ -20,11 +20,12 @@ from pathlib import Path
 
 import sistema  # el sistema que evaluamos: el RAG del módulo 3
 from curso_core import ClienteLLM
+from curso_core import config as cfg
 from curso_core.evals import Informe, ResultadoCaso, comparar
 from sistema import corpus
 
 AQUI = Path(__file__).resolve().parent
-RESULTADOS = AQUI / "resultados"
+RESULTADOS = cfg.carpeta_resultados(AQUI / "resultados")
 VERSIONES = {"v1-texto-libre": "rag/con-contexto", "v2-con-citas": "rag/con-citas"}
 MUESTRAS_10 = 100_000
 

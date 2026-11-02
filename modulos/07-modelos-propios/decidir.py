@@ -20,8 +20,10 @@ import json
 import sys
 from pathlib import Path
 
+from curso_core import config as cfg
+
 AQUI = Path(__file__).resolve().parent
-RESULTADOS = AQUI / "resultados"
+RESULTADOS = cfg.carpeta_resultados(AQUI / "resultados")
 MODULO_4 = AQUI.parent / "04-evals"
 sys.path.insert(0, str(MODULO_4))
 ROLES = {"7B": "chat_grande", "1,5B": "chat"}

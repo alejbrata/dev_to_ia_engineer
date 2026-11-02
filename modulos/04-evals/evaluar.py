@@ -18,12 +18,13 @@ from pathlib import Path
 import dataset
 import sistema
 from curso_core import ClienteLLM
+from curso_core import config as cfg
 from curso_core.evals import Informe, ResultadoCaso
 from sistema import corpus
 
 AQUI = Path(__file__).resolve().parent
 RAIZ = AQUI.parent.parent
-VIGENTE = AQUI / "resultados" / "vigente.jsonl"
+VIGENTE = cfg.carpeta_resultados(AQUI / "resultados") / "vigente.jsonl"
 # El sistema que se considera "en producción": el elegido en la lección 06. Cambiarlo cambia
 # la huella.
 SISTEMA = {"reranker": True, "k": 3, "prompt": "rag/con-citas-reglas", "rol": "chat_grande"}

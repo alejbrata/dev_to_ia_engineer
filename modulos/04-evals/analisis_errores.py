@@ -23,12 +23,13 @@ from statistics import median
 import dataset
 import sistema
 from curso_core import ClienteLLM
+from curso_core import config as cfg
 from curso_core.evals import Informe, ResultadoCaso, comparar, prueba_mcnemar
 from pydantic import BaseModel
 from sistema import corpus
 
 AQUI = Path(__file__).resolve().parent
-RESULTADOS = AQUI / "resultados"
+RESULTADOS = cfg.carpeta_resultados(AQUI / "resultados")
 # (prompt, rol del modelo). El orden importa: ante un empate, gana la primera (la más barata).
 CONFIGURACIONES = {
     "base": ("rag/con-citas", "chat"),

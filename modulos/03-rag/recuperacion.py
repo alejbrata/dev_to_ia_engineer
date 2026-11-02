@@ -39,7 +39,7 @@ def main() -> int:
     lexico = IndiceLexico()
     hibrido = IndiceHibrido(denso, lexico)
     hibrido.añadir(trozos)
-    densa_nombre = f"densa ({cfg.cargar().roles['embeddings'].model})"
+    densa_nombre = f"densa ({cfg.cargar().resolver('embeddings')[2]})"
     indices = {densa_nombre: denso, "léxica (BM25)": lexico, "híbrida (RRF)": hibrido}
 
     print(f"1. Recuperación, {len(respondibles)} preguntas con respuesta")

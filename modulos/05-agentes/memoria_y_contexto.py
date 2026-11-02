@@ -22,10 +22,11 @@ import corpus
 import memoria
 import plataforma
 from curso_core import ClienteLLM
+from curso_core import config as cfg
 from curso_core.evals import Informe, ResultadoCaso, comparar, prueba_mcnemar
 from medir_herramientas import DICE_QUE_ABRE
 
-RESULTADOS = Path(__file__).resolve().parent / "resultados"
+RESULTADOS = cfg.carpeta_resultados(Path(__file__).resolve().parent / "resultados")
 ROL = "agente"
 OPCIONES = agente.OPCIONES.model_copy(update={"razonar": False})
 EJEMPLO = "pagos-pool-sin-despliegue"

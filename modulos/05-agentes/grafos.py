@@ -21,12 +21,13 @@ from statistics import median
 import agente
 import plataforma
 from curso_core import ClienteLLM
+from curso_core import config as cfg
 from curso_core.evals import Informe, ResultadoCaso, comparar, prueba_mcnemar
 from grafo import Checkpoints
 from grafo_guardia import EstadoGuardia, NodosGuardia, construir
 
 AQUI = Path(__file__).resolve().parent
-RESULTADOS = AQUI / "resultados"
+RESULTADOS = cfg.carpeta_resultados(AQUI / "resultados")
 CHECKPOINTS = Checkpoints(AQUI / "checkpoints")
 EJEMPLO = "pagos-pool-despliegue"
 CAIDA = "usuarios-deadlocks"

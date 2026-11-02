@@ -24,6 +24,7 @@ import agente
 import grafo_langgraph
 import plataforma
 from curso_core import ClienteLLM
+from curso_core import config as cfg
 from curso_core.evals import Informe, ResultadoCaso, comparar, prueba_mcnemar
 from grafo import FIN, Checkpoints, Grafo
 from grafo_guardia import EstadoGuardia, NodosGuardia
@@ -34,7 +35,7 @@ from langgraph.types import Command
 from pydantic import BaseModel
 
 AQUI = Path(__file__).resolve().parent
-RESULTADOS = AQUI / "resultados"
+RESULTADOS = cfg.carpeta_resultados(AQUI / "resultados")
 CHECKPOINTS = AQUI / "checkpoints"
 EJEMPLO = "pagos-pool-despliegue"
 CAIDA = "usuarios-deadlocks"

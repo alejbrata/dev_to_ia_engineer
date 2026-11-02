@@ -23,9 +23,10 @@ import agente
 import plataforma
 import subagentes
 from curso_core import ClienteLLM, Opciones
+from curso_core import config as cfg
 from curso_core.evals import Informe, ResultadoCaso, comparar, prueba_mcnemar
 
-RESULTADOS = Path(__file__).resolve().parent / "resultados"
+RESULTADOS = cfg.carpeta_resultados(Path(__file__).resolve().parent / "resultados")
 ROL = "agente"
 OPCIONES = Opciones(temperatura=0, max_tokens=800, razonar=False)
 EJEMPLO = "pagos-pool-despliegue"

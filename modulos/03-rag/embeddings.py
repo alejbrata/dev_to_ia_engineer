@@ -49,8 +49,8 @@ def main() -> int:
     trozos = fragmentos()
 
     # Los nombres salen de config/models.toml: si cambias un modelo, la salida lo dice.
-    roles = cfg.cargar().roles
-    principal, ingles, otro = (roles[r].model for r in EMBEDDINGS)
+    config = cfg.cargar()
+    principal, ingles, otro = (config.resolver(r)[2] for r in EMBEDDINGS)
 
     print("1. Recuperación con secciones, 26 preguntas")
     configuraciones = {
@@ -86,9 +86,12 @@ def main() -> int:
         indice.buscar(preguntas[0].pregunta)
     except ValueError as e:
         print(f"   con {ingles:20} -> ValueError: {e}")
-    indice.rol = "embeddings_otro"  # mismas dimensiones que el principal
-    recall, orden = medir(indice, preguntas)
-    print(f"   con {otro:20} -> sin error · recall@3 {recall:4.0%} · MRR {orden:.2f}")
+    indice.rol = "embeddings_otro"  # mismas dimensiones que el principal (si es el local)
+    try:
+        recall, orden = medir(indice, preguntas)
+        print(f"   con {otro:20} -> sin error · recall@3 {recall:4.0%} · MRR {orden:.2f}")
+    except ValueError as e:  # con CURSO_PROVEEDOR, el principal es otro y no coinciden
+        print(f"   con {otro:20} -> ValueError: {e}")
     return 0
 
 

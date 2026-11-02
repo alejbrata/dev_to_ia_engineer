@@ -27,11 +27,12 @@ import agente
 import grafos
 import plataforma
 from curso_core import ClienteLLM
+from curso_core import config as cfg
 from curso_core.evals import Informe, ResultadoCaso, pass_at_k, pass_hat_k
 from medir_herramientas import DICE_QUE_ABRE
 
 AQUI = Path(__file__).resolve().parent
-RESULTADOS = AQUI / "resultados"
+RESULTADOS = cfg.carpeta_resultados(AQUI / "resultados")
 DATOS = AQUI / "datos"
 ROL = "agente"
 OPCIONES = agente.OPCIONES.model_copy(update={"razonar": False})

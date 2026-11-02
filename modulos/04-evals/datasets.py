@@ -19,11 +19,12 @@ from pathlib import Path
 import dataset
 import sistema
 from curso_core import ClienteLLM
+from curso_core import config as cfg
 from curso_core.evals import Informe, ResultadoCaso
 from curso_core.rag import Fragmento
 from sistema import corpus
 
-RESULTADOS = Path(__file__).resolve().parent / "resultados"
+RESULTADOS = cfg.carpeta_resultados(Path(__file__).resolve().parent / "resultados")
 TIPOS = ["con_respuesta", "sin_respuesta", "fuera_de_ambito", "guardarrail"]
 
 

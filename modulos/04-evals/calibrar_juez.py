@@ -21,9 +21,10 @@ from statistics import median
 
 import jueces
 from curso_core import ClienteLLM
+from curso_core import config as cfg
 from curso_core.evals import Informe, ResultadoCaso, acuerdo
 
-RESULTADOS = Path(__file__).resolve().parent / "resultados"
+RESULTADOS = cfg.carpeta_resultados(Path(__file__).resolve().parent / "resultados")
 # El juez v2 se calibró con la comprobación literal de las citas; la parte 4 recalcula sus
 # veredictos con la que ignora el formato de las tablas, sin volver a llamar al modelo.
 v2_literal = partial(jueces.juez_v2, comprobar=jueces.cita_literal)

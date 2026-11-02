@@ -27,12 +27,13 @@ import anyio.from_thread
 import anyio.to_thread
 import plataforma
 from curso_core import ClienteLLM, Herramienta, LlamadaHerramienta
+from curso_core import config as cfg
 from curso_core.evals import Informe, ResultadoCaso, comparar, prueba_mcnemar
 from mcp import Client, StdioServerParameters
 from mcp.types import TextContent
 
 AQUI = Path(__file__).resolve().parent
-RESULTADOS = AQUI / "resultados"
+RESULTADOS = cfg.carpeta_resultados(AQUI / "resultados")
 SERVIDOR = AQUI / "servidor_mcp.py"
 ROL = "agente"
 OPCIONES = agente.OPCIONES.model_copy(update={"razonar": False})

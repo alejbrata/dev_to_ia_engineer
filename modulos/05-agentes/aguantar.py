@@ -21,10 +21,11 @@ import agente
 import aguante
 import plataforma
 from curso_core import ClienteLLM
+from curso_core import config as cfg
 from curso_core.evals import Informe, ResultadoCaso
 
 AQUI = Path(__file__).resolve().parent
-RESULTADOS = AQUI / "resultados"
+RESULTADOS = cfg.carpeta_resultados(AQUI / "resultados")
 CHECKPOINTS = AQUI / "checkpoints"
 ROL = "agente"
 OPCIONES = agente.OPCIONES.model_copy(update={"razonar": False})

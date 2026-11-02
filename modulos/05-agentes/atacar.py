@@ -20,10 +20,11 @@ import agente
 import plataforma
 import seguridad
 from curso_core import ClienteLLM, LlamadaHerramienta
+from curso_core import config as cfg
 from curso_core.evals import Informe, ResultadoCaso
 from plataforma import HERRAMIENTAS
 
-RESULTADOS = Path(__file__).resolve().parent / "resultados"
+RESULTADOS = cfg.carpeta_resultados(Path(__file__).resolve().parent / "resultados")
 ROL = "agente"
 OPCIONES = agente.OPCIONES.model_copy(update={"razonar": False})
 CONFIGURACIONES = ["tal cual", "delimitada", "guardia"]

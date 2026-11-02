@@ -22,9 +22,10 @@ from pathlib import Path
 from statistics import median
 
 import guardrails
+from curso_core import config as cfg
 
 AQUI = Path(__file__).resolve().parent
-RESULTADOS = AQUI / "resultados"
+RESULTADOS = cfg.carpeta_resultados(AQUI / "resultados")
 sys.path.insert(0, str(AQUI.parent / "04-evals"))
 
 # (nombre, pregunta, cómo se reconoce que el ataque funcionó)

@@ -102,8 +102,10 @@ provider = "openai"
 model = "gpt-6-luna"
 
 [roles.chat_openai_grande]
-# Opcional (anexo G): el modelo intermedio de OpenAI en coste y capacidad. Revisado: 2026-10.
-provider = "openai"
+# Opcional (anexo G): el modelo intermedio de OpenAI en coste y capacidad. Razona siempre:
+# no admite desactivarlo y, por eso, tampoco herramientas en /chat/completions. Sirve de
+# juez, no de agente. Revisado: 2026-11.
+provider = "openai_razonador"
 model = "gpt-6.1-sol"
 
 [roles.chat_claude]
@@ -150,6 +152,19 @@ provider = "ollama"
 model = "nomic-embed-text"
 hf_repo = "nomic-ai/nomic-embed-text-v1.5"
 
+[roles.embeddings_openai]
+# Opcional (CURSO_PROVEEDOR=openai): los embeddings de OpenAI. 1536 dimensiones, no las 1024
+# de bge-m3: un índice hecho con uno no sirve para consultar con el otro. Revisado: 2026-11.
+provider = "openai"
+model = "text-embedding-3-small"
+
+[roles.embeddings_hf]
+# Opcional (CURSO_PROVEEDOR=hf): el mismo bge-m3 del rol embeddings, servido por la
+# inferencia de Hugging Face. Necesita HF_TOKEN y créditos. Revisado: 2026-11.
+provider = "huggingface_inferencia"
+model = "BAAI/bge-m3"
+hf_repo = "BAAI/bge-m3"
+
 [providers.ollama]
 # Servidor local de Ollama. No necesita clave.
 # 127.0.0.1 y no localhost: en algunos sistemas (Windows, sobre todo), localhost intenta
@@ -188,12 +203,22 @@ tipo = "openai"
 base_url = "https://router.huggingface.co/v1"
 api_key_env = "HF_TOKEN"
 
+[providers.huggingface_inferencia]
+# La inferencia de Hugging Face para embeddings (tarea feature-extraction). No tiene una
+# versión compatible con OpenAI, por eso tiene su propio tipo. Revisado: 2026-11.
+tipo = "hf_inference"
+base_url = "https://router.huggingface.co/hf-inference/models"
+api_key_env = "HF_TOKEN"
+
 [providers.openai]
 # Opcional (anexo G). La API de OpenAI pide `max_completion_tokens` en lugar de
 # `max_tokens`, y sus modelos actuales solo aceptan la temperatura por defecto: con
 # temperature=0 responden 400; su salida estructurada estricta exige el esquema cerrado; y
 # razonan por defecto, algo incompatible con las herramientas en /chat/completions (400):
-# con razonar=False se envía reasoning_effort="none". Revisado: 2026-11.
+# con razonar=False se envía reasoning_effort="none". Si la práctica no dice nada, no
+# razona, como los modelos locales: razonando, un max_tokens=80 se va entero en razonar y
+# la respuesta llega vacía. No devuelve logprobs. Con max_tokens=1 responde 400 (pide
+# más margen para terminar el mensaje). Revisado: 2026-11.
 tipo = "openai"
 base_url = "https://api.openai.com/v1"
 api_key_env = "OPENAI_API_KEY"
@@ -201,6 +226,20 @@ parametro_max_tokens = "max_completion_tokens"
 omitir = ["temperature"]
 esquema_estricto = true
 sin_razonar = { reasoning_effort = "none" }
+razonar_por_defecto = false
+admite_logprobs = false
+
+[providers.openai_razonador]
+# La misma API, para modelos que razonan siempre (rechazan reasoning_effort="none"): si
+# una práctica pide razonar=False, la API responde 400 y se ve. Revisado: 2026-11.
+tipo = "openai"
+base_url = "https://api.openai.com/v1"
+api_key_env = "OPENAI_API_KEY"
+parametro_max_tokens = "max_completion_tokens"
+omitir = ["temperature"]
+esquema_estricto = true
+sin_razonar = { reasoning_effort = "none" }
+admite_logprobs = false
 
 [providers.anthropic]
 # Opcional (anexo A). No usa el formato de OpenAI: curso_core lo llama con el SDK oficial,
@@ -254,7 +293,7 @@ salida = 2.565
 entrada = 0.10
 salida = 0.50
 
-[precios."openai/gpt-6.1-sol"]
+[precios."openai_razonador/gpt-6.1-sol"]
 entrada = 2.00
 salida = 10.00
 
@@ -282,3 +321,43 @@ salida = 0.0
 [precios."llamacpp_rerank/gpustack/bge-reranker-v2-m3-GGUF:Q8_0"]
 entrada = 0.0
 salida = 0.0
+
+[precios."openai/text-embedding-3-small"]
+# Revisado: 2026-11. Los embeddings no tienen tokens de salida.
+entrada = 0.02
+salida = 0.0
+
+# Proveedores alternativos para CURSO_PROVEEDOR. Con `CURSO_PROVEEDOR=openai`, cualquier
+# práctica que pida el rol de la izquierda recibe el de la derecha, sin tocar el código.
+# Los roles que no aparecen (el reranker, los de comparar embeddings...) siguen siendo
+# los locales. Para cambios más finos, CURSO_ROLES (que tiene prioridad).
+
+[alternativas.openai]
+# chat_grande y razonador van al modelo barato: el intermedio no admite herramientas en
+# /chat/completions ni desactivar el razonamiento. Las prácticas que comparan chat con
+# chat_grande comparan el mismo modelo consigo mismo.
+chat = "chat_openai"
+chat_pequeno = "chat_openai"
+chat_grande = "chat_openai"
+razonador = "chat_openai"
+agente = "chat_openai"
+judge = "chat_openai_grande"
+embeddings = "embeddings_openai"
+
+[alternativas.hf]
+chat = "chat_hf"
+chat_pequeno = "chat_hf"
+chat_grande = "chat_hf"
+razonador = "chat_hf"
+agente = "chat_hf"
+judge = "chat_hf"
+embeddings = "embeddings_hf"
+
+[alternativas.claude]
+# Claude no ofrece embeddings: el rol embeddings sigue siendo el local.
+chat = "chat_claude"
+chat_pequeno = "chat_claude"
+chat_grande = "chat_claude"
+razonador = "chat_claude"
+agente = "chat_claude"
+judge = "chat_claude"

@@ -23,10 +23,11 @@ from statistics import median
 import medir_modelos
 import plataforma
 from curso_core import ClienteLLM
+from curso_core import config as cfg
 from curso_core.evals import Informe, comparar, prueba_mcnemar
 from plataforma import corpus
 
-RESULTADOS = Path(__file__).resolve().parent / "resultados"
+RESULTADOS = cfg.carpeta_resultados(Path(__file__).resolve().parent / "resultados")
 MODELOS = ["qwen2.5-7b", "qwen3-8b", "qwen3-8b-razonando"]
 # "Abro una incidencia", "he abierto la incidencia", "incidencia abierta"...
 DICE_QUE_ABRE = re.compile(
