@@ -1,0 +1,167 @@
+---
+title: "Prompting, RAG o fine-tuning"
+description: "Prompting, RAG o fine-tuning: qué problema resuelve cada uno, decidido con datos del asistente (lo que saben los modelos sin documentación y dónde falla el pequeño con RAG), y la hipótesis que guía el módulo"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
+:::note[Revisado: 2026-11]
+Salidas reales con Qwen2.5 7B y 1,5B en Ollama sobre CPU, y el dataset de 58 preguntas del módulo 4. Las respuestas con RAG son las grabadas en el módulo 4 (7B) y en la lección 6.01 (1,5B).
+:::
+
+## Objetivos
+
+Al terminar esta lección podrás:
+
+- Distinguir qué problema resuelve cada técnica: el prompt, el comportamiento; el RAG, el conocimiento; el ajuste fino, el comportamiento que el prompt no consigue.
+- Medir si un modelo "sabe" algo sin documentación, y qué hace cuando no lo sabe.
+- Clasificar los fallos de un sistema con RAG para saber qué técnica los arreglaría.
+- Formular, con datos, si merece la pena ajustar un modelo.
+
+## Teoría
+
+### Tres técnicas, tres problemas
+
+Cuando un sistema con LLM no da lo que necesitas, hay tres palancas, y cada una arregla una cosa distinta:
+
+- **El prompt** cambia lo que el modelo hace con lo que ya sabe: el formato, las reglas, el tono. Es barato y rápido de probar: el módulo 2.
+- **El RAG** le da el conocimiento que no tiene: tus documentos, en el momento de responder. Se actualiza cambiando los documentos y permite citar la fuente: el módulo 3.
+- **El ajuste fino** (*fine-tuning*) cambia el modelo: sus pesos. Sirve para que haga mejor y de forma más consistente una tarea concreta (un formato, un estilo, seguir unas reglas), o para que un modelo pequeño haga lo que antes necesitaba uno grande. Es lo más caro: datos de entrenamiento, cómputo, evaluación y mantenimiento.
+
+Una idea muy extendida es que el ajuste fino sirve para "enseñarle al modelo tu documentación". Funciona mal para eso: cuesta mucho meter hechos nuevos en los pesos de forma fiable, cada cambio en la documentación obliga a reentrenar y el modelo no puede citar de dónde sale lo que dice. Hay estudios que lo comparan con el RAG para inyectar conocimiento, y el RAG gana (en Para profundizar). Si vienes de backend: el conocimiento es como los datos de una base de datos, y el comportamiento, como el código. No compilas los datos en el binario.
+
+### El orden de las preguntas
+
+1. ¿Lo arregla un prompt mejor? Pruébalo primero: cuesta minutos.
+2. ¿Le falta conocimiento? RAG, o meter el documento entero en el contexto si cabe (lección 3.01).
+3. ¿Tiene el conocimiento delante y aun así se equivoca? Es un problema de comportamiento: un modelo mayor, o ajustar uno pequeño para la tarea.
+
+Y antes de responder ninguna, mide dónde falla. Sin eso, se elige técnica por moda.
+
+## Práctica
+
+[`decidir.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/07-modelos-propios/decidir.py) junta tres mediciones sobre las 58 preguntas del dataset del módulo 4:
+
+- **Sin documentación**: los modelos de 7B y 1,5B responden con un prompt que les pide abstenerse si no saben ([`prompts/modelos/sin-contexto.md`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/prompts/modelos/sin-contexto.md)). Mide lo que saben por sí solos.
+- **Con RAG**: el sistema vigente, con el 7B, y el mismo sistema con el 1,5B (el respaldo de la lección 6.01), ya grabados.
+- **Dónde falla el 1,5B**: las preguntas que el 7B acierta y el 1,5B no. La recuperación es la misma para los dos (no depende del modelo que genera), así que el script mira, con los fragmentos que recuperó el vigente, si la respuesta estaba en el contexto.
+
+La columna "inventa" cuenta las preguntas con respuesta en las que el modelo ni acierta ni se abstiene: responde otra cosa. Tarda unos 10 minutos; con `--grabadas`, un segundo.
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/07-modelos-propios/decidir.py
+```
+
+```text
+1-2. Aciertos en las 58 preguntas del dataset del módulo 4
+                               total  con respuesta  sin respuesta  inventa
+   7B, sin documentación      16 de 58       2 de 42      14 de 16       10
+   1,5B, sin documentación    11 de 58       1 de 42      10 de 16       32
+   7B, con RAG                52 de 58      38 de 42      14 de 16        3
+   1,5B, con RAG              40 de 58      32 de 42       8 de 16        7
+   7B sin documentación, una que inventa: «¿Qué significa el error invalid_grant al iniciar sesión con Google?»
+        → El error "invalid_grant" indica que el código de autorización o el token de acceso proporcionado no
+
+3. Las 12 que acierta el 7B y falla el 1,5B, con la misma recuperación
+    6 respondió cuando tocaba abstenerse: m3-30, s-02, s-05, s-06, f-02, g-03
+    4 respondió mal, con la respuesta en el contexto: m3-05, m3-22, n-06, n-16
+    2 se abstuvo, con la respuesta en el contexto: m3-26, n-13
+
+4. Lo que cuesta (mediana por respuesta, con RAG, en la CPU del curso)
+   7B: 11.5 s
+   1,5B: 2.6 s
+```
+
+## Mide y depura
+
+### Sin documentación, no saben nada de la empresa
+
+De las 42 preguntas con respuesta en la documentación, el 7B acierta 2 sin ella, y el 1,5B, 1. No es que sean malos modelos: los runbooks de una empresa ficticia no están en sus datos de entrenamiento, igual que no lo estarían los de la tuya. El conocimiento lo pone el RAG: con él, 38 y 32.
+
+Lo que cambia entre los dos es qué hacen cuando no saben. El 7B se abstiene en la mayoría (inventa en 10 de 42) y acierta 14 de las 16 preguntas que no deben responderse. El 1,5B inventa en 32 de 42. Un modelo pequeño sin documentación es una fuente de respuestas falsas con buena redacción.
+
+Para este sistema, ajustar un modelo para que "aprenda la documentación" sería el camino equivocado: habría que convertir los 29 documentos del corpus en datos de entrenamiento, reentrenar con cada cambio y renunciar a las citas. El RAG ya resuelve el conocimiento.
+
+### Con RAG, el modelo pequeño falla por comportamiento
+
+El 1,5B con RAG acierta 40 de 58, frente a 52. Las 12 que pierde se reparten así:
+
+- **6 en las que respondió cuando tocaba abstenerse.** El prompt tiene reglas para eso (lección 4.06), las mismas que sigue el 7B; el pequeño no las sigue.
+- **4 en las que respondió mal teniendo la respuesta en el contexto.**
+- **2 en las que se abstuvo teniendo la respuesta delante.**
+
+Ninguna se debe a la recuperación: en todas, el contexto era el mismo que el del 7B, que acertó. Mejorar la búsqueda no arreglaría nada. Lo que falla es cómo el modelo pequeño usa el contexto y sigue las reglas: un problema de comportamiento.
+
+### La hipótesis del módulo
+
+El prompt ya se intentó: es el mismo que funciona con el 7B. Quedan dos opciones: usar siempre el 7B, que tarda 11,5 s de mediana por respuesta en esta CPU, o enseñar al 1,5B, que tarda 2,6 s, a comportarse como el 7B en esta tarea. Eso último es un ajuste fino, y se puede hacer con las respuestas del 7B como ejemplos (destilación). Es la hipótesis que siguen las lecciones 05 y 06: ¿cuántas de esas 12 recupera un 1,5B ajustado, y a qué coste?
+
+## Errores frecuentes
+
+**Ajustar un modelo para meterle tu documentación.** Es caro, se queda viejo con cada cambio y no cita. Para conocimiento, RAG.
+
+**Decidir la técnica sin saber dónde falla el sistema.** Si el fallo es de recuperación, ni un modelo mejor ni un ajuste fino lo arreglan. Clasifica los fallos primero, como en el módulo 4.
+
+**Dar por bueno lo que el modelo "sabe".** Sin documentación, el 7B dio una explicación correcta en general y equivocada para esta empresa (la anatomía). Lo que suena bien no es lo que dice tu documentación.
+
+**Saltarse el prompt.** Es la palanca más barata. Pero si el mismo prompt funciona con un modelo mayor y no con el pequeño, el problema ya no es el prompt.
+
+**Olvidar el coste de mantener un modelo ajustado.** Hay que reentrenarlo cuando cambie la tarea o salga un modelo base mejor, y evaluarlo cada vez.
+
+### Anatomía de un error: la respuesta correcta para cualquier empresa menos esta
+
+Sin documentación, el 7B respondió así a una pregunta del dataset:
+
+```text
+«¿Qué significa el error invalid_grant al iniciar sesión con Google?»
+→ El error "invalid_grant" indica que el código de autorización o el token de acceso
+  proporcionado no es válido o ha expirado.
+```
+
+**Cómo leerlo.** La respuesta es correcta como explicación general de OAuth. Pero la documentación de la plataforma dice otra cosa: en este sistema, ese error aparece cuando el secreto de cliente de OAuth ha caducado. Quien estuviera de guardia buscaría un token de usuario expirado y no el secreto del servicio, que es lo que hay que renovar.
+
+**Causa.** El modelo responde con lo que vio en su entrenamiento: miles de páginas sobre OAuth en general, ninguna sobre esta empresa. No tiene forma de distinguir "lo que suele pasar" de "lo que pasa aquí", y el prompt le pedía abstenerse si no sabía. Para él, sí sabía.
+
+**Solución.** Lo que ya hace el asistente: RAG, citas y abstención cuando la respuesta no está en los fragmentos. Con la documentación delante, el sistema vigente responde la causa concreta. Y la lección para decidir técnica: un modelo que "sabe" mucho en general no sabe nada de tu sistema, y ajustarlo con tus documentos le daría un conocimiento que caduca con el próximo cambio.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'Tu asistente tiene que responder sobre una normativa interna que cambia cada mes. ¿Qué técnica usas para el conocimiento?',
+			opciones: [
+				{ texto: 'Ajuste fino con la normativa.', porque: 'Habría que reentrenar cada mes y el modelo no podría citar el artículo. Para conocimiento que cambia, RAG ("Tres técnicas, tres problemas").' },
+				{ texto: 'RAG, o la normativa entera en el contexto si cabe.', correcta: true, porque: 'Se actualiza cambiando los documentos y permite citar. Aquí, sin documentación, los modelos acertaban 1 o 2 de 42.' },
+			],
+		},
+		{
+			pregunta: 'Con RAG, tu modelo pequeño falla preguntas cuya respuesta está en los fragmentos recuperados. ¿Qué mejora pruebas?',
+			opciones: [
+				{ texto: 'Una búsqueda mejor.', porque: 'La respuesta ya estaba en el contexto: la búsqueda funcionó. El fallo es de cómo el modelo usa el contexto ("Con RAG, el modelo pequeño falla por comportamiento").' },
+				{ texto: 'Un prompt mejor y, si el mismo prompt ya funciona con un modelo mayor, un modelo mayor o ajustar el pequeño.', correcta: true, porque: 'Es un problema de comportamiento. Aquí, el prompt funcionaba con el 7B: el siguiente paso es el ajuste fino del 1,5B.' },
+			],
+		},
+		{
+			pregunta: 'Sin documentación, un modelo da una explicación técnica correcta en general. ¿La usarías en tu asistente interno?',
+			opciones: [
+				{ texto: 'Sí, si es técnicamente correcta.', porque: 'Puede ser correcta en general y equivocada para tu sistema: aquí, la causa real de invalid_grant era otra (la anatomía).' },
+				{ texto: 'No: el asistente tiene que responder con la documentación de la empresa, citándola, o abstenerse.', correcta: true, porque: 'Lo que el modelo sabe en general no distingue "lo que suele pasar" de "lo que pasa aquí".' },
+			],
+		},
+		{
+			pregunta: 'El 7B acierta 52 de 58 en 11,5 s por respuesta; el 1,5B, 40 de 58 en 2,6 s, y sus fallos son de comportamiento. ¿Qué te dicen los datos?',
+			opciones: [
+				{ texto: 'Que hay que usar siempre el 7B.', porque: 'Es una opción, pero cuatro veces más lenta. Los datos permiten probar otra: ajustar el pequeño ("La hipótesis del módulo").' },
+				{ texto: 'Que merece la pena probar un ajuste fino del 1,5B, y medir cuántos de los 12 fallos recupera.', correcta: true, porque: 'Los fallos son de comportamiento, que es lo que un ajuste fino puede cambiar. Si recupera la mayoría, tendrías un modelo cuatro veces más rápido para esta tarea.' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- Ovadia et al., [Fine-Tuning or Retrieval? Comparing Knowledge Injection in LLMs](https://arxiv.org/abs/2312.05934) (2023): el RAG gana al ajuste fino para meter conocimiento nuevo.
+- Lewis et al., [Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks](https://arxiv.org/abs/2005.11401) (2020): el artículo que dio nombre al RAG.
+- Hu et al., [LoRA: Low-Rank Adaptation of Large Language Models](https://arxiv.org/abs/2106.09685) (2021): el ajuste fino eficiente de la lección 05.
+- [PEFT, de Hugging Face](https://huggingface.co/docs/peft/index): la librería de referencia para LoRA y otros ajustes finos eficientes.
