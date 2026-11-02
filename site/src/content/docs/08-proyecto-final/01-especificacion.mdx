@@ -1,0 +1,170 @@
+---
+title: "Especificación"
+description: "Especificación: el alumno elige dominio y problema, y lo deja escrito con métrica, umbral y línea base antes de escribir código"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
+## Objetivos
+
+Al terminar esta lección podrás:
+
+- Elegir un problema para tu proyecto final en el que un LLM aporte algo medible, y descartar los que no.
+- Escribir la especificación antes del código: problema, usuarios, métrica, umbral, línea base y lo que queda fuera.
+- Preparar el esqueleto del proyecto con la plantilla del curso y comprobar qué le falta.
+- Calcular cuántos casos necesita tu eval para que la métrica signifique algo.
+
+## Teoría
+
+### Qué hace bueno un proyecto final
+
+El proyecto final es la prueba de que puedes hacer el trabajo: construir un sistema con LLMs, medirlo, depurarlo y ponerlo en marcha. No hace falta que sea grande. Lo que se nota es si está bien medido y bien razonado. Un buen problema cumple cuatro condiciones:
+
+- **Es real.** Alguien pierde tiempo o dinero con él hoy, y puedes describir cómo se resuelve sin tu sistema.
+- **Tienes datos.** Documentos, tickets, correos, registros: algo con lo que construir y, sobre todo, con lo que montar la eval. Si no puedes conseguir 30 casos con su respuesta esperada, no puedes medir el proyecto.
+- **Se puede medir.** Hay una respuesta correcta, o al menos un criterio que se puede comprobar, como en el módulo 4.
+- **El LLM aporta.** Si una expresión regular, una consulta SQL o un clasificador clásico lo resuelven, eso es tu línea base, y el LLM tiene que superarla. En el anexo B.3, un encoder pequeño clasificaba sentimiento mejor que un LLM y cien veces más rápido.
+
+Dominios que suelen funcionar: un asistente sobre la documentación de un equipo (como el del curso), clasificar y enrutar incidencias o tickets (módulo 2), extraer datos de documentos con un formato variable, un agente que hace una tarea acotada con herramientas (módulo 5). Lo que suele salir mal: "chatea con tus PDFs" sin eval, un envoltorio de una API sin ninguna decisión propia, o un problema tan abierto que no hay forma de decir si una respuesta está bien.
+
+### La especificación va antes que el código
+
+En backend no empiezas un servicio sin saber qué contrato tiene. Aquí, el contrato es la especificación, y tiene seis partes:
+
+- **Problema**: qué duele y a quién, en una o dos frases.
+- **Usuarios**: quién lo usa y en qué situación (con prisa, de guardia, sin conocer el dominio...). Cambia lo que es una buena respuesta.
+- **Métrica**: cómo sabrás si funciona, medible con tu eval. "Que responda bien" no es una métrica; "aciertos en 58 preguntas ancladas a la documentación" sí.
+- **Umbral**: a partir de qué valor lo darías por bueno. Sin umbral, cualquier resultado parece un éxito.
+- **Línea base**: lo que da la solución más simple. En el asistente del curso, el modelo sin documentación acertaba 2 de 42 preguntas (lección 7.01): esa es la distancia que justifica el RAG.
+- **Fuera de alcance**: lo que el proyecto no hace, a propósito. Te protege de crecer sin medir.
+
+La técnica (prompt, RAG, agente, ajuste fino) **no** es parte de la especificación: sale de medir la línea base y de las preguntas de la lección 7.01. Elegirla antes es empezar por la solución.
+
+### Cuántos casos necesita la eval
+
+Con pocos casos, la métrica no dice nada. Si aciertas 8 de 10, el intervalo de confianza del 95 % va del 49 % al 94 % (lección 4.03). Con 30 casos y un 80 % de aciertos, va del 63 % al 90 %; con 58, del 67 % al 88 %. Por eso el curso pide como mínimo 30 casos, anclados a tus datos y con los tipos que importan: preguntas con respuesta, sin respuesta y fuera de ámbito, o el equivalente en tu tarea.
+
+## Práctica
+
+El código está en [`modulos/08-proyecto-final/`](https://github.com/alejbrata/dev_to_ia_engineer/tree/main/modulos/08-proyecto-final). Tiene tres piezas:
+
+- **`plantilla/`**: el esqueleto de un proyecto. Un `app.py` mínimo con `curso_core`, su prompt en `prompts/`, un `evaluar.py` que guarda los resultados con tokens, latencia y coste, un test y un README con las secciones que se piden.
+- **`proyecto.toml`**: el manifiesto del proyecto. Dice dónde está cada pieza y contiene la especificación.
+- **`comprobar_proyecto.py`**: lee el manifiesto y comprueba, mirando el contenido de cada fichero, los requisitos mínimos de la lección 02.
+
+Copia la plantilla a una carpeta propia de tu fork, para que tu proyecto use el mismo `curso_core` y la misma configuración de modelos:
+
+```sh
+cp -r modulos/08-proyecto-final/plantilla proyectos/mi-proyecto
+uv run python modulos/08-proyecto-final/comprobar_proyecto.py proyectos/mi-proyecto/proyecto.toml
+```
+
+Recién copiada, antes del primer commit, esto es lo que dice:
+
+```text
+Proyecto: (sin nombre)
+   FALTA especificación             sin problema, usuarios, metrica, linea_base, fuera_de_alcance
+   FALTA dataset de la eval         1 casos; con un 80% de aciertos, IC 95 % 21%-100%
+   FALTA resultados de la eval      no hay resultados grabados
+   OK    tests                      1 ficheros (sin ejecutar: usa --tests)
+   OK    trazas                     evaluar.py
+   OK    métricas                   evaluar.py
+   FALTA coste medido               no hay medidas de tokens, latencia, dinero
+   AVISO secretos                   ningún fichero en git: haz commit y repite
+   OK    modelos en configuración   16 modelos, ninguno en el código
+   OK    README                     las 6 secciones
+   5 OK, 1 avisos, 4 por hacer
+```
+
+Lo primero que hay que rellenar es la especificación, en `proyecto.toml`. La del asistente del curso, que es el ejemplo resuelto del módulo ([`ejemplo/proyecto.toml`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/08-proyecto-final/ejemplo/proyecto.toml)), queda así:
+
+```toml
+[especificacion]
+problema = "El equipo técnico pierde tiempo buscando en runbooks, postmortems y documentos de arquitectura cuando hay una incidencia, y la respuesta tiene que ser la de esos documentos, no una genérica."
+usuarios = "Ingenieros del equipo técnico de la plataforma, sobre todo los de guardia."
+metrica = "Aciertos en las 58 preguntas del dataset del módulo 4, ancladas a fragmentos del corpus"
+umbral = 0.8
+linea_base = "Sin documentación, el modelo de 7B acierta 2 de las 42 preguntas con respuesta (lección 7.01)."
+fuera_de_alcance = "Actuar sobre la plataforma (eso es el agente del módulo 5), datos personales y preguntas que no tratan de la plataforma."
+```
+
+Después, los primeros casos de la eval en `datos/casos.jsonl`, antes de escribir el sistema. Escribirlos te obliga a decidir qué es una respuesta correcta, y esa decisión cambia el diseño.
+
+## Mide y depura
+
+### La primera medida es la línea base
+
+Antes de construir nada, mide la solución más simple con tus primeros casos: el modelo con un prompt directo, o la regla sin LLM. Es lo que hizo la lección 7.01 con el asistente, y es lo que da sentido a todo lo demás. Sin línea base, un 70 % de aciertos puede ser un gran resultado o uno pésimo.
+
+### El umbral se fija antes de ver los resultados
+
+Si fijas el umbral después de medir, lo pondrás donde caiga tu resultado. Escríbelo en la especificación al principio y no lo toques sin dejar constancia del motivo. Es la misma disciplina que separar desarrollo y prueba en el módulo 4.
+
+### El comprobador mide el contenido, no la presencia
+
+En la salida, la plantilla tiene un README con las seis secciones y un test, y por eso salen OK, aunque estén vacíos de contenido real. El comprobador te dice qué falta de forma objetiva. Si lo que hay es bueno o no lo dice la rúbrica de la lección 03, que mira también lo que no se puede comprobar con un script.
+
+## Errores frecuentes
+
+- **Empezar por la técnica.** "Quiero hacer un agente" no es un problema. Primero el problema y la línea base; la técnica sale de ahí.
+- **Una métrica que no se puede calcular.** "Que el usuario esté contento" no entra en una eval. Busca algo que puedas comprobar caso a caso.
+- **Elegir un problema sin datos.** Si no puedes conseguir 30 casos reales o realistas, cambia de problema.
+- **Un alcance que crece.** Cada funcionalidad nueva necesita sus casos en la eval. Lo que no esté en "fuera de alcance" acabará colándose.
+- **Pocos casos.** Es la anatomía de esta lección.
+
+### Anatomía de un error: una eval que no puede suspender
+
+**El síntoma.** La plantilla trae un caso de ejemplo, y el comprobador dice:
+
+```text
+   FALTA dataset de la eval         1 casos; con un 80% de aciertos, IC 95 % 21%-100%
+```
+
+**Cómo leerlo.** El intervalo es lo importante: con un caso, un sistema que acierta el 80 % de las veces es compatible con cualquier tasa real entre el 21 % y el 100 %. Pasa lo mismo, en menor grado, con 5 o 10 casos. La eval "funciona", da un número, pero ese número no puede decirte que el sistema es malo.
+
+**La causa.** Dejar el dataset para el final, cuando el sistema ya está hecho, y conformarse con los pocos casos que se te ocurren probando a mano.
+
+**La solución.** Al menos 30 casos antes de construir, con los tipos que importan en tu tarea y anclados a tus datos (lección 4.02). Con 30 casos y un 80 % de aciertos, el intervalo va del 63 % al 90 %: ya distingue un sistema útil de uno que no lo es. Si necesitas comparar dos versiones parecidas, necesitarás más.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'Quieres hacer un proyecto que clasifique correos de clientes en cinco categorías. Un compañero dice que con palabras clave ya acierta el 70 %. ¿Qué haces con ese dato?',
+			opciones: [
+				{ texto: 'Ignorarlo: un LLM siempre lo hará mejor.', porque: 'No siempre: en el anexo B.3, un encoder pequeño ganaba al LLM. Hay que medirlo ("Qué hace bueno un proyecto final").' },
+				{ texto: 'Usarlo como línea base: tu sistema tiene que superar ese 70 % en tu eval, y si no, no compensa.', correcta: true, porque: 'La línea base da sentido al resultado. Sin ella, cualquier porcentaje parece bueno.' },
+			],
+		},
+		{
+			pregunta: '¿Cuál de estas es una métrica válida para la especificación?',
+			opciones: [
+				{ texto: 'Que el asistente responda de forma útil.', porque: 'No se puede comprobar caso a caso ("La especificación va antes que el código").' },
+				{ texto: 'Aciertos en 40 preguntas con su respuesta esperada, anclada a la documentación, con un umbral del 80 %.', correcta: true, porque: 'Se calcula con una eval, tiene umbral y se puede repetir en cada cambio.' },
+				{ texto: 'Usar un modelo de 70B, que es más capaz.', porque: 'Eso es una decisión técnica, no una métrica. Y sale de medir, no de la especificación.' },
+			],
+		},
+		{
+			pregunta: 'Tu eval tiene 10 casos y aciertas 9. ¿Qué puedes afirmar?',
+			opciones: [
+				{ texto: 'Que el sistema acierta el 90 %.', porque: 'Con 10 casos, el intervalo del 95 % va del 60 % al 98 %. No puedes afirmar el 90 % (anatomía).' },
+				{ texto: 'Muy poco: el intervalo es tan ancho que no distingue un sistema bueno de uno mediocre. Necesitas más casos.', correcta: true, porque: 'Por eso el mínimo del curso son 30 casos, y más si comparas versiones parecidas.' },
+			],
+		},
+		{
+			pregunta: 'A mitad de proyecto ves que tu sistema acierta el 72 % y tu umbral era el 80 %. ¿Qué haces?',
+			opciones: [
+				{ texto: 'Bajar el umbral al 70 %: era demasiado ambicioso.', porque: 'Moverlo después de medir le quita todo el valor ("El umbral se fija antes de ver los resultados").' },
+				{ texto: 'Mantener el umbral, analizar los errores para mejorar y, si no se alcanza, contarlo como límite del proyecto.', correcta: true, porque: 'Un proyecto que explica por qué no llega, con datos, vale más que uno que mueve la meta.' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- [Rules of Machine Learning](https://developers.google.com/machine-learning/guides/rules-of-ml), de Google: la primera regla es no tener miedo a lanzar sin ML, y la línea base viene de ahí.
+- [Your AI Product Needs Evals](https://hamel.dev/blog/posts/evals/), de Hamel Husain: por qué la eval va antes que el sistema.
+- [What We Learned from a Year of Building with LLMs](https://applied-llms.org/): lecciones de equipos que han puesto sistemas con LLMs en producción, de la táctica a la estrategia.
+- [Building effective agents](https://www.anthropic.com/engineering/building-effective-agents), de Anthropic: cuándo un agente compensa y cuándo basta con algo más simple.

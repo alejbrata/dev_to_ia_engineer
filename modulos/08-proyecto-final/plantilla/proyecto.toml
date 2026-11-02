@@ -1,0 +1,37 @@
+# Manifiesto de tu proyecto final. Copia la carpeta plantilla/ a proyectos/<tu-proyecto>/
+# en tu fork, rellena esto y compruébalo con:
+#   uv run python modulos/08-proyecto-final/comprobar_proyecto.py proyectos/<tu-proyecto>/proyecto.toml
+
+[proyecto]
+nombre = ""
+raiz = "."  # las rutas de abajo son relativas a esta carpeta
+readme = "README.md"
+
+[especificacion]
+# Lección 8.01. Todo antes de escribir código.
+problema = ""          # qué problema real resuelve y para quién duele
+usuarios = ""          # quién lo usa y en qué situación
+metrica = ""           # cómo sabrás si funciona, medible en tu eval
+umbral = 0.8           # a partir de qué valor de la métrica lo darías por bueno
+linea_base = ""        # cuánto da la solución más simple (sin LLM, o con un prompt sin más)
+fuera_de_alcance = ""  # lo que el proyecto no hace, a propósito
+
+[evals]
+dataset = "datos/casos.jsonl"
+resultados = "resultados/eval.jsonl"
+
+[codigo]
+sistema = ["app.py", "prompts"]   # lo que, si cambia, obliga a repetir la eval
+tests = ["."]
+raices = ["."]                    # dónde buscar secretos
+# config_modelos: sin ponerlo, se usa el config/models.toml del repositorio
+
+[observabilidad]
+trazas = ["evaluar.py"]
+metricas = ["evaluar.py"]
+
+[coste]
+medidas = ["resultados/eval.jsonl"]
+
+[secretos]
+de_prueba = []  # valores falsos con forma de secreto que uses en tests, uno a uno
