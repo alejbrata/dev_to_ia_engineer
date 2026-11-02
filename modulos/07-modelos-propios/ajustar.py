@@ -8,10 +8,10 @@
 3. Lo que queda: un adaptador por época (unos MB) y, para servirlo, el modelo con el
    adaptador fusionado.
 
-Necesita el grupo opcional `hf` y los datos de datos_ajuste.py. Es CPU pura: unas tres
-horas en la máquina del curso. Los modelos van a ~/.cache/curso-ai-engineer/lora.
+Necesita el grupo opcional `hf` y los datos de datos_ajuste.py. Es CPU pura: unas cuatro
+horas y media en la máquina del curso. Los modelos van a ~/.cache/curso-ai-engineer/lora.
 Con --grabadas, un segundo.
-Uso: `uv run python modulos/07-modelos-propios/ajustar.py [--grabadas]`
+Uso: `uv run --group hf python modulos/07-modelos-propios/ajustar.py [--grabadas]`
 """
 
 from __future__ import annotations
@@ -109,6 +109,7 @@ def entrenar() -> dict:
     )
 
     curva = [{"epoca": 0.0, "validacion": perdida(modelo, datos["validacion"])}]
+    print(curva[-1], flush=True)
     orden = random.Random(0)
     n = len(datos["entrenamiento"])
     cada = n // VALIDACIONES_POR_EPOCA
@@ -181,6 +182,8 @@ def main() -> int:
         r = json.loads(ruta.read_text(encoding="utf-8"))
     else:
         r = entrenar()
+        # Se guarda antes de fusionar: si la fusión falla, no se pierden horas de entrenamiento.
+        ruta.write_text(json.dumps(r, ensure_ascii=False, indent=1), encoding="utf-8")
         r["fusionado_bytes"] = fusionar()
         ruta.write_text(json.dumps(r, ensure_ascii=False, indent=1), encoding="utf-8")
 

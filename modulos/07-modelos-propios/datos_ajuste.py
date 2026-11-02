@@ -10,7 +10,7 @@
 4. División en entrenamiento y validación.
 
 Necesita Ollama con el modelo de 7B y los embeddings, y el reranker en llama-server.
-Tarda unas dos horas en la CPU del curso; con --grabadas, un segundo.
+Tarda algo más de una hora en la CPU del curso; con --grabadas, un segundo.
 Uso: `uv run python modulos/07-modelos-propios/datos_ajuste.py [--grabadas]`
 """
 

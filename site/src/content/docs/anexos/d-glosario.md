@@ -43,7 +43,7 @@ Los términos técnicos que usa el curso, ordenados alfabéticamente. Cada defin
 
 **Decoder, encoder y encoder-decoder**. Las tres arquitecturas de transformer. Los LLMs de chat son decoders (generan texto); los encoders representan texto (clasificar, embeddings); los encoder-decoder transforman un texto en otro (traducir). → [B.2 Encoder, decoder y encoder-decoder](../b2-encoder-decoder-y-encoder-decoder/)
 
-**Destilación**. Entrenar un modelo pequeño (alumno) con las respuestas de uno grande (maestro) para que se comporte como él en una tarea. → [Prompting, RAG o fine-tuning](../../07-modelos-propios/01-prompting-rag-o-fine-tuning/)
+**Destilación**. Entrenar un modelo pequeño (alumno) con las respuestas de uno grande (maestro) para que se comporte como él en una tarea. → [Fine-tuning con LoRA/QLoRA](../../07-modelos-propios/05-fine-tuning-con-lora-qlora/)
 
 ## E
 
@@ -89,7 +89,7 @@ Los términos técnicos que usa el curso, ordenados alfabéticamente. Cada defin
 
 **Logprobs**. Las probabilidades (en logaritmo) que el modelo asigna a cada token generado y a sus alternativas. → [Cómo funciona un LLM](../../01-fundamentos-de-llms/01-como-funciona-un-llm/)
 
-**LoRA y QLoRA**. Ajuste fino que congela el modelo y entrena solo dos matrices pequeñas por capa. QLoRA hace lo mismo con el modelo base cuantizado a 4 bits, para que quepa en menos memoria. → [Prompting, RAG o fine-tuning](../../07-modelos-propios/01-prompting-rag-o-fine-tuning/)
+**LoRA y QLoRA**. Ajuste fino que congela el modelo y entrena solo dos matrices pequeñas por capa. QLoRA hace lo mismo con el modelo base cuantizado a 4 bits, para que quepa en menos memoria. → [Fine-tuning con LoRA/QLoRA](../../07-modelos-propios/05-fine-tuning-con-lora-qlora/)
 
 ## M
 
@@ -142,6 +142,8 @@ Los términos técnicos que usa el curso, ordenados alfabéticamente. Cada defin
 **Sampling**. Cómo se elige cada token entre los posibles: la temperatura, top-p y top-k controlan cuánta variación hay. → [Sampling](../../01-fundamentos-de-llms/03-sampling/)
 
 **SLO**. Objetivo de nivel de servicio: el valor que una métrica (latencia, errores) debe cumplir, y que decide cuándo alertar. → [Métricas operativas](../../06-produccion/03-metricas-operativas/)
+
+**Sobreajuste (overfitting)**. Cuando un modelo aprende de memoria los ejemplos de entrenamiento: su pérdida sigue bajando mientras la de una validación que no ve se estanca o sube. → [Fine-tuning con LoRA/QLoRA](../../07-modelos-propios/05-fine-tuning-con-lora-qlora/)
 
 **Subagente**. Agente al que otro delega una tarea con su propio contexto aislado, y del que recibe solo el resultado. → [Subagentes](../../05-agentes/08-subagentes/)
 

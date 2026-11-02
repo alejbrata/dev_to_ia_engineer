@@ -1,0 +1,309 @@
+---
+title: "Fine-tuning con LoRA/QLoRA"
+description: "Ajustar el modelo de 1,5B del asistente con LoRA, destilando las respuestas del de 7B: los datos, el entrenamiento en CPU, la curva de pérdida y el adaptador fusionado"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
+
+:::note[Revisado: 2026-11]
+Salidas reales con Qwen2.5 1,5B Instruct (el modelo del rol `chat`) ajustado en CPU, en float32, con transformers 5.22, peft 0.21 y PyTorch 2.15. El maestro es el sistema vigente del módulo 4 con Qwen2.5 7B en Ollama. Durante parte del entrenamiento la máquina ejecutó otras pruebas, así que los minutos son algo más de lo que tardaría sola. Puedes usar el modelo que quieras o puedas.
+:::
+
+## Objetivos
+
+Al terminar esta lección podrás:
+
+- Explicar qué entrena LoRA, por qué cabe en una máquina que no podría con un ajuste completo y en qué se diferencia QLoRA.
+- Construir un dataset de ajuste por destilación: preguntas nuevas, sin colarse la eval, respondidas por un modelo mayor con el prompt de producción.
+- Entrenar un adaptador LoRA calculando la pérdida solo sobre la respuesta, y leer la curva de entrenamiento y la de validación.
+- Fusionar el adaptador con el modelo base para servirlo con cualquier servidor.
+- Organizar un entrenamiento largo para que un fallo al final no se lleve por delante horas de trabajo.
+
+## Teoría
+
+### Qué cambia el ajuste fino
+
+Ajustar un modelo es seguir entrenándolo con ejemplos de tu tarea. Le enseñas pares de entrada y salida, mides cuánto se aleja su respuesta de la esperada (la **pérdida**) y mueves sus pesos para que se acerque. Es el mismo entrenamiento con el que se hizo el modelo, pero con pocos ejemplos y muy concretos.
+
+La lección 01 dejó claro para qué sirve: cambiar el **comportamiento** (seguir un formato, abstenerse cuando toca, imitar a un modelo mayor), no darle **conocimiento** que cambia. En el asistente, los 12 fallos del modelo de 1,5B frente al de 7B eran de comportamiento, con la misma documentación en el contexto. Esa es la hipótesis que se pone a prueba aquí y se mide en la lección 06.
+
+### Por qué no se ajustan todos los pesos
+
+Ajustar todos los pesos (*full fine-tuning*) es caro en memoria. Además de los pesos, hay que guardar sus gradientes y el estado del optimizador: AdamW guarda dos números más por peso. En float32 son unos 16 bytes por parámetro, unos 25 GB para el modelo de 1,5B y más de 100 GB para uno de 7B. Y el resultado es una copia entera del modelo por cada tarea.
+
+### LoRA
+
+**LoRA** (*Low-Rank Adaptation*) congela el modelo y aprende solo una corrección pequeña. Para cada matriz de pesos W que elijas (las de atención, las del MLP), añade dos matrices estrechas, A y B, de rango r (8, 16, 32...), y el modelo usa W + B·A en lugar de W. Solo se entrenan A y B. B empieza a cero, así que, antes de entrenar, el modelo con LoRA es idéntico al original.
+
+- **Memoria y tiempo.** Con r = 16 en las siete matrices lineales de cada capa, el modelo de 1,5B entrena unos 18 millones de parámetros, en torno al 1 % del total. Los gradientes y el optimizador son solo de esos.
+- **El resultado es un adaptador** de unas decenas de MB. Puedes tener varios para el mismo modelo base y cargar el que toque.
+- **Se puede fusionar.** B·A se suma a W y queda un modelo normal, que cualquier servidor carga sin saber nada de LoRA y sin coste extra al generar.
+
+Los hiperparámetros que importan son estos:
+
+- **El rango r:** cuánta capacidad tiene la corrección.
+- **Alfa:** la escala de la corrección. Es habitual usar el doble del rango.
+- **Las matrices:** en cuáles se aplica.
+- **La tasa de aprendizaje:** más alta que en un ajuste completo, del orden de 1e-4.
+- **El número de épocas:** cuántas pasadas se hacen por los datos.
+
+### QLoRA
+
+**QLoRA** carga el modelo base cuantizado a 4 bits (lección 04) con la librería bitsandbytes y entrena encima los adaptadores LoRA en 16 bits. Así los pesos de un modelo de 7B pasan de unos 15 GB a unos 4 GB, y se puede ajustar en una GPU de consumo. El artículo original ajusta un modelo de 65B en una sola GPU de 48 GB. Es el método más usado cuando la memoria de la GPU es el límite.
+
+En esta lección no se usa. bitsandbytes está pensado para GPU, y en CPU la cuantización a 4 bits no ahorra lo que importa: aquí el límite es el tiempo, no la memoria. La práctica usa LoRA sobre el modelo en float32, que en esta CPU es más rápido que en bfloat16 (lección 02). Con una GPU, el mismo código sirve para QLoRA cambiando la carga del modelo (más abajo).
+
+### Los datos son la mitad del trabajo
+
+El modelo aprende exactamente lo que le enseñas, incluidos los errores. Hay tres decisiones:
+
+- **El formato.** Cada ejemplo es una conversación con la plantilla de chat del modelo (lección 02), con el mismo prompt que usará en producción. La pérdida se calcula **solo sobre la respuesta**: el prompt es contexto, no algo que aprender.
+- **De dónde salen las respuestas.** Aquí, de un modelo mayor que hace bien la tarea: el sistema vigente con el modelo de 7B, el **maestro**. Es **destilación**. El alumno hereda los aciertos del maestro y también sus fallos. Además, la licencia del maestro tiene que permitirlo: algunos proveedores comerciales prohíben usar sus respuestas para entrenar otros modelos.
+- **Que no se cuele la eval.** Si entrenas con las preguntas del examen, el examen ya no mide nada. Las preguntas de entrenamiento se generan aparte y se descartan las que se parecen demasiado a las de la eval.
+
+### Aprender o memorizar
+
+Durante el entrenamiento se miran dos curvas: la pérdida en los ejemplos de entrenamiento y la pérdida en una **validación** que el modelo no ve. Si las dos bajan, aprende. Si la de entrenamiento sigue bajando y la de validación sube, está memorizando los ejemplos (**sobreajuste**). Pero una pérdida baja no garantiza nada en la tarea: lo que decide es la eval, en la lección 06.
+
+## Práctica
+
+Son dos scripts. Los dos tienen `--grabadas` para ver la salida sin ejecutar nada.
+
+### 1. Los datos
+
+[`datos_ajuste.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/07-modelos-propios/datos_ajuste.py) hace lo que harías para cualquier tarea:
+
+1. **Pide preguntas al modelo de 7B.** Por cada fragmento del corpus, dos que el fragmento responde y una que pide un dato que no está. Aparte, preguntas fuera de ámbito e intentos de saltarse las instrucciones. Los prompts están en `prompts/modelos/`.
+2. **Descarta las parecidas a la eval.** Las compara con las 58 preguntas de la eval del módulo 4 por similitud de embeddings, y quita también las casi repetidas entre sí.
+3. **Las responde con el maestro.** El sistema vigente del módulo 4 (búsqueda con reranker, el prompt con reglas y citas, y el modelo de 7B) responde cada pregunta. Su prompt completo y su respuesta forman un ejemplo.
+4. **Separa una validación.**
+
+```sh
+uv run python modulos/07-modelos-propios/datos_ajuste.py             # algo más de una hora
+uv run python modulos/07-modelos-propios/datos_ajuste.py --grabadas  # la salida grabada
+```
+
+Necesita lo mismo que el módulo 4: Ollama con el modelo de 7B y los embeddings, y el reranker en llama-server. La salida:
+
+```text
+1. Preguntas generadas por el modelo de 7B: 334, en 22 min
+   con_respuesta     194
+   sin_respuesta      97
+   fuera_de_ambito    21
+   manipulacion       22
+
+2. Descartadas: 24 por parecerse a la eval (coseno ≥ 0.85),
+   4 casi repetidas (≥ 0.95)
+   0.96  generada: ¿Cuáles son las posibles causas del error invalid_grant durante el inicio de sesión con Google?
+         eval:     ¿Qué significa el error invalid_grant al iniciar sesión con Google?
+   0.95  generada: ¿Cuál es la compensación por semana de guardia?
+         eval:     ¿Cómo se compensa una semana de guardia?
+   0.95  generada: ¿Qué porcentaje del tráfico inicialmente recibe el canario?
+         eval:     ¿Qué porcentaje del tráfico recibe el canario y durante cuánto tiempo?
+   0.94  generada: ¿Cuánto tiempo puede llevar un retraso normal de la réplica del catálogo?
+         eval:     ¿Qué retraso de la réplica del catálogo se considera normal?
+
+3. Respuestas del maestro (sistema vigente con el 7B), en 55 min
+   306 de 306 con JSON válido
+                     ejemplos  se abstiene
+   con_respuesta          174      29 (17%)
+   sin_respuesta           90      67 (74%)
+   fuera_de_ambito         21      21 (100%)
+   manipulacion            21      21 (100%)
+
+4. 284 de entrenamiento y 22 de validación
+   tokens por ejemplo (mediana): 598 de prompt y 18 de respuesta
+   un ejemplo (sin_respuesta): «¿Cuál es el número de elementos que se indexan en OpenSearch por día?»
+      → {"respuesta": "No aparece en la documentación", "citas": []}
+```
+
+El filtro del apartado 2 no es un detalle. Las cuatro preguntas que enseña son la misma pregunta que la de la eval con otras palabras, y el modelo de 7B las generó sin saber que existía la eval. Sin el filtro, el alumno practicaría con el examen.
+
+### 2. El entrenamiento
+
+[`ajustar.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/07-modelos-propios/ajustar.py) parte del modelo de la lección 02, con el mismo commit del Hub, y lo entrena con peft, la librería de Hugging Face para LoRA y sus variantes. El bucle de entrenamiento está escrito a mano, sin `Trainer`, para que se vea cada paso. La configuración de LoRA es esta:
+
+```python
+LORA = {
+    "r": 16,
+    "lora_alpha": 32,
+    "lora_dropout": 0.05,
+    "target_modules": [
+        "q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj",
+    ],
+}
+modelo = get_peft_model(modelo, LoraConfig(task_type="CAUSAL_LM", **LORA))
+```
+
+La parte importante de los datos es la máscara. El prompt va con etiqueta `-100`, que la pérdida ignora, y la respuesta termina en el token de fin de turno, `<|im_end|>`, para que el modelo aprenda también a parar:
+
+```python
+prompt = tokenizador.apply_chat_template(e["mensajes"], add_generation_prompt=True)["input_ids"]
+completo = tokenizador.apply_chat_template(
+    [*e["mensajes"], {"role": "assistant", "content": e["objetivo"]}]
+)["input_ids"]
+etiquetas = [-100] * len(prompt) + completo[len(prompt) :]
+```
+
+Cada paso del optimizador acumula los gradientes de 8 ejemplos, con una tasa de aprendizaje de 2e-4 que baja linealmente hasta cero. Cada media época mide la pérdida en la validación, y al final de cada época guarda el adaptador. Al terminar, fusiona cada adaptador con el modelo base y lo guarda en bfloat16, como el original, para servirlo con vLLM en la lección 06. Todo va a `~/.cache/curso-ai-engineer/lora`, fuera del repositorio.
+
+```sh
+uv run --group hf python modulos/07-modelos-propios/ajustar.py             # unas cuatro horas y media en CPU
+uv run --group hf python modulos/07-modelos-propios/ajustar.py --grabadas  # la salida grabada
+```
+
+```text
+1. LoRA sobre el modelo de 1,5B
+   rango 16, alfa 32, en q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj
+   parámetros que se entrenan: 18,464,768 de 1,562,179,072 (1.18%)
+
+2. Entrenamiento: 284 ejemplos, 2 épocas, 71 pasos de 8 ejemplos, en 261 min
+   validación: 22 ejemplos
+    época  pérdida entrenamiento  pérdida validación  minutos
+      0.0                      -               0.299        -
+      0.5                  0.191               0.198       54
+      1.0                  0.108               0.167      125
+      1.5                  0.071               0.163      199
+      2.0                  0.062               0.157      261
+
+3. Lo que queda
+   adaptador LoRA de una época: 74 MB
+   modelo con el adaptador fusionado, en bfloat16: 3.10 GB
+```
+
+### Con una GPU: QLoRA
+
+La máquina del curso no tiene GPU, así que esto no se ha ejecutado aquí. En una GPU NVIDIA, QLoRA cambia la carga del modelo y poco más. Con bitsandbytes instalado, sería así:
+
+```python
+from peft import prepare_model_for_kbit_training
+from transformers import BitsAndBytesConfig
+
+cuantizado = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_quant_type="nf4",  # el formato de 4 bits del artículo de QLoRA
+    bnb_4bit_compute_dtype=torch.bfloat16,
+)
+modelo = AutoModelForCausalLM.from_pretrained(ruta, quantization_config=cuantizado)
+modelo = prepare_model_for_kbit_training(modelo)
+modelo = get_peft_model(modelo, LoraConfig(task_type="CAUSAL_LM", **LORA))
+```
+
+Lo demás (los datos, la máscara, el bucle) no cambia. Una diferencia que conviene saber: el adaptador se entrena sobre la versión cuantizada del modelo. Para fusionarlo, carga el base en 16 bits y aplica encima el adaptador.
+
+<ConUnaApi practicas={['modulos/07-modelos-propios/datos_ajuste.py', 'modulos/07-modelos-propios/ajustar.py']}>
+	<p>Con <code>CURSO_PROVEEDOR</code>, el maestro de <code>datos_ajuste.py</code> pasa a ser el modelo del proveedor, y los datos se guardan en <code>resultados/ajuste/&lt;proveedor&gt;/</code>. Antes de entrenar con ellos, revisa los términos de uso del proveedor: algunos prohíben usar sus respuestas para entrenar otros modelos. <code>ajustar.py</code> entrena con los datos de <code>resultados/ajuste/</code>; para usar los del proveedor, cópialos ahí.</p>
+</ConUnaApi>
+
+## Mide y depura
+
+### La curva: casi todo pasa en la primera media época
+
+La pérdida de validación del modelo sin ajustar es 0,299, y en la primera media época baja a 0,198. Las tres medias épocas siguientes solo la llevan a 0,157. Es lo habitual en un ajuste de comportamiento: el modelo ya sabía hacer la tarea, y lo primero que aprende es la forma (el JSON con `respuesta` y `citas`, cuándo abstenerse). Lo demás son ajustes finos.
+
+La pérdida es la entropía cruzada media por token de la respuesta. Para hacerla legible, e^(-pérdida) es la probabilidad media (geométrica) que el modelo da al token correcto. Ha pasado de 0,74 a 0,85 en la validación.
+
+### Aprende, pero empieza a memorizar
+
+Las dos curvas empiezan juntas (0,191 y 0,198) y se separan. Al final, la de entrenamiento está en 0,062 y la de validación en 0,157. El modelo predice mucho mejor los ejemplos que ha visto que los que no. Con 284 ejemplos, la segunda pasada por los mismos datos sirve sobre todo para memorizarlos. La validación todavía baja, así que no hay sobreajuste en sentido estricto, pero cada media época aporta menos: 0,031, luego 0,004 y luego 0,006. Por eso se guarda un adaptador por época, y la lección 06 evalúa los dos.
+
+Hay que leer con cuidado la validación de 22 ejemplos. Es poca, y una diferencia de 0,006 puede ser ruido. Sirve para ver la tendencia y para detectar un sobreajuste claro, cuando la validación sube varias veces seguidas. No sirve para elegir entre dos épocas que se diferencian en milésimas.
+
+### Lo que enseña el maestro, incluidos sus fallos
+
+La tabla del apartado 3 de los datos es el comportamiento que el alumno va a imitar:
+
+- **Se abstiene en el 17 % de las preguntas que sí tienen respuesta.** El alumno aprenderá a abstenerse con esa frecuencia, también donde no debe.
+- **En las preguntas sin respuesta, responde en el 26 %.** O la pregunta generada sí tenía respuesta en el fragmento, o el maestro inventa. Con estos datos no se puede saber cuál de las dos sin leer los casos, y el alumno aprende las dos cosas.
+- **Fuera de ámbito y manipulación: se abstiene siempre.** Es lo que se quiere.
+
+Antes de entrenar con datos destilados, lee una muestra de cada grupo. Si el maestro se equivoca de forma sistemática, corrige o quita esos ejemplos: entrenar con ellos cuesta horas y fija el error en el alumno.
+
+### Lo que ocupa
+
+El adaptador de una época son 74 MB, y el modelo fusionado, 3,10 GB, lo mismo que el original en bfloat16. Con varios ajustes del mismo modelo, guardar adaptadores en lugar de modelos completos es la diferencia entre megas y gigas por versión. Para servir, el fusionado es más sencillo: es un modelo normal.
+
+## Errores frecuentes
+
+- **Calcular la pérdida sobre todo el texto.** Con 598 tokens de prompt y 18 de respuesta, la pérdida la dominaría el prompt, y el modelo gastaría el entrenamiento en aprender a repetir la documentación.
+- **Entrenar con un prompt distinto del de producción.** El modelo aprende la relación entre ese prompt y la respuesta. Si en producción el prompt cambia, lo aprendido se aplica peor.
+- **No terminar la respuesta en el token de fin de turno.** El modelo aprende a responder, pero no a parar, y sigue generando hasta el límite de tokens.
+- **Dejar que la eval se cuele en los datos.** Aunque las preguntas se generen aparte, salen parecidas: aquí se descartaron 24 de 334. Filtra por similitud, no solo por texto idéntico.
+- **Fiarse de la pérdida.** Una pérdida baja dice que el modelo imita al maestro, no que acierte. Lo decide la eval (lección 06).
+- **No guardar nada hasta el final.** Un entrenamiento de horas tiene que guardar el adaptador de cada época y los resultados antes de cualquier paso que pueda fallar. La anatomía de abajo es por qué.
+
+### Anatomía de un error: el entrenamiento que falló después de terminar
+
+**El síntoma.** Al preparar esta lección, el entrenamiento llegó al final de la segunda época, guardó los dos adaptadores y falló a las 4 horas y 21 minutos, al empezar a fusionar. Sin escribir los resultados:
+
+```text
+Traceback (most recent call last):
+  File "...\modulos\07-modelos-propios\ajustar.py", line 184, in main
+    r["fusionado_bytes"] = fusionar()
+  File "...\modulos\07-modelos-propios\ajustar.py", line 162, in fusionar
+    ruta = base()
+  File "...\modulos\07-modelos-propios\ajustar.py", line 50, in base
+    repo = cfg.cargar().roles["chat"].hf_repo
+  File "...\packages\curso_core\src\curso_core\config.py", line 111, in cargar
+  ...
+pydantic_core._pydantic_core.ValidationError: 4 validation errors for Config
+providers.huggingface_inferencia.tipo
+  Input should be 'ollama', 'openai' or 'anthropic' [type=literal_error, input_value='hf_inference', input_type=str]
+providers.openai.razonar_por_defecto
+  Extra inputs are not permitted [type=extra_forbidden, input_value=False, input_type=bool]
+```
+
+**Cómo leerlo.** La última línea del script es `cfg.cargar()`: leer `config/models.toml`. El error es de validación. Pydantic dice que el fichero tiene un tipo de proveedor (`hf_inference`) y campos (`razonar_por_defecto`) que la clase `Config` no conoce. Pero el código del repositorio sí los conoce. Si ejecutas `cfg.cargar()` ahora, funciona.
+
+**La causa.** El proceso importó `curso_core` al empezar, más de cuatro horas antes. Mientras entrenaba, en el mismo repositorio se añadieron a la vez a `curso_core` y a `config/models.toml` los campos del anexo G. El proceso seguía con la versión de `curso_core` que tenía en memoria, y al final leyó del disco el `models.toml` nuevo. Código viejo con configuración nueva. No es un fallo del entrenamiento sino de cómo se lanzó: un proceso largo que lee ficheros a mitad de camino depende de que nadie los toque.
+
+**La solución.** Hay dos partes:
+
+- **Recuperar lo hecho.** Los adaptadores estaban guardados, porque se guardan al final de cada época, y la curva había salido por pantalla. Faltaban el punto 0,0, que no se imprimía, y los recuentos, y se recalcularon. Son deterministas: con B a cero, el modelo con LoRA es el base. Con eso, la fusión se hizo aparte, en unos minutos, sin repetir las cuatro horas.
+- **Que no vuelva a pasar.** `ajustar.py` ahora imprime también el punto inicial y escribe los resultados del entrenamiento antes de fusionar. En general, un trabajo largo debe leer todo lo que necesita al empezar, o ejecutarse sobre una copia que no se toca: un `git worktree`, una imagen de contenedor o un commit fijo. Es lo mismo que en un despliegue (módulo 6). Lo que se ejecuta debe ser una versión concreta, no lo que haya en la carpeta en ese momento.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'Tienes una GPU de 24 GB y quieres ajustar un modelo de 7B. ¿Qué método eliges?',
+			opciones: [
+				{ texto: 'Ajuste completo en float32: es el que más aprende.', porque: 'Necesitaría unos 16 bytes por parámetro, más de 100 GB solo en pesos, gradientes y optimizador ("Por qué no se ajustan todos los pesos").' },
+				{ texto: 'QLoRA: el modelo base en 4 bits, unos 4 GB, y adaptadores LoRA encima.', correcta: true, porque: 'Es el caso para el que se diseñó: el límite es la memoria de la GPU ("QLoRA").' },
+				{ texto: 'LoRA sobre el modelo en float32, como en la práctica.', porque: 'Los pesos congelados del 7B en float32 ocupan unos 30 GB y no caben. En la práctica funciona porque el modelo es de 1,5B y la CPU usa la RAM del equipo.' },
+			],
+		},
+		{
+			pregunta: 'Tras la tercera época, la pérdida de entrenamiento baja de 0,06 a 0,03 y la de validación sube de 0,157 a 0,171, y vuelve a subir en la cuarta. ¿Qué haces?',
+			opciones: [
+				{ texto: 'Seguir: la pérdida de entrenamiento sigue bajando.', porque: 'Es la señal de sobreajuste: memoriza los ejemplos y generaliza peor ("Aprender o memorizar").' },
+				{ texto: 'Quedarte con el adaptador de la época 2 y comprobarlo con la eval de la tarea.', correcta: true, porque: 'Por eso se guarda un adaptador por época. La pérdida elige candidatos; la eval decide ("Aprende, pero empieza a memorizar").' },
+			],
+		},
+		{
+			pregunta: 'El maestro se abstiene en el 17 % de las preguntas que sí tienen respuesta. ¿Qué esperas del alumno y qué harías antes de entrenar?',
+			opciones: [
+				{ texto: 'El alumno lo hará mejor que el maestro, porque aprende de muchos ejemplos.', porque: 'Aprende a imitar al maestro, defectos incluidos ("Lo que enseña el maestro, incluidos sus fallos").' },
+				{ texto: 'Que se abstenga parecido; leer una muestra de esos casos y corregir o quitar los ejemplos en los que el maestro falla.', correcta: true, porque: 'En destilación, la calidad de los datos pone el techo. Corregir antes cuesta minutos; entrenar con el error, horas.' },
+			],
+		},
+		{
+			pregunta: 'Generas 300 preguntas con un LLM para entrenar y no las comparas con las de la eval. Tras ajustar, la eval sube 10 puntos. ¿Qué dudas tienes?',
+			opciones: [
+				{ texto: 'Ninguna: las preguntas son distintas porque las escribió otro modelo.', porque: 'Aquí, 24 de 334 eran la misma pregunta que alguna de la eval con otras palabras ("1. Los datos").' },
+				{ texto: 'Que parte de la mejora sea haber entrenado con preguntas de la eval reformuladas: filtra por similitud y vuelve a medir.', correcta: true, porque: 'Si el examen se cuela en el entrenamiento, la eval mide memoria, no capacidad.' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- [LoRA: Low-Rank Adaptation of Large Language Models](https://arxiv.org/abs/2106.09685), el artículo original.
+- [QLoRA: Efficient Finetuning of Quantized LLMs](https://arxiv.org/abs/2305.14314), con el formato NF4 y los adaptadores sobre el modelo en 4 bits.
+- [LoRA Learns Less and Forgets Less](https://arxiv.org/abs/2405.09673): cuándo se queda corto LoRA frente al ajuste completo, y qué conserva mejor del modelo original.
+- [Documentación de PEFT](https://huggingface.co/docs/peft), la librería de la práctica: LoRA, sus variantes y cómo fusionar.
+- [Plantillas de chat en transformers](https://huggingface.co/docs/transformers/chat_templating): cómo se convierten los mensajes en tokens, que es lo que se entrena.
+- [Distilling the Knowledge in a Neural Network](https://arxiv.org/abs/1503.02531), el artículo que dio nombre a la destilación.
