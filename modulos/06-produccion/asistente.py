@@ -28,6 +28,7 @@ from pydantic import BaseModel
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "04-evals"))
 
 import evaluar  # noqa: E402
+import guardrails  # noqa: E402
 import sistema  # noqa: E402
 from curso_core import ClienteLLM, ErrorLLM  # noqa: E402
 from curso_core import config as cfg  # noqa: E402
@@ -49,6 +50,8 @@ class Resultado(BaseModel):
     cache: bool = False
     fallback: bool = False  # respondió un modelo que no es el primero de la lista
     errores: list[str] = []  # lo que falló por el camino
+    bloqueado: bool = False  # un guardrail sustituyó la respuesta (lección 6.05)
+    guardrails: list[str] = []  # qué guardrails actuaron y por qué
     ms: int = 0
 
 
@@ -88,11 +91,13 @@ class Asistente:
         roles: tuple[str, ...] = ROLES,
         *,
         cache: bool = True,
+        guardrails: bool = False,
         timeout_s: float = 45.0,
         reintentos: int = 0,
         config: cfg.Config | None = None,
     ):
         self.roles = roles
+        self.guardrails = guardrails
         config = config or cfg.cargar()
         # Un cliente para buscar (embeddings y reranker) y uno por modelo, cada uno con su
         # límite de tiempo: si el principal se cuelga, hay que soltarlo a tiempo de que
@@ -108,13 +113,38 @@ class Asistente:
     def responder(self, pregunta: str) -> Resultado:
         # Un span por pregunta (lección 6.02): las llamadas de curso_core cuelgan de él.
         with tracer.start_as_current_span("asistente.responder") as span:
-            r = self._responder(pregunta)
+            r = self._con_guardrails(pregunta) if self.guardrails else self._responder(pregunta)
+            span.set_attribute("asistente.bloqueado", r.bloqueado)
             span.set_attribute("asistente.cache", r.cache)
             span.set_attribute("asistente.fallback", r.fallback)
             span.set_attribute("asistente.rol", r.rol or "degradada")
             if r.rol is None:
                 span.set_status(StatusCode.ERROR, "respuesta degradada")
             return r
+
+    def _con_guardrails(self, pregunta: str) -> Resultado:
+        """Revisa la pregunta antes de buscar y la respuesta antes de devolverla."""
+        inicio = time.perf_counter()
+        entrada = guardrails.revisar_entrada(pregunta)
+        if entrada.bloqueado:
+            return Resultado(
+                texto=guardrails.ABSTENCION,
+                bloqueado=True,
+                guardrails=entrada.motivos,
+                ms=ms_desde(inicio),
+            )
+        r = self._responder(entrada.texto)
+        if r.rol is None:  # la respuesta degradada no viene del modelo: no hay que revisarla
+            return r
+        salida = guardrails.revisar_salida(r.texto, r.citas, len(r.fuentes))
+        return r.model_copy(
+            update={
+                "texto": salida.texto,
+                "bloqueado": salida.bloqueado,
+                "guardrails": entrada.motivos + salida.motivos,
+                "ms": ms_desde(inicio),
+            }
+        )
 
     def _responder(self, pregunta: str) -> Resultado:
         inicio = time.perf_counter()

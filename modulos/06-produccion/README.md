@@ -12,6 +12,8 @@ convertido en un servicio: el asistente de documentación interna.
 - `metricas_operativas.py`: tráfico normal y un pico, leídos de `/metrics`; p50/p95, tasas de caché y respaldo, coste por pregunta y SLO (lección 03).
 - `privacidad.py`: detecta y redacta datos personales (email, teléfono, DNI, NIE, IBAN, tarjeta) y secretos con expresiones regulares.
 - `amenazas.py`: inyección directa e indirecta (una página del runbook editada), datos personales y una clave en el historial de git, limpiada con `git filter-repo` (lección 04).
+- `guardrails.py`: comprobaciones de entrada (inyección, datos personales) y de salida (sin fundamento, contacto externo, credenciales, comandos destructivos). El asistente las aplica con `guardrails=True`; el servicio, con `ASISTENTE_GUARDRAILS=1`.
+- `defensas.py`: los guardrails con las 58 respuestas del módulo 4 (falsos positivos) y con nueve ataques en vivo (lección 05).
 - `test_produccion.py`: la caché y la API con un asistente falso, sin modelos.
 - `resultados/`: lo que midió cada práctica. Con `--grabadas`, se reutiliza sin llamar a nada.
 

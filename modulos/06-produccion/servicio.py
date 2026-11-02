@@ -8,7 +8,8 @@
 - GET /metrics: las métricas en formato Prometheus (lección 6.03, metricas_servicio.py).
 
 Configuración por variables de entorno: ASISTENTE_CACHE=0 desactiva la caché;
-ASISTENTE_TRAZAS=1 activa las trazas de OpenTelemetry (lección 6.02, observabilidad.py).
+ASISTENTE_TRAZAS=1 activa las trazas de OpenTelemetry (lección 6.02, observabilidad.py);
+ASISTENTE_GUARDRAILS=1 activa los guardrails de entrada y salida (lección 6.05).
 Arranque: `uv run uvicorn servicio:app --app-dir modulos/06-produccion --port 8100`
 """
 
@@ -60,7 +61,10 @@ async def ciclo_de_vida(_: FastAPI):
 
         trazas = observabilidad.configurar()
     # Construir el índice tarda unos segundos: se hace una vez, al arrancar.
-    estado["asistente"] = Asistente(cache=os.environ.get("ASISTENTE_CACHE", "1") != "0")
+    estado["asistente"] = Asistente(
+        cache=os.environ.get("ASISTENTE_CACHE", "1") != "0",
+        guardrails=os.environ.get("ASISTENTE_GUARDRAILS") == "1",
+    )
     estado["cola"], estado["trabajos"] = queue.Queue(), {}
     threading.Thread(target=trabajador, daemon=True).start()
     tracing.observadores.append(metricas_servicio.observar_llamada)

@@ -38,6 +38,8 @@ COSTE = Counter("llm_coste_usd_total", "Coste de las llamadas a modelos, en dól
 
 
 def resultado_de(r: Resultado) -> str:
+    if r.bloqueado:
+        return "bloqueada"
     if r.cache:
         return "cache"
     if r.rol is None:
