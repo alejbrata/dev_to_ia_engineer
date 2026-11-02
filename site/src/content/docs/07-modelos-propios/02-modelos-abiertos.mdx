@@ -1,0 +1,286 @@
+---
+title: "Modelos abiertos"
+description: "Descargar un modelo abierto del Hub y prepararlo para servirlo: qué hay en el repositorio, fijar la revisión, cuánta memoria pide, la plantilla de chat y por qué el mismo modelo no responde igual en transformers y en Ollama"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
+:::note[Revisado: 2026-11]
+Salidas reales con Qwen2.5 1,5B Instruct: los safetensors del Hub cargados con transformers 5 en CPU (Intel Core Ultra 7, sin GPU) y la versión Q4_K_M de Ollama. Puedes usar el modelo que quieras o puedas: el del rol `chat` en `config/models.toml`. Elegir modelo en el Hub está en el [anexo B.1](../../anexos/b1-el-hub-y-elegir-modelo/).
+:::
+
+## Objetivos
+
+Al terminar esta lección podrás:
+
+- Revisar un repositorio de modelo antes de descargarlo: sus ficheros, la licencia de ese tamaño concreto y el commit que vas a usar.
+- Descargar un modelo de forma reproducible, fijando la revisión y solo con los ficheros que hacen falta.
+- Estimar con `config.json` la memoria de los pesos y de la caché KV, y comprobar la estimación.
+- Cargar el modelo con transformers aplicando su plantilla de chat, y explicar por qué no responde igual que en Ollama.
+- Reconocer, por sus métricas, un modelo que genera sin plantilla de chat.
+
+## Teoría
+
+### Qué significa "abierto"
+
+Un modelo abierto es uno cuyos **pesos** se pueden descargar: los números que forman el modelo. Puedes ejecutarlo en tu máquina o en tu infraestructura, ajustarlo y servirlo sin pasar por la API de nadie. Eso no lo convierte en código abierto en el sentido clásico: casi nunca se publican los datos de entrenamiento ni el código con el que se entrenó. Por eso se suele hablar de *open weights*.
+
+Lo que puedes hacer con esos pesos lo dice la **licencia**, y hay que leerla para cada modelo, no para cada familia. En la práctica lo verás con Qwen2.5: casi todos los tamaños son Apache 2.0, pero dos tienen licencia propia. Elegir el modelo (ficha, licencia, datos declarados) está en el [anexo B.1](../../anexos/b1-el-hub-y-elegir-modelo/). Esta lección empieza cuando ya lo has elegido.
+
+### Qué hay en el repositorio de un modelo
+
+Un repositorio de modelo en el Hub es un repositorio git con ficheros grandes. Para un LLM de tipo decoder, como los del curso, los que importan son estos:
+
+- **Los pesos**, en `*.safetensors`. Es un formato que solo guarda tensores: abrirlo no ejecuta código. El formato antiguo de PyTorch (`*.bin`, *pickle*) sí puede ejecutarlo al cargarse, y por eso se evita con modelos de origen desconocido. Los modelos grandes reparten los pesos en varios ficheros, con un índice (`model.safetensors.index.json`).
+- **`config.json`**: la arquitectura. Número de capas, dimensión, cabezas de atención, vocabulario, contexto máximo y el tipo numérico en que se guardaron los pesos. Es lo que la librería lee para construir el modelo vacío antes de rellenarlo con los pesos.
+- **El tokenizador** (`tokenizer.json`, `vocab.json`, `merges.txt`) y su configuración (`tokenizer_config.json`). En esa configuración va la **plantilla de chat**, que convierte la lista de mensajes en el texto con marcas especiales que el modelo vio en su entrenamiento (lección 1.01).
+- **`generation_config.json`**: los parámetros de generación que recomienda quien entrenó el modelo (temperatura, *top-p*, penalización de repetición) y los tokens que marcan el final.
+
+Herramientas como Ollama o llama.cpp no usan estos ficheros directamente. Usan **GGUF**, un formato de llama.cpp que mete en un solo fichero los pesos (normalmente cuantizados: con menos bits por número, lección 04), el tokenizador, la plantilla y los metadatos. Cuando haces `ollama pull`, alguien ya ha hecho esa conversión por ti.
+
+### Fijar la revisión
+
+El repositorio cambia: el autor puede corregir la plantilla, cambiar la configuración de generación o subir pesos nuevos con el mismo nombre. Descargar "lo último" es como depender de una versión `SNAPSHOT` en Maven: hoy funciona y mañana no sabes con qué estás trabajando. Cada estado del repositorio tiene un **commit**, y descargar fijando el commit (`revision=`) hace la descarga reproducible. Es lo que guardas junto a la eval que mediste.
+
+La otra mitad es descargar **solo lo que necesitas** (`allow_patterns`): muchos repositorios traen el modelo en varios formatos, y no tiene sentido bajar todos.
+
+### Cuánta memoria necesita
+
+La cuenta de partida es sencilla: **parámetros × bytes por parámetro**. Un modelo de 1.500 millones de parámetros ocupa 6 GB en `float32` (4 bytes), 3 GB en `bfloat16` (2 bytes) y menos de 1 GB con 4 bits.
+
+A eso hay que sumar la **caché KV**: durante la generación, el modelo guarda las claves y valores de atención de cada token ya procesado para no recalcularlos. Crece con el contexto: 2 (clave y valor) × capas × cabezas de clave-valor × dimensión por cabeza × bytes, por cada token. Con contextos largos puede pesar tanto como el modelo. Y hay memoria de trabajo (activaciones) que depende del tamaño del lote.
+
+Esa cuenta, con los números de `config.json`, te dice si un modelo cabe en tu máquina o en tu GPU **antes** de descargarlo. Es la versión de "dimensionar el heap" para un LLM.
+
+## Práctica
+
+El código está en [`modulos/07-modelos-propios/preparar.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/07-modelos-propios/preparar.py). Toma el modelo del rol `chat` (el de 1,5B del asistente) tal como se publica en el Hub, en safetensors, y hace lo que harías antes de servirlo tú. Necesita el grupo opcional de Hugging Face, porque carga el modelo con `transformers` y `torch`:
+
+```sh
+uv sync --group hf
+uv run python modulos/07-modelos-propios/preparar.py             # unos 15 minutos y 3 GB de descarga
+uv run python modulos/07-modelos-propios/preparar.py --grabadas  # la salida grabada, sin red ni modelos
+```
+
+Lo primero es mirar el repositorio sin descargar nada. `model_info` devuelve los ficheros con su tamaño, la ficha y el commit actual. La cabecera de los safetensors trae el número exacto de parámetros, también sin descargar los pesos:
+
+```python
+info = HfApi().model_info(repo, files_metadata=True)
+meta = get_safetensors_metadata(repo, revision=info.sha)
+```
+
+La descarga fija ese commit y filtra los ficheros:
+
+```python
+PATRONES = ["*.safetensors", "*.json", "merges.txt", "vocab.json", "LICENSE"]
+ruta = snapshot_download(repo, revision=commit, allow_patterns=PATRONES)
+```
+
+Después carga el modelo dos veces, en `bfloat16` y en `float32`, para medir la memoria y la velocidad de cada precisión. Por último, responde cinco preguntas del asistente con los fragmentos que recuperó el sistema vigente del módulo 4, de tres formas: con transformers aplicando la plantilla de chat, con transformers pegando los mensajes como texto plano, y con Ollama. La parte con plantilla es una línea:
+
+```python
+texto = tokenizador.apply_chat_template(mensajes, tokenize=False, add_generation_prompt=True)
+```
+
+`add_generation_prompt=True` añade al final la marca que abre el turno del asistente (`<|im_start|>assistant`). Sin ella, el modelo no sabe que le toca responder.
+
+La salida, en la máquina del curso (CPU, sin GPU):
+
+```text
+1. Qwen/Qwen2.5-1.5B-Instruct en el Hub, antes de descargar
+   commit 989aa7980e4c · licencia apache-2.0
+   modelo base: Qwen/Qwen2.5-1.5B
+   licencia de cada tamaño de la familia:
+      Qwen/Qwen2.5-0.5B-Instruct       apache-2.0
+      Qwen/Qwen2.5-1.5B-Instruct       apache-2.0
+      Qwen/Qwen2.5-3B-Instruct         qwen-research
+      Qwen/Qwen2.5-7B-Instruct         apache-2.0
+      Qwen/Qwen2.5-14B-Instruct        apache-2.0
+      Qwen/Qwen2.5-32B-Instruct        apache-2.0
+      Qwen/Qwen2.5-72B-Instruct        qwen
+   10 ficheros, 3.10 GB:
+       3,087,467,144 B  model.safetensors
+           7,031,645 B  tokenizer.json
+           2,776,833 B  vocab.json
+           1,671,839 B  merges.txt
+              11,343 B  LICENSE
+               7,305 B  tokenizer_config.json
+               4,917 B  README.md
+               1,519 B  .gitattributes
+                 660 B  config.json
+                 242 B  generation_config.json
+
+2. Descarga fijada al commit, con *.safetensors, *.json, merges.txt, vocab.json, LICENSE
+   8 ficheros, 3.10 GB, en 253 s
+
+3. Qué hay dentro (config.json) y cuánta memoria pide
+   Qwen2ForCausalLM: 28 capas, dimensión 1536, 12 cabezas de atención (2 de clave-valor)
+   vocabulario de 151,936 tokens, contexto máximo de 32,768, pesos guardados en bfloat16
+   parámetros, según la cabecera de safetensors: 1,543,714,304
+   memoria de los pesos (parámetros × bits / 8):
+      float32     6.17 GB
+      bfloat16    3.09 GB
+      int8        1.54 GB
+      Q4_K_M      0.94 GB
+   medido: model.safetensors 3.09 GB; Ollama (qwen2.5:1.5b, Q4_K_M) 0.99 GB
+   caché KV en 16 bits: 28 KB por token
+      con  4,096 tokens de contexto: 0.12 GB
+      con 32,768 tokens de contexto: 0.94 GB
+
+4. La plantilla de chat (tokenizer_config.json), con un sistema y una pregunta:
+      <|im_start|>system
+      SISTEMA<|im_end|>
+      <|im_start|>user
+      PREGUNTA<|im_end|>
+      <|im_start|>assistant
+   generation_config.json: {'bos_token_id': 151643, 'pad_token_id': 151643, 'do_sample': True, 'eos_token_id': [151645, 151643], 'repetition_penalty': 1.1, 'temperature': 0.7, 'top_p': 0.8, 'top_k': 20, 'transformers_version': '4.37.0'}
+   Ollama, parámetros del Modelfile: None
+
+5. Cargado con transformers en CPU, según la precisión (352 tokens
+   de entrada, la primera pregunta con su plantilla)
+                carga   memoria  primer token  tokens/s
+   bfloat16      4.8s   3.09 GB         18.1s       7.1
+   float32       5.8s   6.17 GB          3.2s       7.1
+
+6. Las mismas 5 preguntas, voraz (sin muestreo), máximo 150 tokens
+                                           segundos  paró solo  entrada  aciertos
+   transformers float32, con plantilla         11.3     5 de 5      356    4 de 5
+   transformers float32, sin plantilla         24.2     2 de 5      343    1 de 5
+   Ollama Q4_K_M, con plantilla                 4.7     4 de 5      356    3 de 5
+   (segundos y tokens de entrada: media por pregunta; aciertos: dataset del módulo 4)
+   misma respuesta exacta, transformers con plantilla y Ollama: 1 de 5
+
+   m3-01: ¿Qué hago si pagos devuelve 'too many connections'?
+      transformers                Si pagos devuelve 'too many connections', sigue estos pasos: 1. Verifica el número de conexiones act
+      transformers sin plantilla  No aparece en la documentación. No aparece en la documentación. Si pagos devuelve 'too many connecti
+      Ollama                      Si pagos devuelve 'too many connections', primero debes abrir el panel de PgBouncer y verificar el n
+
+   m3-02: ¿Cuál es el límite del pool de conexiones de pagos?
+      transformers                El límite actual del pool de conexiones de pagos es de 200 conexiones.
+      transformers sin plantilla  La pregunta se refiere al postmortem mencionado en la primera referencia. No subas el límite del poo
+      Ollama                      El límite actual del pool de conexiones de pagos es de 200 conexiones.
+
+   m3-03: ¿Cada cuánto caduca el token de la API del banco?
+      transformers                Según el documento proporcionado, el token de la API del banco caducará cada 90 días.
+      transformers sin plantilla  No aparece en la documentación. La información sobre la caducidad del token de la API del banco se e
+      Ollama                      El token de la API del banco caduca cada 90 días.
+
+   m3-04: ¿Qué significa el error invalid_grant al iniciar sesión con Google?
+      transformers                El error invalid_grant ocurre cuando el secreto de cliente de OAuth ha caducado o se ha rotado sin a
+      transformers sin plantilla  El error 'invalid_grant' en el inicio de sesión con Google ocurre cuando el secreto de cliente OAuth
+      Ollama                      El error invalid_grant se produce cuando el secreto de cliente de OAuth ha caducado o se ha rotado s
+
+   m3-05: La base de datos de cobros ha dejado de aceptar conexiones nuevas. ¿Qué procedimiento sigo?
+      transformers                Según el postmortem mencionado, si la base de datos de cobros ha dejado de aceptar nuevas conexiones
+      transformers sin plantilla  No aparece en la documentación. Procedimiento: 1. Reiniciar PgBouncer de forma ordenada, una réplica
+      Ollama                      Según el postmortem, la base de datos de cobros ha dejado de aceptar nuevas conexiones debido a un p
+```
+
+## Mide y depura
+
+### La cuenta de memoria acierta, y se hace antes de descargar
+
+Los parámetros multiplicados por los bytes de cada precisión dan 3,09 GB en `bfloat16`, y eso es exactamente lo que ocupa `model.safetensors` y lo que mide transformers al cargarlo. En `float32` se duplica: 6,17 GB. Para 4 bits, la estimación da 0,94 GB, y el modelo de Ollama ocupa 0,99 GB. La diferencia es razonable: el fichero GGUF también lleva el tokenizador, y Q4_K_M guarda algunas matrices con más bits.
+
+La caché KV de este modelo es pequeña: 28 KB por token. El motivo está en `config.json`: tiene 12 cabezas de atención, pero solo 2 de clave-valor (lo que se llama *grouped-query attention*), así que guarda 6 veces menos de lo que guardaría con 12. Aun así, con el contexto máximo de 32.768 tokens la caché ocupa 0,94 GB, lo mismo que los pesos cuantizados. Si sirves contextos largos o varias peticiones a la vez, la caché pesa tanto como el modelo.
+
+Esta cuenta te dice, antes de bajar nada, si un modelo cabe en tu máquina. En una GPU de 8 GB, el 7B en `bfloat16` (unos 15 GB) no cabe, y cuantizado a 4 bits sí.
+
+### En CPU, la mitad de memoria no significa más rápido
+
+En `bfloat16` el modelo ocupa la mitad, pero procesar el prompt de 352 tokens tardó 18,1 s, frente a 3,2 s en `float32`. Generar token a token va igual en los dos: 7,1 tokens por segundo. Lo más probable es que esta CPU no tenga instrucciones para operar en `bfloat16` y convierta los números en cada operación. En una GPU, o en CPUs de servidor con soporte para `bfloat16`, el resultado cambia. No supongas: mídelo en la máquina donde vas a servir.
+
+Ollama respondió en 4,7 s por pregunta y transformers en 11,3 s. Ollama usa llama.cpp, que está optimizado para CPU, con pesos de 4 bits. Transformers en CPU sirve para experimentar y, como verás en la lección 05, para ajustar el modelo. Para servirlo en CPU, la lección 03 compara las alternativas.
+
+### Mismo modelo, respuestas distintas
+
+Transformers con plantilla y Ollama dieron la misma respuesta exacta en una de cinco preguntas, aunque los dos generaban de forma voraz (sin muestreo), con el mismo prompt y el mismo modelo. Hay dos diferencias que lo explican:
+
+- **Los pesos.** Ollama usa los pesos cuantizados a 4 bits, y transformers los originales. Las probabilidades cambian un poco, y en cuanto un token es distinto, todo lo que viene detrás también lo es.
+- **La configuración de generación.** Transformers aplica `generation_config.json` salvo en lo que tú cambies: aquí, la penalización de repetición de 1,1 sigue activa aunque la generación sea voraz. Ollama no lee ese fichero. Los parámetros de su Modelfile salen vacíos (`None`), así que usa sus propios valores por defecto.
+
+En aciertos, transformers sacó 4 de 5 y Ollama 3 de 5. Con cinco preguntas, eso no dice cuál es mejor: una pregunta es la diferencia. Saber cuánto pierde el modelo al cuantizarlo exige la eval completa, y es lo que hace la lección 04 con las 58 preguntas.
+
+La lección práctica es otra: **el modelo no es solo los pesos**. Son los pesos, la precisión, la plantilla y los parámetros de generación. Si cambias cualquiera de ellos, estás sirviendo otro sistema, y la eval que hiciste ya no vale. Fija esos parámetros en la configuración del servidor, no los dejes a los valores por defecto de cada herramienta.
+
+### Qué mirar en `generation_config.json`
+
+El autor recomienda muestrear con temperatura 0,7, *top-p* 0,8, *top-k* 20 y penalización de repetición 1,1, y declara dos tokens de fin: `<|im_end|>` (151645) y `<|endoftext|>` (151643). Para un asistente que debe responder siempre igual, el curso usa temperatura 0. Esa es una decisión tuya y la tienes que fijar de forma explícita. Los tokens de fin, en cambio, no son opcionales: si el servidor no los conoce, el modelo no para.
+
+## Errores frecuentes
+
+- **Descargar sin fijar la revisión.** Funciona hasta que el autor cambia algo en el repositorio. Guarda el commit (aquí, `989aa7980e4c`) junto a la eval.
+- **Suponer la licencia por la familia.** En Qwen2.5, el 3B (`qwen-research`) y el 72B (`qwen`) no tienen la licencia Apache 2.0 de los demás tamaños. Lee la de cada modelo.
+- **Contar solo los pesos.** La caché KV crece con el contexto y con las peticiones concurrentes. Con 32.768 tokens, aquí ocupa lo mismo que el modelo cuantizado.
+- **Dar por hecho que `bfloat16` es más rápido.** En esta CPU tardó 5,7 veces más en procesar el prompt.
+- **Cargar modelos con `trust_remote_code=True` sin mirar.** Algunos repositorios traen código Python propio para construir el modelo, y esa opción lo ejecuta. Los modelos con arquitectura soportada por transformers, como Qwen2.5, no lo necesitan.
+- **Generar sin la plantilla de chat.** No da ningún error, y por eso es el más peligroso. Es la anatomía de esta lección.
+
+### Anatomía de un error: el modelo que no sabía que le tocaba responder
+
+**El síntoma.** En la parte 6, la fila sin plantilla:
+
+```text
+   transformers float32, sin plantilla         24.2     2 de 5      343    1 de 5
+```
+
+Y una de sus respuestas (m3-03), con un tramo del medio recortado:
+
+```text
+ No aparece en la documentación.
+La información sobre la caducidad del token de la API del banco se encuentra en el [Runbook: credenciales de pagos](https://www.example.com/runbooks/credenciales-de-pagos). Según este documento, el token de la API del banco caducea cada 90 días. [...]
+
+Pregunta: ¿Dónde se guardan los secretos en la arquitectura del servicio de
+```
+
+**Cómo leerlo.** No hay excepción ni aviso: la llamada devuelve texto en español y sobre el tema. Las señales están en las métricas. Solo 2 de 5 respuestas pararon solas; las demás llegaron al límite de 150 tokens, y por eso tardaron el doble (24,2 s frente a 11,3 s). Además, el texto tiene tres rarezas: empieza con la frase de abstención y luego responde igualmente, inventa un enlace que no está en la documentación y termina **escribiendo una pregunta nueva**, como si continuara un documento de preguntas y respuestas.
+
+**La causa.** Al pegar los mensajes como texto plano, faltan las marcas `<|im_start|>` y `<|im_end|>`. Sin `<|im_start|>assistant` al final, el modelo no sabe que le toca responder. Ve un documento y hace lo que hace un modelo de lenguaje con un documento: continuarlo. Tampoco tiene motivo para emitir `<|im_end|>`, el token de fin que aprendió a poner al cerrar su turno, así que sigue hasta el límite. Es el mismo modelo que con plantilla acertó 4 de 5. Sin plantilla, acertó 1.
+
+**La solución.** Usa siempre `apply_chat_template(..., add_generation_prompt=True)` con la plantilla del propio repositorio. Si sirves con otra herramienta, comprueba que usa la misma plantilla: Ollama la lleva dentro del GGUF (`ollama show --template`), y puedes compararla con la de `tokenizer_config.json`, que muestra la parte 4. Como métrica de vigilancia, cuenta las respuestas que terminan por límite de tokens (`motivo_fin == "length"` en `curso_core`). Si sube de golpe, sospecha de la plantilla o de los tokens de fin antes que del modelo.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'Quieres servir un modelo de 7.600 millones de parámetros en una GPU de 16 GB, con contextos de hasta 8.000 tokens. ¿Qué calculas antes de descargarlo?',
+			opciones: [
+				{ texto: 'El tamaño de los ficheros del repositorio: si caben en 16 GB, vale.', porque: 'Falta la caché KV, que crece con el contexto y con las peticiones a la vez ("La cuenta de memoria acierta").' },
+				{ texto: 'Parámetros × bytes de la precisión (unos 15 GB en bfloat16) más la caché KV para 8.000 tokens, con los datos de config.json.', correcta: true, porque: 'En bfloat16 los pesos casi llenan la GPU y no queda sitio para la caché: hay que cuantizar o usar una GPU mayor.' },
+				{ texto: 'Nada: se prueba y, si no cabe, da error.', porque: 'La cuenta se hace en segundos con config.json y te ahorra descargar 15 GB ("Cuánta memoria necesita").' },
+			],
+		},
+		{
+			pregunta: 'Sirves tu modelo con un servidor nuevo. Las respuestas son más largas, a veces repiten la frase de abstención y el porcentaje de respuestas que terminan por límite de tokens pasa del 0 % al 60 %. ¿Qué miras primero?',
+			opciones: [
+				{ texto: 'La plantilla de chat y los tokens de fin que usa el servidor.', correcta: true, porque: 'Son los síntomas de la anatomía: el modelo no sabe que le toca responder ni cuándo cerrar su turno.' },
+				{ texto: 'Bajar la temperatura.', porque: 'La temperatura cambia qué token se elige, no que el modelo pare. Aquí todo era voraz y el modelo seguía sin parar ("Anatomía de un error").' },
+				{ texto: 'Cambiar a un modelo mayor.', porque: 'El mismo modelo, con plantilla, paró solo en 5 de 5. El problema está en cómo se le pasa el texto.' },
+			],
+		},
+		{
+			pregunta: 'Tu eval se hizo con el modelo en Ollama. Un compañero lo sirve con transformers, con los mismos pesos originales y en modo voraz, y las respuestas no coinciden. ¿Es un error?',
+			opciones: [
+				{ texto: 'Sí: con los mismos pesos y sin muestreo, deberían ser idénticas.', porque: 'No son los mismos pesos (Ollama usa 4 bits) ni la misma configuración de generación: transformers aplica la penalización de repetición de generation_config.json ("Mismo modelo, respuestas distintas").' },
+				{ texto: 'No es un error, pero es otro sistema: hay que repetir la eval con esa configuración, o fijar la misma precisión y los mismos parámetros.', correcta: true, porque: 'El modelo son los pesos, la precisión, la plantilla y los parámetros de generación. Aquí coincidieron en 1 de 5 respuestas.' },
+			],
+		},
+		{
+			pregunta: 'Vas a usar Qwen2.5 de 3B en un producto comercial porque "Qwen2.5 es Apache 2.0". ¿Qué haces?',
+			opciones: [
+				{ texto: 'Nada más: la licencia es de la familia.', porque: 'El 3B tiene licencia qwen-research, distinta de la de casi todos sus hermanos (parte 1 de la práctica).' },
+				{ texto: 'Leer la licencia de ese repositorio concreto y fijar el commit con el que la revisaste.', correcta: true, porque: 'La licencia va por modelo, y puede cambiar entre versiones del repositorio.' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- [Descargar ficheros del Hub](https://huggingface.co/docs/huggingface_hub/guides/download): `snapshot_download`, `revision` y `allow_patterns`, en la documentación de `huggingface_hub`.
+- [Safetensors](https://huggingface.co/docs/safetensors/index): el formato y por qué no ejecuta código al cargarse.
+- [Plantillas de chat en transformers](https://huggingface.co/docs/transformers/chat_templating): cómo funcionan `apply_chat_template` y `add_generation_prompt`.
+- [Generación con LLMs en transformers](https://huggingface.co/docs/transformers/llm_tutorial): `generate`, `generation_config` y los errores típicos, entre ellos el modelo que no para.
+- [GGUF en el Hub](https://huggingface.co/docs/hub/gguf): qué guarda el formato que usan llama.cpp y Ollama.
+- [Qwen2.5 Technical Report](https://arxiv.org/abs/2412.15115): la arquitectura y el entrenamiento de la familia que usa el curso.

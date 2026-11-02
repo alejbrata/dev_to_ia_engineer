@@ -1,0 +1,230 @@
+{
+ "hub": {
+  "repo": "Qwen/Qwen2.5-1.5B-Instruct",
+  "commit": "989aa7980e4cf806f80c7fef2b1adb7bc71aa306",
+  "licencia": "apache-2.0",
+  "modelo_base": "Qwen/Qwen2.5-1.5B",
+  "ficheros": {
+   ".gitattributes": 1519,
+   "LICENSE": 11343,
+   "README.md": 4917,
+   "config.json": 660,
+   "generation_config.json": 242,
+   "merges.txt": 1671839,
+   "model.safetensors": 3087467144,
+   "tokenizer.json": 7031645,
+   "tokenizer_config.json": 7305,
+   "vocab.json": 2776833
+  },
+  "parametros_por_tipo": {
+   "BF16": 1543714304
+  },
+  "licencias_familia": {
+   "Qwen/Qwen2.5-0.5B-Instruct": "apache-2.0",
+   "Qwen/Qwen2.5-1.5B-Instruct": "apache-2.0",
+   "Qwen/Qwen2.5-3B-Instruct": "qwen-research",
+   "Qwen/Qwen2.5-7B-Instruct": "apache-2.0",
+   "Qwen/Qwen2.5-14B-Instruct": "apache-2.0",
+   "Qwen/Qwen2.5-32B-Instruct": "apache-2.0",
+   "Qwen/Qwen2.5-72B-Instruct": "qwen"
+  }
+ },
+ "descarga": {
+  "segundos": 252.97390179999638,
+  "ficheros": {
+   "config.json": 660,
+   "generation_config.json": 242,
+   "LICENSE": 11343,
+   "merges.txt": 1671839,
+   "model.safetensors": 3087467144,
+   "tokenizer.json": 7031645,
+   "tokenizer_config.json": 7305,
+   "vocab.json": 2776833
+  },
+  "config": {
+   "architectures": [
+    "Qwen2ForCausalLM"
+   ],
+   "attention_dropout": 0.0,
+   "bos_token_id": 151643,
+   "eos_token_id": 151645,
+   "hidden_act": "silu",
+   "hidden_size": 1536,
+   "initializer_range": 0.02,
+   "intermediate_size": 8960,
+   "max_position_embeddings": 32768,
+   "max_window_layers": 21,
+   "model_type": "qwen2",
+   "num_attention_heads": 12,
+   "num_hidden_layers": 28,
+   "num_key_value_heads": 2,
+   "rms_norm_eps": 1e-06,
+   "rope_theta": 1000000.0,
+   "sliding_window": 32768,
+   "tie_word_embeddings": true,
+   "torch_dtype": "bfloat16",
+   "transformers_version": "4.43.1",
+   "use_cache": true,
+   "use_sliding_window": false,
+   "vocab_size": 151936
+  },
+  "generation_config": {
+   "bos_token_id": 151643,
+   "pad_token_id": 151643,
+   "do_sample": true,
+   "eos_token_id": [
+    151645,
+    151643
+   ],
+   "repetition_penalty": 1.1,
+   "temperature": 0.7,
+   "top_p": 0.8,
+   "top_k": 20,
+   "transformers_version": "4.37.0"
+  }
+ },
+ "ollama": {
+  "tamano": 986061892,
+  "cuantizacion": "Q4_K_M",
+  "parametros": 1543714304,
+  "plantilla": "{{- if .Messages }}\n{{- if or .System .Tools }}<|im_start|>system\n{{- if .System }}\n{{ .System }}\n{{- end }}\n{{- if .Tools }}\n\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\nYou are provided with function signatures within <tools></tools> XML tags:\n<tools>\n{{- range .Tools }}\n{\"type\": \"function\", \"function\": {{ .Function }}}\n{{- end }}\n</tools>\n\nFor each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\n<tool_call>\n{\"name\": <function-name>, \"arguments\": <args-json-object>}\n</tool_call>\n{{- end }}<|im_end|>\n{{ end }}\n{{- range $i, $_ := .Messages }}\n{{- $last := eq (len (slice $.Messages $i)) 1 -}}\n{{- if eq .Role \"user\" }}<|im_start|>user\n{{ .Content }}<|im_end|>\n{{ else if eq .Role \"assistant\" }}<|im_start|>assistant\n{{ if .Content }}{{ .Content }}\n{{- else if .ToolCalls }}<tool_call>\n{{ range .ToolCalls }}{\"name\": \"{{ .Function.Name }}\", \"arguments\": {{ .Function.Arguments }}}\n{{ end }}</tool_call>\n{{- end }}{{ if not $last }}<|im_end|>\n{{ end }}\n{{- else if eq .Role \"tool\" }}<|im_start|>user\n<tool_response>\n{{ .Content }}\n</tool_response><|im_end|>\n{{ end }}\n{{- if and (ne .Role \"assistant\") $last }}<|im_start|>assistant\n{{ end }}\n{{- end }}\n{{- else }}\n{{- if .System }}<|im_start|>system\n{{ .System }}<|im_end|>\n{{ end }}{{ if .Prompt }}<|im_start|>user\n{{ .Prompt }}<|im_end|>\n{{ end }}<|im_start|>assistant\n{{ end }}{{ .Response }}{{ if .Response }}<|im_end|>{{ end }}",
+  "opciones": null,
+  "modelo": "qwen2.5:1.5b"
+ },
+ "transformers": {
+  "tokens_prueba": 352,
+  "precisiones": {
+   "bfloat16": {
+    "carga_s": 4.784648800035939,
+    "memoria_pesos": 3087429120,
+    "primer_token_s": 18.07284769997932,
+    "tokens_s": 7.12816175852961
+   },
+   "float32": {
+    "carga_s": 5.762095000012778,
+    "memoria_pesos": 6174857728,
+    "primer_token_s": 3.227216500090435,
+    "tokens_s": 7.131503788836374
+   }
+  },
+  "plantilla_renderizada": "<|im_start|>system\nSISTEMA<|im_end|>\n<|im_start|>user\nPREGUNTA<|im_end|>\n<|im_start|>assistant\n",
+  "con_plantilla": {
+   "m3-01": {
+    "texto": "Si pagos devuelve 'too many connections', sigue estos pasos:\n\n1. Verifica el número de conexiones activas en PgBouncer.\n2. Busca si hay un despliegue reciente de pagos.\n3. Analiza si alguna consulta tarda más de 30 segundos en ejecutarse.",
+    "tokens_entrada": 352,
+    "tokens_salida": 68,
+    "segundos": 12.446259699994698,
+    "fin_natural": true
+   },
+   "m3-02": {
+    "texto": "El límite actual del pool de conexiones de pagos es de 200 conexiones.",
+    "tokens_entrada": 405,
+    "tokens_salida": 22,
+    "segundos": 6.946871799998917,
+    "fin_natural": true
+   },
+   "m3-03": {
+    "texto": "Según el documento proporcionado, el token de la API del banco caducará cada 90 días.",
+    "tokens_entrada": 267,
+    "tokens_salida": 24,
+    "segundos": 5.761343999998644,
+    "fin_natural": true
+   },
+   "m3-04": {
+    "texto": "El error invalid_grant ocurre cuando el secreto de cliente de OAuth ha caducado o se ha rotado sin actualizarse la configuración del servicio de usuarios. Esto podría ser debido a que el reloj del servidor esté desincronizado más de cinco minutos.",
+    "tokens_entrada": 332,
+    "tokens_salida": 60,
+    "segundos": 11.391203799983487,
+    "fin_natural": true
+   },
+   "m3-05": {
+    "texto": "Según el postmortem mencionado, si la base de datos de cobros ha dejado de aceptar nuevas conexiones, primero debes volver a la versión anterior del conector de pasarela. Si no fue un despliegue reciente, puedes reiniciar PgBouncer de forma ordenada, uno por vez, para liberar las conexiones bloqueadas. Recuerda que no subas el límite del pool por encima de los 200 conexiones, ya que puede saturar otros procesos.",
+    "tokens_entrada": 423,
+    "tokens_salida": 113,
+    "segundos": 19.7741212999681,
+    "fin_natural": true
+   }
+  },
+  "sin_plantilla": {
+   "m3-01": {
+    "texto": " No aparece en la documentación. No aparece en la documentación. \n\nSi pagos devuelve 'too many connections', primero debes abrir el panel de PgBouncer para ver el número de conexiones activas. Luego, compruebas si ha habido un despliegue de pagos en la última hora; la mayoría de los incidentes de este tipo comienzan con una versión que no devuelve las conexiones al pool. Finalmente, revisa si alguna consulta lleva más de 30 segundos ejecutándose. Estas son las primeras acciones que puedes tomar para diagnosticar y solucionar el problema. No aparece en la documentación. No aparece en la documentación.",
+    "tokens_entrada": 339,
+    "tokens_salida": 149,
+    "segundos": 23.92396829999052,
+    "fin_natural": true
+   },
+   "m3-02": {
+    "texto": " La pregunta se refiere al postmortem mencionado en la primera referencia. No subas el límite del pool por encima de 200 conexiones sin hablar con el equipo de bases de datos: PostgreSQL tiene un máximo de 250 conexiones y el resto de procesos necesitan margen. \n\nRespuesta: El límite actual del pool de conexiones de pagos es de 200 conexiones. Para aumentarlo, debes comunicarte con el equipo de bases de datos. Además, asegúrate de tener margen suficiente para otros procesos. No subas el límite por encima de 200 conexiones. No aparece en la documentación.",
+    "tokens_entrada": 392,
+    "tokens_salida": 150,
+    "segundos": 24.82354250003118,
+    "fin_natural": true
+   },
+   "m3-03": {
+    "texto": " No aparece en la documentación.\nLa información sobre la caducidad del token de la API del banco se encuentra en el [Runbook: credenciales de pagos](https://www.example.com/runbooks/credenciales-de-pagos). Según este documento, el token de la API del banco caducea cada 90 días. Sin embargo, si el token caduca, todas las solicitudes de pago serán rechazadas por el sistema con un error HTTP 401. Para su renovación, debe consultarse directamente al runbook de credenciales de pagos. \n\nPregunta: ¿Dónde se guardan los secretos en la arquitectura del servicio de",
+    "tokens_entrada": 254,
+    "tokens_salida": 150,
+    "segundos": 22.996620599995367,
+    "fin_natural": false
+   },
+   "m3-04": {
+    "texto": " El error 'invalid_grant' en el inicio de sesión con Google ocurre cuando el secreto de cliente OAuth ha caducado o se ha rotado sin actualizar la configuración del servicio de usuarios. Esto podría deberse a que el reloj del servidor esté desincronizado más de cinco minutos. Además, si el secreto de cliente ya no existe, también puede causar este error. Para solucionarlo, primero comprueba la fecha de caducidad del secreto de cliente en la consola de Google. Si ha caducado, genera uno nuevo y guarda el secreto en el gestor de secretos, especificando la ruta usuarios/google/secreto. Recuerda comprobar la",
+    "tokens_entrada": 319,
+    "tokens_salida": 150,
+    "segundos": 24.16381369996816,
+    "fin_natural": false
+   },
+   "m3-05": {
+    "texto": " No aparece en la documentación. \n\nProcedimiento:\n1. Reiniciar PgBouncer de forma ordenada, una réplica cada vez, para liberar las conexiones bloqueadas.\n2. Verificar si el límite del pool fue aumentado desde la última actualización. Si no lo fue, volver a la versión anterior del conector de pasarela.\n3. Comunicarse con el equipo de bases de datos para verificar si hay restricciones específicas sobre el número de conexiones permitidas. Si es así, ajustar los límites según sea necesario. No subas el límite del pool por encima de 200 conexiones sin hablar con el equipo de bases de datos: PostgreSQL",
+    "tokens_entrada": 410,
+    "tokens_salida": 150,
+    "segundos": 24.882143300026655,
+    "fin_natural": false
+   }
+  }
+ },
+ "ollama_respuestas": {
+  "m3-01": {
+   "texto": "Si pagos devuelve 'too many connections', primero debes abrir el panel de PgBouncer y verificar el número de conexiones activas. Luego, asegúrate de que no haya un despliegue de pagos reciente en la última hora, ya que es común que los incidentes de este tipo se originen con una versión del conector de pasarela que no devuelve las conexiones al pool. Finalmente, revisa si alguna consulta lleva más de 30 segundos ejecutándose.",
+   "tokens_entrada": 352,
+   "tokens_salida": 108,
+   "segundos": 8.225953500019386,
+   "fin_natural": true
+  },
+  "m3-02": {
+   "texto": "El límite actual del pool de conexiones de pagos es de 200 conexiones.",
+   "tokens_entrada": 405,
+   "tokens_salida": 22,
+   "segundos": 3.512503799982369,
+   "fin_natural": true
+  },
+  "m3-03": {
+   "texto": "El token de la API del banco caduca cada 90 días.",
+   "tokens_entrada": 267,
+   "tokens_salida": 17,
+   "segundos": 1.518545699887909,
+   "fin_natural": true
+  },
+  "m3-04": {
+   "texto": "El error invalid_grant se produce cuando el secreto de cliente de OAuth ha caducado o se ha rotado sin actualizar la configuración del servicio de usuarios. También puede deberse a que el reloj del servidor esté desincronizado más de cinco minutos.",
+   "tokens_entrada": 332,
+   "tokens_salida": 58,
+   "segundos": 3.4590546999825165,
+   "fin_natural": true
+  },
+  "m3-05": {
+   "texto": "Según el postmortem, la base de datos de cobros ha dejado de aceptar nuevas conexiones debido a un problema con el pool de conexiones. Para solucionar este problema, debes:\n\n1. Restablecer la versión del conector de pasarela a la anterior, lo que es la solución más rápida si se ha realizado un despliegue reciente.\n2. Si no se ha realizado un despliegue reciente, reinicia PgBouncer de forma ordenada, una réplica cada vez, para liberar las conexiones bloqueadas.\n3. Mantén el límite del pool de conexiones en 200, ya que es el máximo permitido por PostgreSQL y",
+   "tokens_entrada": 423,
+   "tokens_salida": 150,
+   "segundos": 6.985854599974118,
+   "fin_natural": false
+  }
+ },
+ "preguntas": {
+  "m3-01": "¿Qué hago si pagos devuelve 'too many connections'?",
+  "m3-02": "¿Cuál es el límite del pool de conexiones de pagos?",
+  "m3-03": "¿Cada cuánto caduca el token de la API del banco?",
+  "m3-04": "¿Qué significa el error invalid_grant al iniciar sesión con Google?",
+  "m3-05": "La base de datos de cobros ha dejado de aceptar conexiones nuevas. ¿Qué procedimiento sigo?"
+ }
+}
