@@ -1,0 +1,193 @@
+---
+title: "Cómo presentarlo como proyecto de portafolio"
+description: "Cómo presentar el proyecto final como portafolio: un README que se lee en cinco minutos, decisiones contadas con datos y cómo defenderlas en una entrevista"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
+## Objetivos
+
+Al terminar esta lección podrás:
+
+- Escribir el README de tu proyecto con las seis secciones, cada cifra con su intervalo y el comando que la reproduce.
+- Contar una decisión técnica con su contexto, las alternativas, el dato que decidió y su límite.
+- Preparar las preguntas habituales de una entrevista de AI Engineering con tus propias medidas.
+- Reconocer, antes que quien te entrevista, las afirmaciones que no aguantan una pregunta.
+
+## Teoría
+
+### Qué mira quien revisa tu proyecto
+
+Quien revisa un proyecto de portafolio le dedica unos minutos. Abre el README y busca tres cosas: qué problema resuelve, si funciona (con números) y si las decisiones tienen sentido. Si eso le convence, mira el código: la eval, los tests, cómo está organizado. Lo que más pesa en AI Engineering no es la técnica que uses, sino tres señales que se ven enseguida:
+
+- **Que se puede reproducir.** Cada número tiene un comando que lo genera.
+- **Que los números son honestos.** Con su intervalo, frente a una línea base, y con los límites dichos.
+- **Que las decisiones están razonadas.** Cada una con la alternativa descartada y el dato que la decidió.
+
+Un proyecto pequeño con estas tres señales vale más que uno grande sin ellas. Es lo mismo que en backend: un servicio con tests, métricas y un README que explica cómo desplegarlo se nota en seguida.
+
+### El README como informe
+
+Las seis secciones de la plantilla son las de un informe técnico corto: problema, cómo ejecutarlo, resultados, decisiones, coste y límites. Dos consejos:
+
+- **Los resultados, en tabla y con la línea base.** "90 % de aciertos" no dice nada; "52 de 58 (IC 79 %-95 %), frente a 16 sin documentación y 40 con un modelo más pequeño" sí.
+- **Los límites suman.** Decir qué no funciona, qué no has medido y dónde la evidencia no llega es lo que hace creíble el resto. Quien revisa los va a encontrar igual; mejor que los encuentre escritos por ti.
+
+### Contar una decisión
+
+Cada decisión importante se puede contar en cinco pasos, la misma estructura que un registro de decisiones de arquitectura (ADR):
+
+1. **Contexto**: qué problema había.
+2. **Alternativas**: qué opciones consideraste.
+3. **Dato**: qué mediste para elegir.
+4. **Decisión**: qué elegiste.
+5. **Límite**: qué no sabes o qué te costó.
+
+Con un ejemplo del curso, contado como lo contarías tú en una entrevista: "El asistente fallaba preguntas sobre la documentación interna (contexto). Podía ajustar el modelo o darle la documentación con RAG (alternativas). Sin documentación, el modelo acertaba 2 de 42 preguntas con respuesta: no sabía nada de la empresa (dato). Elegí RAG, que además se actualiza cambiando documentos (decisión). Con RAG, el modelo pequeño seguía fallando por comportamiento, y eso sí podría arreglarlo un ajuste (límite)." Es la lección 7.01 en cinco frases.
+
+### Las preguntas de una entrevista
+
+Las preguntas sobre un proyecto con LLMs se repiten, y casi todas se responden con algo que ya mediste en el curso:
+
+| Pregunta | Con qué respondes |
+| --- | --- |
+| ¿Cómo sabes que funciona? | Tu eval: casos, cómo se anclaron, el resultado con su intervalo y la línea base (módulo 4) |
+| ¿Por qué no usaste ajuste fino, o un agente? | Tus datos de la línea base y de los fallos (7.01, 5.01) |
+| ¿Qué pasa si el proveedor cambia el modelo o el precio? | Los modelos en la configuración y la eval en CI para comparar (4.07, anexo G) |
+| ¿Cómo lo depurarías en producción? | Las trazas y las métricas, y qué señal detecta cada fallo (6.02, 6.03, 6.07) |
+| ¿Cuánto cuesta? | Tokens, latencia y dinero por petición, y la caché (6.03) |
+| ¿Qué no funciona? | Tus límites, con los datos que los muestran |
+
+La forma de responder es siempre la misma: el dato y su límite. "Acierta el 90 %" es una respuesta débil; "52 de 58, con un intervalo del 79 % al 95 %: más casos me dirían si supera de verdad el 80 %" es una respuesta que abre una conversación de ingeniería.
+
+## Práctica
+
+El README del ejemplo resuelto está en [`modulos/08-proyecto-final/ejemplo/README.md`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/08-proyecto-final/ejemplo/README.md). Su tabla de resultados:
+
+| Sistema | Aciertos (58) | IC 95 % | Lección |
+| --- | --- | --- | --- |
+| 7B sin documentación (línea base) | 16 | | 7.01 |
+| 1,5B con el mismo RAG | 40 | 56 %-79 % | 6.01 |
+| **7B con RAG, reranker y prompt con reglas (vigente)** | **52** | **79 %-95 %** | 4.07 |
+| El mismo sistema con un modelo comercial | 53 | 81 %-96 % | anexo G |
+
+Y una de sus decisiones, con los cinco pasos comprimidos:
+
+> **Prompt con reglas, salido del análisis de errores.** En desarrollo, de 30 a 36 de 39 (p = 0,03); en prueba, de 13 a 16 de 19 (p = 0,38), una mejora que encoge al pasar a prueba. Lección 4.06.
+
+Con el README escrito, el comprobador y la rúbrica, antes de enseñar el proyecto:
+
+```sh
+uv run python modulos/08-proyecto-final/comprobar_proyecto.py modulos/08-proyecto-final/ejemplo/proyecto.toml
+uv run python modulos/08-proyecto-final/rubrica.py modulos/08-proyecto-final/ejemplo/proyecto.toml
+```
+
+```text
+Proyecto: Asistente interno de documentación técnica
+   OK    especificación             métrica «Aciertos en las 58 preguntas del dataset del módulo 4, ancladas a fragmentos del corpus», umbral 0.8
+   OK    dataset de la eval         58 casos; con un 80% de aciertos, IC 95 % 67%-88%
+   AVISO resultados de la eval      52 de 58 (79%-95%): el umbral es 80% y el intervalo baja de él
+   OK    tests                      4 ficheros (sin ejecutar: usa --tests)
+   OK    trazas                     modulos/06-produccion/observabilidad.py, packages/curso_core/src/curso_core/tracing.py
+   OK    métricas                   modulos/06-produccion/metricas_servicio.py
+   OK    coste medido               tokens, latencia y dinero en resultados grabados
+   OK    secretos                   160 ficheros, ninguno (5 con valores de prueba declarados)
+   OK    modelos en configuración   16 modelos, ninguno en el código
+   OK    README                     las 6 secciones
+   9 OK, 1 avisos, 0 por hacer
+```
+
+```text
+criterio                                  te das       permite
+   Problema y especificación                 sólido        sólido
+   Desarrollo                                sólido        sólido
+   Seguridad y datos                         sólido        sólido
+   Evaluación                            suficiente    suficiente
+   Análisis de errores e iteración           sólido        sólido
+   Observabilidad                            sólido        sólido
+   Coste                                 suficiente        sólido
+   Documentación y decisiones                sólido        sólido
+   8 criterios coherentes con la evidencia, 0 por revisar
+```
+
+## Mide y depura
+
+### El aviso no desaparece: se convierte en un límite
+
+El comprobador sigue avisando de que el intervalo de la eval baja del umbral, y debe seguir haciéndolo: es un hecho del proyecto. Lo que cambia es que el README lo dice, en Resultados y en Límites. Un aviso callado es un riesgo en una entrevista; uno escrito es una muestra de criterio.
+
+### Cada cifra, con su comando
+
+Antes de publicar, recorre el README y, para cada número, comprueba que puedes regenerarlo con el comando que indicas. Es la versión manual de la coherencia entre las salidas y las lecciones que usa este curso. Si una cifra viene de una ejecución que ya no puedes repetir, o la quitas o dices de dónde sale.
+
+### Lo que el comprobador no ve
+
+La rúbrica da "suficiente" en coste por una razón que el script no puede ver: no hay volumen real para proyectar. El README lo dice ("No hay una proyección con un volumen real"). Es el tipo de frase que evita que te pregunten por un número que no tienes.
+
+## Errores frecuentes
+
+- **Un README que es una lista de tecnologías.** "FastAPI, OpenTelemetry, Docker" no dice si funciona. Empieza por el problema y los resultados.
+- **Números sin línea base ni intervalo.** Un porcentaje suelto no permite juzgar nada.
+- **Esconder los límites.** Quien revisa los encuentra, y entonces duda también de lo demás.
+- **Defender una decisión con la intuición.** Si no mediste la alternativa, dilo: "no lo medí, y lo haría así".
+- **Contar como mejora un empate.** Es la anatomía.
+
+### Anatomía de un error: la mejora que no aguanta una pregunta
+
+**El síntoma.** En la lección 7.04, la cuantización a 4 bits dio esta línea:
+
+```text
+             aciertos    IC 95 %  se abstiene*    p50       frente a F16
+   F16       40 de 58  56%-79%      3 de 42   2.1s
+   Q4_K_M    42 de 58  60%-82%      2 de 42   1.0s       +5 -3 p=0.73
+```
+
+Y es tentador escribir en el README, o decir en una entrevista: "Cuantizar a 4 bits mejoró la calidad un 5 % y duplicó la velocidad".
+
+**Cómo leerlo.** La columna "frente a F16" desmiente la primera mitad: Q4_K_M gana 5 casos y pierde 3, y p = 0,73. Si los dos modelos fueran igual de buenos, un saldo así saldría por azar la mayoría de las veces. Los intervalos, del 56 %-79 % y del 60 %-82 %, se solapan casi enteros. La segunda mitad sí aguanta: la mediana baja de 2,1 s a 1,0 s.
+
+**La causa.** Comparar totales en lugar de casos, y querer que el resultado cuente una historia mejor que la que cuentan los datos. La primera pregunta de cualquier entrevistador con experiencia en evals sería "¿es significativo?".
+
+**La solución.** Decir lo que aguanta: "Cuantizado a 4 bits, no pierde calidad medible en mi eval (42 frente a 40 de 58, p = 0,73) y responde el doble de rápido; por eso lo elegí". Es una afirmación más modesta y mucho más fuerte, porque sobrevive a la pregunta.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'Tienes cinco minutos para que alguien entienda tu proyecto. ¿Qué pones al principio del README?',
+			opciones: [
+				{ texto: 'La lista de tecnologías y la arquitectura.', porque: 'No dice si el proyecto funciona ni qué problema resuelve ("Qué mira quien revisa tu proyecto").' },
+				{ texto: 'El problema en una frase y una tabla de resultados con la línea base y los intervalos.', correcta: true, porque: 'Es lo que permite juzgar el proyecto en minutos; el resto se lee si eso convence.' },
+			],
+		},
+		{
+			pregunta: 'En una entrevista te preguntan por qué no ajustaste el modelo. ¿Qué respondes?',
+			opciones: [
+				{ texto: 'Que el ajuste fino es caro y complicado.', porque: 'Es una opinión, no un dato. ¿Lo mediste? ("Contar una decisión").' },
+				{ texto: 'Con el dato que lo decidió: el modelo sin documentación no sabía nada de la empresa (2 de 42), así que el problema era de conocimiento y lo resolvía el RAG; y el límite: los fallos de comportamiento que quedaban sí podría arreglarlos un ajuste.', correcta: true, porque: 'Contexto, dato, decisión y límite: la estructura de una decisión defendible.' },
+			],
+		},
+		{
+			pregunta: 'Tu nueva versión acierta 45 de 50 frente a 43 de 50 de la anterior, con McNemar p = 0,69. ¿Cómo lo cuentas?',
+			opciones: [
+				{ texto: '"La nueva versión mejora un 4 %".', porque: 'Con p = 0,69 la diferencia es compatible con el azar (anatomía).' },
+				{ texto: '"No hay diferencia medible en calidad", y lo que sí haya cambiado de forma medible (coste, latencia).', correcta: true, porque: 'Es la afirmación que sobrevive a "¿es significativo?".' },
+			],
+		},
+		{
+			pregunta: 'El comprobador da un aviso que no puedes resolver sin muchos más casos. ¿Qué haces antes de publicar el proyecto?',
+			opciones: [
+				{ texto: 'Ajustar el umbral para que el aviso desaparezca.', porque: 'Mover el umbral después de medir le quita su valor (lección 01).' },
+				{ texto: 'Dejar el aviso y escribirlo en Resultados y en Límites del README.', correcta: true, porque: 'Un límite escrito por ti suma credibilidad ("El aviso no desaparece: se convierte en un límite").' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- [Make a README](https://www.makeareadme.com/) y la [guía de GitHub sobre los README](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-readmes): qué suele incluir un buen README.
+- [Documenting Architecture Decisions](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions), de Michael Nygard, y [adr.github.io](https://adr.github.io/): el origen de los registros de decisiones.
+- [What We Learned from a Year of Building with LLMs](https://applied-llms.org/): un buen repaso de lo que se suele preguntar sobre sistemas con LLMs en producción.
+- [Your AI Product Needs Evals](https://hamel.dev/blog/posts/evals/): la base para responder "¿cómo sabes que funciona?".

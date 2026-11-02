@@ -106,12 +106,14 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 - **Decisiones** (2026-11-02, tomadas por Claude para que Alex las valide): el caso sigue siendo el asistente. La 7.01 mide que los fallos del modelo de 1,5B con RAG frente al de 7B son de comportamiento, así que la hipótesis de las lecciones 5 y 6 es ajustar el de 1,5B con LoRA usando las respuestas del de 7B (destilación) y medirlo con la eval del módulo 4. La idea de desplegar modelos propios como en empresa queda repartida entre el módulo 6 (servir) y este (descargar, cuantizar, ajustar)
 - **Estado** (2026-11-02): lecciones 1 a 4 escritas, con salidas reales
 
-## Módulo 8 — Proyecto final ⬜
+## Módulo 8 — Proyecto final 🟨
 
 1. Especificación: el alumno elige dominio y problema
 2. Requisitos mínimos: proyecto propio creado desde cero, desarrollo, evals, observabilidad, documentación y análisis de coste
 3. Rúbrica de evaluación
 4. Cómo presentarlo como proyecto de portafolio
+- **Decisiones** (Alex, 2026-11-02): práctica con plantilla de proyecto y comprobador de requisitos (`proyecto.toml` + `comprobar_proyecto.py`); rúbrica por niveles (insuficiente, suficiente, sólido) sin nota, contrastada con la evidencia (`rubrica.py`); explicar decisiones en entrevistas va en la lección 4. El ejemplo resuelto es el asistente del curso
+- **Estado** (2026-11-02): las 4 lecciones escritas, con salidas reales; pendiente de la revisión de Alex
 
 ---
 
