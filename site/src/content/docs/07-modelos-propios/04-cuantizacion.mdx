@@ -1,0 +1,225 @@
+---
+title: "Cuantización"
+description: "Cuantizar el modelo del asistente de 16 a 2 bits con llama-quantize y medir cada nivel: tamaño, velocidad, perplejidad y la eval del módulo 4 caso a caso"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+
+:::note[Revisado: 2026-11]
+Salidas reales con Qwen2.5 1,5B Instruct (GGUF oficial en 16 bits) cuantizado con llama.cpp (compilación 11977) en CPU, y la eval de 58 preguntas del módulo 4. Puedes usar el modelo que quieras o puedas: el del rol `chat_llamacpp` en `config/models.toml`.
+:::
+
+## Objetivos
+
+Al terminar esta lección podrás:
+
+- Explicar qué guarda un modelo cuantizado y leer los nombres de los formatos de llama.cpp (`Q4_K_M`, `Q8_0`...).
+- Cuantizar un GGUF a varios niveles con `llama-quantize` y comprobar qué ha hecho con cada tensor.
+- Medir cada nivel en velocidad, perplejidad y en la eval de tu sistema, comparando caso a caso con el modelo sin cuantizar.
+- Elegir el nivel de cuantización con datos, y detectar el que rompe el modelo aunque no dé ningún error.
+
+## Teoría
+
+### Qué es cuantizar
+
+Cuantizar es guardar los pesos con menos bits. En 16 bits, cada peso es un número de coma flotante. En 4 bits solo hay 16 valores posibles, así que no se guarda el número sino una aproximación: los pesos se agrupan en **bloques** (por ejemplo, de 32), y cada bloque guarda una **escala** en alta precisión y, para cada peso, un entero pequeño que dice a qué fracción de esa escala se parece más. Al calcular, el servidor reconstruye cada peso como entero × escala. Se pierde precisión; la pregunta es cuánta importa en tu tarea.
+
+Se cuantiza por dos motivos, que ya has visto en las lecciones anteriores:
+
+- **Memoria.** El modelo de 7B ocupa unos 15 GB en 16 bits y 4,7 GB en 4 bits: la diferencia entre necesitar una GPU de servidor y caber en un portátil.
+- **Velocidad.** Generar token a token está limitado por la lectura de los pesos (lección 03): con la mitad de bytes que leer, se genera más rápido.
+
+### Los nombres de llama.cpp
+
+Los formatos de llama.cpp se llaman como `Q4_K_M`, y el nombre se lee así:
+
+- **El número** son los bits por peso de la mayoría de las matrices: Q8, Q6, Q5, Q4, Q3, Q2.
+- **`_0`** es el esquema antiguo y sencillo (bloques con una escala). **`K`** son los *k-quants*: bloques agrupados en superbloques, con escalas también cuantizadas, que aprovechan mejor los bits.
+- **`S`, `M`, `L`** (pequeño, mediano, grande) dicen cuántas matrices se dejan con más bits. No todas las capas son igual de sensibles: `Q4_K_M` deja en 6 bits algunas de las que más afectan a la calidad. Por eso un `Q4_K_M` no ocupa 4 bits por peso de media, sino unos 5.
+
+Hay otras familias fuera de llama.cpp: **GPTQ** y **AWQ** (cuantizan usando datos de calibración para decidir qué pesos proteger, habituales con vLLM en GPU) y **bitsandbytes** (cuantiza al cargar con transformers, y es la base de QLoRA, lección 05). La idea es la misma; cambian el formato y el servidor que lo entiende.
+
+### De safetensors a GGUF cuantizado
+
+El camino completo, con un modelo tuyo (por ejemplo, el que ajustarás en la lección 05), tiene dos pasos:
+
+1. **Convertir** los safetensors a GGUF en 16 bits con el script `convert_hf_to_gguf.py` del repositorio de llama.cpp. Usa la versión del script del mismo commit que tus binarios, y sus dependencias fijadas (`requirements/requirements-convert_hf_to_gguf.txt`), en un entorno aparte: el formato evoluciona y las versiones mezcladas fallan.
+2. **Cuantizar** ese GGUF con `llama-quantize` al nivel que quieras.
+
+Con un modelo publicado, muchas veces el autor ya ofrece el GGUF en 16 bits, o incluso los cuantizados. En la práctica partimos del GGUF en 16 bits del repositorio oficial de Qwen y cuantizamos nosotros, que es el paso que tendrás que repetir con un modelo ajustado.
+
+### Cómo medir lo que se pierde
+
+La métrica clásica es la **perplejidad**: lo "sorprendido" que está el modelo con un texto, a partir de la probabilidad que da a cada token real. Cuanto más baja, mejor predice. Es barata, no necesita etiquetas y sirve para comparar cuantizaciones del mismo modelo.
+
+Pero no mide tu tarea. Un modelo puede predecir algo peor el texto en general y seguir respondiendo bien a tus preguntas, o al revés. La medida que decide es la de siempre en el curso: **la eval de tu sistema**, caso a caso contra la versión sin cuantizar, con su intervalo de confianza y su prueba de McNemar (módulo 4).
+
+## Práctica
+
+El código está en [`modulos/07-modelos-propios/cuantizar.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/07-modelos-propios/cuantizar.py). Parte del GGUF en 16 bits del repositorio oficial de Qwen (el del rol `chat_llamacpp`), fijado a su commit, y hace con él lo que harías antes de servir un modelo cuantizado:
+
+```sh
+uv run python modulos/07-modelos-propios/cuantizar.py             # más de una hora; 3,6 GB de descarga
+uv run python modulos/07-modelos-propios/cuantizar.py --grabadas  # la salida grabada
+```
+
+Necesita llama.cpp (como en la lección 03, en el PATH o en `LLAMA_CPP_DIR`) y, para la eval, lo mismo que el módulo 4: Ollama con los embeddings y el reranker en llama-server. Los ficheros cuantizados (unos 8 GB) van a `~/.cache/curso-ai-engineer/gguf`, fuera del repositorio.
+
+Cuantizar es una orden por nivel:
+
+```sh
+llama-quantize qwen2.5-1.5b-instruct-fp16.gguf qwen2.5-1.5b-instruct-Q4_K_M.gguf Q4_K_M
+```
+
+Después, cada fichero pasa por tres medidas:
+
+- **`llama-bench`**, la herramienta de llama.cpp para medir velocidad: procesa un prompt de 512 tokens y genera 128, dos veces.
+- **`llama-perplexity`**, sobre los 29 documentos del corpus del asistente.
+- **La eval del módulo 4**: el sistema vigente (búsqueda con reranker, prompt con reglas y citas) con el modelo cuantizado servido por llama-server en lugar del de 7B. Es `con_api.ejecutar` del anexo G, con el rol `chat_llamacpp` apuntando a cada fichero. Cada eval se guarda en `resultados/cuantizar/`, y la salida se vuelve a puntuar desde ahí, como en el módulo 4.
+
+La salida:
+
+```text
+1. Partida: Qwen/Qwen2.5-1.5B-Instruct-GGUF, qwen2.5-1.5b-instruct-fp16.gguf (commit 91cad51170dc)
+   3.56 GB
+
+2. Cuantizado con llama-quantize
+              tamaño  bits/peso  tiempo   oficial de Qwen
+   F16        3.56GB      16.00
+   Q8_0       1.89GB       8.50      9s   1.89 GB
+   Q6_K       1.46GB       6.56     16s   1.46 GB
+   Q5_K_M     1.29GB       5.76     20s   1.29 GB
+   Q4_K_M     1.12GB       5.00     21s   1.12 GB
+   Q3_K_M     0.92GB       4.13     13s   0.92 GB
+   Q2_K       0.75GB       3.36     20s   0.75 GB
+   tipo de algunos tensores tras cuantizar:
+      Q8_0    output q8_0, token_embd q8_0, attn_q q8_0, attn_v q8_0, ffn_down q8_0
+      Q4_K_M  output q6_K, token_embd q4_K, attn_q q4_K, attn_v q6_K, ffn_down q6_K
+      Q2_K    output q6_K, token_embd q2_K, attn_q q2_K, attn_v q4_K, ffn_down q3_K
+
+3-4. Velocidad (llama-bench) y perplejidad sobre el corpus del asistente
+             prompt t/s  generar t/s  perplejidad
+   F16              427         24.3         7.57
+   Q8_0             489         36.9         7.55
+   Q6_K             600         40.7         7.59
+   Q5_K_M           569         48.2         7.59
+   Q4_K_M           805         51.6         7.82
+   Q3_K_M           776         40.0         8.39
+   Q2_K             671         34.8        13.05
+
+5. La eval del módulo 4: 58 preguntas, sistema vigente con cada modelo
+             aciertos    IC 95 %  se abstiene*    p50       frente a F16
+   F16       40 de 58  56%-79%      3 de 42   2.1s
+   Q8_0      40 de 58  56%-79%      3 de 42   1.4s       +1 -1 p=1.00
+   Q6_K      40 de 58  56%-79%      3 de 42   1.3s       +0 -0 p=1.00
+   Q5_K_M    42 de 58  60%-82%      3 de 42   1.2s       +2 -0 p=0.50
+   Q4_K_M    42 de 58  60%-82%      2 de 42   1.0s       +5 -3 p=0.73
+   Q3_K_M    40 de 58  56%-79%      1 de 42   1.2s       +6 -6 p=1.00
+   Q2_K      19 de 58  22%-46%     27 de 42   1.0s      +4 -25 p=0.00
+   * se abstiene en preguntas que sí tienen respuesta en la documentación (42)
+
+   Referencias, grabadas en módulos anteriores:
+   1,5B en Ollama (lección 6.01)    0.99 GB  40 de 58
+   7B en Ollama (sistema vigente)   4.68 GB  52 de 58
+```
+
+## Mide y depura
+
+### Hasta 3 bits no se pierde nada medible; a 2 bits, se rompe
+
+El modelo en 16 bits acierta 40 de 58. De Q8_0 a Q3_K_M, todos aciertan 40 o 42, y ninguna diferencia con el de 16 bits es significativa (p de 0,50 o más). Q2_K se hunde: 19 de 58, con 25 casos perdidos y solo 4 ganados (p = 0,00).
+
+Que Q4_K_M y Q5_K_M acierten 42 no significa que cuantizar mejore el modelo. Mira la columna "frente a F16": Q4_K_M gana 5 casos y pierde 3. Cada cuantización cambia algunas respuestas en los dos sentidos, y el saldo queda dentro del ruido. Q3_K_M lo enseña mejor: acierta los mismos 40 que el de 16 bits, pero cambia 12 casos, 6 a mejor y 6 a peor. Con solo el total no lo verías: por eso se compara caso a caso (lección 4.03).
+
+### La perplejidad avisa, pero no decide
+
+La perplejidad sube poco hasta Q4_K_M (de 7,57 a 7,82, un 3 %), algo más en Q3_K_M (8,39, un 11 %) y se dispara en Q2_K (13,05, un 72 %). Señala bien el nivel que se rompe, y por eso es útil como primer filtro: es barata y no necesita etiquetas.
+
+Pero Q3_K_M empeora la perplejidad un 11 % y en la tarea acierta lo mismo que el de 16 bits. No hay un umbral de perplejidad que te diga de antemano cuánto se puede perder en tu tarea. Eso solo lo dice tu eval.
+
+### Más rápido, hasta cierto punto
+
+Generar pasa de 24,3 tokens por segundo en 16 bits a 51,6 en Q4_K_M: algo más del doble, porque hay que leer menos bytes por token (lección 03). Pero por debajo de 4 bits vuelve a bajar: 40,0 en Q3_K_M y 34,8 en Q2_K. Hay menos bytes que leer, pero desempaquetar los formatos de 2 y 3 bits cuesta más cálculo. En esta CPU, Q4_K_M es a la vez el más rápido y uno de los que no pierden calidad medible. En la eval, la mediana por pregunta baja de 2,1 s a 1,0 s.
+
+### Lo que hay dentro de cada fichero
+
+Q4_K_M no ocupa 4 bits por peso, sino 5,00. Las líneas de tipos de tensor dicen por qué: deja en 6 bits (`q6_K`) la matriz de salida, `attn_v` y `ffn_down`, que son de las que más afectan a la calidad. Hasta Q2_K protege la salida con 6 bits. Esa es la diferencia entre los niveles `_K_M` y una cuantización uniforme.
+
+El GGUF en 16 bits ocupa 3,56 GB, 0,47 GB más que los safetensors de la lección 02. En el modelo original, la matriz de embeddings y la de salida son la misma (`"tie_word_embeddings": true` en `config.json`), y el GGUF las guarda por separado: 151.936 × 1.536 × 2 bytes son 0,47 GB.
+
+Y un detalle que tranquiliza: los seis ficheros que hemos cuantizado ocupan lo mismo que los oficiales de Qwen. El Q4_K_M, por ejemplo, tiene exactamente los mismos 1.117.320.736 bytes. Con el mismo fichero de partida y la misma herramienta, el resultado es reproducible.
+
+### ¿Un modelo grande cuantizado o uno pequeño sin cuantizar?
+
+Las dos referencias del final responden a esta pregunta. El modelo de 1,5B en 16 bits ocupa 3,56 GB y acierta 40 de 58. El de 7B cuantizado a 4 bits ocupa 4,68 GB y acierta 52. Con una memoria parecida, el modelo grande cuantizado gana con claridad. Es lo habitual mientras no se baje de unos 4 bits, y aquí está medido en tu tarea. La pega es la velocidad: el de 7B tardaba 11,5 s por respuesta en esta CPU (anexo G), y el de 1,5B en Q4_K_M, 1,0 s. Esa es la tensión que intentará resolver la lección 05: que el pequeño se comporte como el grande.
+
+El modelo de 1,5B de Ollama, con 0,99 GB, también acierta 40 de 58, lo mismo que el de 16 bits.
+
+## Errores frecuentes
+
+- **Elegir el nivel por el tamaño sin medir.** Q3_K_M y Q2_K se diferencian en 0,17 GB, y uno acierta el doble que el otro.
+- **Mirar solo la perplejidad.** Sirve de filtro, no de veredicto.
+- **Mirar solo el total de aciertos.** Q3_K_M empata con el de 16 bits y cambia 12 respuestas. Compara caso a caso.
+- **Creer que una cuantización "mejora" el modelo.** Las diferencias pequeñas en los dos sentidos son ruido. Si no es significativo, es empate.
+- **Suponer que menos bits siempre es más rápido.** En esta CPU, Q2_K genera más despacio que Q4_K_M.
+- **Mezclar las versiones del conversor y de los binarios.** Si conviertes tú de safetensors a GGUF, usa el script y sus dependencias del mismo commit que `llama-quantize` y `llama-server`.
+
+### Anatomía de un error: el modelo que se volvió prudente
+
+**El síntoma.** No hay errores: el servidor arranca, responde rápido (1,0 s de mediana) y devuelve JSON válido. Pero la eval baja de 40 a 19 aciertos. Las respuestas que pierde frente al modelo de 16 bits son, sobre todo, como estas, del fichero `resultados/cuantizar/Q2_K.jsonl`:
+
+```text
+m3-02  No aparece en la documentación
+m3-07  Servicio de notificaciones
+m3-20  Si un secreto se filtra, inmediatamente en su origen, genera uno nuevo y guáslalo en el gestor de secretos.
+m3-24  No apareceron en la documentación
+```
+
+**Cómo leerlo.** La columna "se abstiene" lo resume: el modelo de 16 bits dice "No aparece en la documentación" en 3 de las 42 preguntas que sí tienen respuesta, y Q2_K en 27. Además, en los casos que pierde no cita ningún fragmento, y aparecen palabras rotas ("guáslalo", "apareceron"). Ojo con la lectura rápida. Si solo vigilaras que el asistente no invente, este modelo parecería **más seguro**: se abstiene, no da datos falsos. La perplejidad, 13,05 frente a 7,57, ya avisaba de que algo se había roto.
+
+**La causa.** Con unos 3,4 bits por peso de media, la mayoría de las matrices se quedan en 2 y 3 bits. El modelo sigue produciendo texto con la forma correcta, pero ya no consigue sacar del contexto el dato que se le pide, y cae en la respuesta de seguridad que le da el prompt. En un modelo de 1,5B hay poco margen: cada peso cuenta más que en uno grande.
+
+**La solución.** Aquí, no bajar de Q3_K_M, y preferir Q4_K_M, que es más rápido y no pierde calidad medible. Si necesitas menos memoria que eso, es mejor un modelo más pequeño con una cuantización sana que este a 2 bits. Y como métrica, además de los aciertos, vigila la **tasa de abstención en preguntas que sí tienen respuesta**. El dataset del módulo 4 las tiene separadas, y es la que salta primero cuando un modelo deja de entender el contexto.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'Necesitas que el modelo de 1,5B ocupe menos de 1 GB. Tienes Q3_K_M (0,92 GB, 40 de 58) y Q2_K (0,75 GB, 19 de 58). ¿Cuál eliges?',
+			opciones: [
+				{ texto: 'Q2_K: cuanto menos ocupe, mejor.', porque: 'Pierde 25 casos frente al de 16 bits (p = 0,00). Ahorra 0,17 GB a cambio de la mitad de los aciertos ("Hasta 3 bits no se pierde nada medible...").' },
+				{ texto: 'Q3_K_M, porque cumple el límite y no pierde calidad medible frente al de 16 bits.', correcta: true, porque: 'Empata con el de 16 bits, aunque cambia 12 casos. Antes de servirlo, revisa esos casos.' },
+			],
+		},
+		{
+			pregunta: 'Tras cuantizar a Q4_K_M, tu eval pasa de 40 a 42 aciertos: gana 5 casos y pierde 3 (p = 0,73). ¿Qué concluyes?',
+			opciones: [
+				{ texto: 'La cuantización ha mejorado el modelo.', porque: 'Cambia respuestas en los dos sentidos y el saldo está dentro del ruido. Es un empate.' },
+				{ texto: 'Que no pierde calidad medible en tu tarea, y que es más rápido: puedes usarlo.', correcta: true, porque: 'p = 0,73 es compatible con el azar. Lo que sí es real es la velocidad: de 24,3 a 51,6 tokens por segundo al generar.' },
+			],
+		},
+		{
+			pregunta: 'Un compañero propone elegir la cuantización solo por la perplejidad, porque la eval tarda mucho. ¿Qué le dices?',
+			opciones: [
+				{ texto: 'Que vale: la perplejidad mide lo mismo y es más rápida.', porque: 'Q3_K_M empeora la perplejidad un 11 % y acierta lo mismo que el de 16 bits. No hay un umbral que la traduzca a tu tarea ("La perplejidad avisa, pero no decide").' },
+				{ texto: 'Que sirve para descartar los niveles rotos, pero que el nivel final lo decide la eval de la tarea, caso a caso.', correcta: true, porque: 'La perplejidad señaló bien Q2_K (13,05 frente a 7,57). Para decidir entre los que quedan, hace falta la eval.' },
+			],
+		},
+		{
+			pregunta: 'En producción cambias a un modelo más cuantizado. La tasa de respuestas inventadas baja y la de "No aparece en la documentación" sube del 7 % al 64 % en preguntas que sí tienen respuesta. ¿Qué ha pasado?',
+			opciones: [
+				{ texto: 'El modelo es más prudente: mejor.', porque: 'Se abstiene donde había respuesta: ha dejado de entender el contexto (la anatomía).' },
+				{ texto: 'La cuantización ha roto la capacidad de usar el contexto. Vuelve al nivel anterior y vigila la tasa de abstención en preguntas con respuesta.', correcta: true, porque: 'Es lo que pasó con Q2_K: de 3 a 27 abstenciones en 42 preguntas con respuesta, sin ningún error.' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- [llama-quantize](https://github.com/ggml-org/llama.cpp/blob/master/tools/quantize/README.md): los niveles de llama.cpp, con su tamaño y su perplejidad en modelos de referencia.
+- [llama-perplexity](https://github.com/ggml-org/llama.cpp/blob/master/tools/perplexity/README.md): cómo se calcula y cómo se usa para comparar cuantizaciones.
+- [GPTQ](https://arxiv.org/abs/2210.17323) y [AWQ](https://arxiv.org/abs/2306.00978): las cuantizaciones con datos de calibración más usadas en GPU.
+- [LLM.int8()](https://arxiv.org/abs/2208.07339): el trabajo detrás de la cuantización de bitsandbytes, que usará QLoRA en la lección 05.
+- [Cuantización en transformers](https://huggingface.co/docs/transformers/quantization/overview): los métodos disponibles al cargar un modelo con transformers.

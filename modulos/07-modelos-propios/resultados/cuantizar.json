@@ -1,0 +1,141 @@
+{
+ "origen": {
+  "repo": "Qwen/Qwen2.5-1.5B-Instruct-GGUF",
+  "commit": "91cad51170dc346986eccefdc2dd33a9da36ead9",
+  "fichero": "qwen2.5-1.5b-instruct-fp16.gguf",
+  "descarga_s": 0.0012836999958381057,
+  "oficiales": {
+   "qwen2.5-1.5b-instruct-fp16.gguf": 3560416288,
+   "qwen2.5-1.5b-instruct-q2_k.gguf": 752880160,
+   "qwen2.5-1.5b-instruct-q3_k_m.gguf": 924455968,
+   "qwen2.5-1.5b-instruct-q4_0.gguf": 1066227232,
+   "qwen2.5-1.5b-instruct-q4_k_m.gguf": 1117320736,
+   "qwen2.5-1.5b-instruct-q5_0.gguf": 1259173408,
+   "qwen2.5-1.5b-instruct-q5_k_m.gguf": 1285494304,
+   "qwen2.5-1.5b-instruct-q6_k.gguf": 1464178720,
+   "qwen2.5-1.5b-instruct-q8_0.gguf": 1894532128
+  }
+ },
+ "modelos": {
+  "F16": {
+   "ruta": "qwen2.5-1.5b-instruct-fp16.gguf",
+   "bytes": 3560416288,
+   "prompt_tps": 426.508887,
+   "generacion_tps": 24.294132,
+   "perplejidad": 7.5666,
+   "latencia_p50_s": 2.1097057999577373
+  },
+  "Q8_0": {
+   "ruta": "qwen2.5-1.5b-instruct-Q8_0.gguf",
+   "segundos": 8.85586999997031,
+   "bytes": 1894532128,
+   "tensores": {
+    "output": "q8_0",
+    "token_embd": "q8_0",
+    "blk.0.attn_q": "q8_0",
+    "blk.0.attn_v": "q8_0",
+    "blk.0.ffn_down": "q8_0"
+   },
+   "bpw": 8.5,
+   "prompt_tps": 488.688998,
+   "generacion_tps": 36.867701,
+   "perplejidad": 7.5505,
+   "latencia_p50_s": 1.4478441999526694
+  },
+  "Q6_K": {
+   "ruta": "qwen2.5-1.5b-instruct-Q6_K.gguf",
+   "segundos": 16.084466199972667,
+   "bytes": 1464178720,
+   "tensores": {
+    "output": "q6_K",
+    "token_embd": "q6_K",
+    "blk.0.attn_q": "q6_K",
+    "blk.0.attn_v": "q6_K",
+    "blk.0.ffn_down": "q6_K"
+   },
+   "bpw": 6.56,
+   "prompt_tps": 599.514825,
+   "generacion_tps": 40.654576,
+   "perplejidad": 7.5898,
+   "latencia_p50_s": 1.2689258999889717
+  },
+  "Q5_K_M": {
+   "ruta": "qwen2.5-1.5b-instruct-Q5_K_M.gguf",
+   "segundos": 20.092771199997514,
+   "bytes": 1285494304,
+   "tensores": {
+    "output": "q6_K",
+    "token_embd": "q5_K",
+    "blk.0.attn_q": "q5_K",
+    "blk.0.attn_v": "q6_K",
+    "blk.0.ffn_down": "q6_K"
+   },
+   "bpw": 5.76,
+   "prompt_tps": 569.205485,
+   "generacion_tps": 48.221571,
+   "perplejidad": 7.5883,
+   "latencia_p50_s": 1.2001869000960141
+  },
+  "Q4_K_M": {
+   "ruta": "qwen2.5-1.5b-instruct-Q4_K_M.gguf",
+   "segundos": 21.435512299998663,
+   "bytes": 1117320736,
+   "tensores": {
+    "output": "q6_K",
+    "token_embd": "q4_K",
+    "blk.0.attn_q": "q4_K",
+    "blk.0.attn_v": "q6_K",
+    "blk.0.ffn_down": "q6_K"
+   },
+   "bpw": 5.0,
+   "prompt_tps": 805.438302,
+   "generacion_tps": 51.64659,
+   "perplejidad": 7.8167,
+   "latencia_p50_s": 0.9679925000527874
+  },
+  "Q3_K_M": {
+   "ruta": "qwen2.5-1.5b-instruct-Q3_K_M.gguf",
+   "segundos": 12.950401499983855,
+   "bytes": 924455968,
+   "tensores": {
+    "output": "q6_K",
+    "token_embd": "q3_K",
+    "blk.0.attn_q": "q3_K",
+    "blk.0.attn_v": "q5_K",
+    "blk.0.ffn_down": "q5_K"
+   },
+   "bpw": 4.13,
+   "prompt_tps": 775.57537,
+   "generacion_tps": 39.988713,
+   "perplejidad": 8.3941,
+   "latencia_p50_s": 1.2191445999778807
+  },
+  "Q2_K": {
+   "ruta": "qwen2.5-1.5b-instruct-Q2_K.gguf",
+   "segundos": 20.432645799941383,
+   "bytes": 752880160,
+   "tensores": {
+    "output": "q6_K",
+    "token_embd": "q2_K",
+    "blk.0.attn_q": "q2_K",
+    "blk.0.attn_v": "q4_K",
+    "blk.0.ffn_down": "q3_K"
+   },
+   "bpw": 3.36,
+   "prompt_tps": 671.475545,
+   "generacion_tps": 34.75887,
+   "perplejidad": 13.0479,
+   "latencia_p50_s": 0.9793054999317974
+  }
+ },
+ "ollama_bytes": {
+  "qwen3:8b": 5225388164,
+  "qwen3-embedding:0.6b": 639150858,
+  "nomic-embed-text:latest": 274302450,
+  "bge-m3:latest": 1157672605,
+  "qwen2.5:7b": 4683087332,
+  "qwen2.5:0.5b": 397821319,
+  "qwen2.5:1.5b": 986061892,
+  "qwen2.5-coder:14b-instruct-q4_K_M": 8988124298
+ }
+}

@@ -38,3 +38,24 @@ def test_resumen_de_un_modelo_que_siempre_se_abstiene() -> None:
     # Abstenerse cuando había respuesta es un fallo, pero no es inventar.
     assert r["inventa"] == 0
     assert r["total"] == sin == total - con
+
+
+def test_tipos_de_tensor_lee_el_registro_de_llama_quantize() -> None:
+    import cuantizar
+
+    registro = (
+        "[   1/ 339] output.weight - [  1536, 151936,      1,      1], type =    f16, "
+        "converting to q6_K .. size =   445.12 MiB ->   182.57 MiB\n"
+        "[   4/ 339] blk.0.attn_k.bias - [   256,      1,      1,      1], type =    f32, "
+        "size =    0.001 MiB\n"
+        "[   9/ 339] blk.0.attn_q.weight - [  1536,   1536,      1,      1], type =    f16, "
+        "converting to q4_K .. size =     4.50 MiB ->     1.27 MiB\n"
+    )
+    assert cuantizar.tipos_de_tensor(registro) == {"output": "q6_K", "blk.0.attn_q": "q4_K"}
+
+
+def test_p95() -> None:
+    import servir
+
+    assert servir.p95([1.0, 2.0, 3.0]) == 3.0
+    assert servir.p95([float(i) for i in range(1, 101)]) == 95.0

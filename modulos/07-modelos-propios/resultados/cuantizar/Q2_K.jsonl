@@ -1,0 +1,59 @@
+{"version": "Q2_K", "meta": {"rol": "chat_llamacpp", "modelo": "qwen2.5-1.5b-instruct-Q2_K.gguf", "uso": {"llamadas": 58, "errores": 0, "tasa_error": 0.0, "reintentos": 0, "latencia_p50_s": 0.9793054999317974, "latencia_p95_s": 2.6004278999753296, "tokens_entrada": 34658, "tokens_salida": 1415, "coste_usd": 0.0, "llamadas_sin_precio": 0}}}
+{"caso":"m3-01","ok":false,"salida":"Si el servicio de pagos devuelve 'too many connections' y en los logs se menciona 'too many connections' contra PostgreSQL, entonces probablemente se estén ejecutando consultas o operaciones que llevan más de 30 segundos en ejecución.","detalle":{"se_abstiene":false,"citas":[]}}
+{"caso":"m3-02","ok":false,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"m3-03","ok":false,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"m3-04","ok":true,"salida":"El error invalid_grant suele aparecer cuando el secreto de cliente de OAuth ha caducado o se ha rotado sin actualizar la configuración del servicio de usuarios. También puede deberse a que el reloj del servidor esté desincronizado más de cinco minutos.","detalle":{"se_abstiene":false,"citas":[]}}
+{"caso":"m3-05","ok":false,"salida":"Si no hubo un despliegue reciente, reiniciar el PgBouncer de forma ordenada, una réplica cada vez, para liberar las conexiones bloqueadas.","detalle":{"se_abstiene":false,"citas":[]}}
+{"caso":"m3-06","ok":false,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"m3-07","ok":false,"salida":"Servicio de notificaciones","detalle":{"se_abstiene":false,"citas":[]}}
+{"caso":"m3-08","ok":true,"salida":"15 minutos","detalle":{"se_abstiene":false,"citas":[]}}
+{"caso":"m3-09","ok":false,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"m3-10","ok":false,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"m3-11","ok":false,"salida":"Causa raíz","detalle":{"se_abstiene":false,"citas":[]}}
+{"caso":"m3-12","ok":false,"salida":"40 minutos","detalle":{"se_abstiene":false,"citas":[]}}
+{"caso":"m3-13","ok":false,"salida":"20","detalle":{"se_abstiene":false,"citas":[]}}
+{"caso":"m3-14","ok":false,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"m3-15","ok":false,"salida":"Si la tienda está enseñando precios viejos, primero, verifique si hay un retraso de la réplica de la tienda. Si es así, contacte al equipo de atención al cliente para informar sobre el retraso. Si no, verifique si hay un retraso de la réplica del catálogo, y si es así, contacte al equipo de atención al cliente para informar sobre el retraso. Si no, verifique si hay un retraso de la réplica del catálogo, y si es así, contacte al equipo de atención al cliente para informar sobre el retraso.","detalle":{"se_abstiene":false,"citas":[]}}
+{"caso":"m3-16","ok":false,"salida":"A partir de 5 minutos","detalle":{"se_abstiene":false,"citas":[]}}
+{"caso":"m3-17","ok":false,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"m3-18","ok":false,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"m3-19","ok":false,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"m3-20","ok":false,"salida":"Si un secreto se filtra, inmediatamente en su origen, genera uno nuevo y guáslalo en el gestor de secretos.","detalle":{"se_abstiene":false,"citas":[]}}
+{"caso":"m3-21","ok":false,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"m3-22","ok":false,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"m3-23","ok":false,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"m3-24","ok":false,"salida":"No apareceron en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"m3-25","ok":false,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"m3-26","ok":false,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"m3-27","ok":true,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"m3-28","ok":true,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"m3-29","ok":true,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"m3-30","ok":true,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"n-01","ok":false,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"n-02","ok":true,"salida":"Para que el usuario pueda reintentar si se produzca un error, se desactiva el interruptor de la edición de perfil con el interruptor de funcionalidad perfil_edicion y se abre una incidencia al equipo Identidad.","detalle":{"se_abstiene":false,"citas":[]}}
+{"caso":"n-03","ok":false,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"n-04","ok":false,"salida":"Si el puerto está cerrado por un cambio de firewall, pide al equipo de redes que lo vuelva a abrir.","detalle":{"se_abstiene":false,"citas":[]}}
+{"caso":"n-05","ok":false,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"n-06","ok":false,"salida":"El objetivo de disponibilidad de notificaciones es del 99,9 % mensual.","detalle":{"se_abstiene":false,"citas":[2]}}
+{"caso":"n-07","ok":false,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"n-08","ok":false,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"n-09","ok":false,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"n-10","ok":false,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"n-11","ok":false,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"n-12","ok":true,"salida":"Dudo entre severidad alta y crítica. ¿Cuál pongo?","detalle":{"se_abstiene":false,"citas":[2]}}
+{"caso":"n-13","ok":false,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"n-14","ok":false,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"n-15","ok":false,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"n-16","ok":false,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"s-01","ok":true,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"s-02","ok":true,"salida":"No aparecer en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"s-03","ok":false,"salida":"El servicio de notificaciones utiliza proveedores externos para SMS.","detalle":{"se_abstiene":false,"citas":[2]}}
+{"caso":"s-04","ok":true,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"s-05","ok":true,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"s-06","ok":true,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"f-01","ok":true,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"f-02","ok":true,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"f-03","ok":true,"salida":"No aparecería en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"g-01","ok":true,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"g-02","ok":true,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
+{"caso":"g-03","ok":true,"salida":"No aparece en la documentación","detalle":{"se_abstiene":true,"citas":[]}}
