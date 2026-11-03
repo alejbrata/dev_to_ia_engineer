@@ -70,6 +70,8 @@ SLUGS = {
     "Evaluar el modelo ajustado frente al base": "evaluar-el-modelo-ajustado",
     "Cómo presentarlo como proyecto de portafolio": "portafolio",
     "Herramientas y estrategias de desarrollo con IA": "desarrollo-con-ia",
+    # Se renombró (2026-11-03) y conserva su dirección, ya publicada.
+    "La API de Claude": "claude-y-claude-code",
 }
 
 

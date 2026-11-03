@@ -43,8 +43,6 @@ def test_carpetas_de_modulos() -> None:
     assert existentes - anexos == {g.directory for g in MODULOS}
 
 
-def test_bitacoras_por_modulo() -> None:
-    existentes = {p.stem for p in (ROOT / "bitacora").glob("*.md") if p.name != "README.md"}
-    # El código de un anexo con prácticas vive en una carpeta con su nombre (b-hugging-face).
-    anexos = {p.slug for g in GRUPOS if g.directory == plan_sync.ANEXOS_DIR for p in g.paginas}
-    assert existentes - anexos == {g.directory for g in MODULOS}
+def test_la_bitacora_es_un_solo_fichero() -> None:
+    """El contenido personal va entero al anexo H, desde un único fichero (2026-11-03)."""
+    assert {p.name for p in (ROOT / "bitacora").glob("*.md")} == {"proceso.md"}
