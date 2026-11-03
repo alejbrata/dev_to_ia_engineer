@@ -6,8 +6,8 @@ description: "Evals de RAG: medir la recuperación y la generación por separado
 import Autoevaluacion from '../../../components/Autoevaluacion.astro';
 import ConUnaApi from '../../../components/ConUnaApi.astro';
 
-:::note[Revisado: 2026-10]
-Las salidas son reales. El sistema es el RAG de las lecciones anteriores: bge-m3 para la búsqueda, el reranker bge-reranker-v2-m3 en `llama-server` y Qwen2.5 1.5B Instruct para generar. El juez es Qwen2.5 7B Instruct (rol `judge`). Todo sobre CPU.
+:::note[Revisado: 2026-11]
+Las salidas son reales. El sistema es el RAG de las lecciones anteriores: bge-m3 para la búsqueda, el reranker bge-reranker-v2-m3 en `llama-server` y Qwen2.5 1.5B Instruct para generar. El juez es Qwen2.5 7B Instruct (rol `judge`). Todo sobre CPU. La relevancia y la comprobación de su juez se añadieron en noviembre sobre las mismas respuestas grabadas.
 :::
 
 ## Objetivos
@@ -18,6 +18,7 @@ Al terminar esta lección podrás:
 - Clasificar cada fallo según la etapa en la que se pierde.
 - Reconocer cuándo mejorar la recuperación ya no mejora el sistema, porque el cuello de botella se ha movido a la generación.
 - Distinguir fidelidad y corrección, y combinar el comprobador de datos clave con el juez.
+- Medir las cuatro métricas de RAG (recall y precisión del contexto, fidelidad y relevancia) y comprobar un juez de relevancia antes de fiarte de sus cifras.
 
 ## Teoría
 
@@ -46,7 +47,20 @@ La casilla "correcta sin el segmento" no debería existir. Si aparece, o el dato
 
 La fidelidad añade otra dimensión. Una respuesta puede ser **fiel e incorrecta**, si el contexto que recibió era el equivocado. Y puede ser **correcta y no fiel**, si acierta el dato pero inventa lo que lo rodea. Por eso se miden las dos.
 
-Las librerías de evals de RAG ponen nombre a estas métricas: *context recall* (el dato llega), *context precision* (cuánto de lo que llega sirve), *faithfulness* (fidelidad) y *answer correctness* o *answer relevancy* (la respuesta responde a lo que se preguntó). Aquí se calculan con el código de las lecciones anteriores; el [anexo F](../../anexos/f-herramientas-de-evals/) compara cómo lo hacen esas librerías. La *context precision* no se mide en esta lección.
+### Las cuatro métricas de RAG
+
+Las librerías de evals de RAG ponen nombre a cuatro métricas, dos por etapa. Cada una mide una cosa distinta, y una respuesta puede ir bien en unas y mal en otras:
+
+| Métrica | Pregunta | Etapa | Cómo se mide aquí |
+| --- | --- | --- | --- |
+| *Context recall* | ¿Llega al contexto el dato que hace falta? | recuperación | sin modelo: algún fragmento contiene un segmento anclado |
+| *Context precision* | ¿Cuánto de lo que llega sirve? | recuperación | sin modelo: la fracción de fragmentos con un segmento anclado |
+| *Faithfulness* (fidelidad) | ¿Lo que dice la respuesta está en el contexto? | generación | el juez v2 de la lección 04 |
+| *Answer relevancy* (relevancia) | ¿La respuesta contesta a lo que se preguntó? | generación | un juez de relevancia v2, que se construye y se comprueba en esta lección |
+
+Una respuesta fiel puede no contestar: repite bien un fragmento que habla de otra cosa. Y una que contesta puede no ser fiel, si se inventa el dato. Por eso no se resumen en una sola cifra. La corrección (*answer correctness*) es una quinta medida que sí necesita la respuesta buena: aquí es el comprobador de datos clave.
+
+Recall y precisión del contexto, calculadas así, necesitan el dataset anclado: en producción no lo hay. Fidelidad y relevancia no, y la precisión del contexto se puede juzgar con un modelo. La lección [Calidad en producción](../../06-produccion/09-calidad-en-produccion/) del módulo 6 usa esas tres sobre el tráfico real. El [anexo F](../../anexos/f-herramientas-de-evals/) compara cómo calculan estas métricas las librerías.
 
 ## Práctica
 
@@ -60,7 +74,7 @@ llama-server -hf gpustack/bge-reranker-v2-m3-GGUF:Q8_0 --reranking --port 8082
 uv run python modulos/04-evals/por_etapas.py
 ```
 
-[`por_etapas.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/04-evals/por_etapas.py) responde las 58 preguntas con cada configuración y pasa el juez v2 por las respuestas que no se abstienen. Son unas 320 llamadas a modelos y, en la máquina del curso, alrededor de una hora. Guarda los resultados caso a caso en `resultados/etapas-*.jsonl`; con `--grabadas` los reutiliza sin llamar a nada. La salida:
+[`por_etapas.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/04-evals/por_etapas.py) responde las 58 preguntas con cada configuración y pasa dos jueces por las respuestas que no se abstienen: el de fidelidad v2 y el de relevancia v2, que se comprueba más abajo. Son unas 460 llamadas a modelos y, en la máquina del curso, alrededor de una hora y media. Guarda los resultados caso a caso en `resultados/etapas-*.jsonl`; con `--grabadas` los reutiliza sin llamar a nada, y con `--completar` solo juzga la relevancia que falte (o la que dio otra versión del prompt del juez). La salida:
 
 ```text
 1. Embudo de las 42 preguntas con respuesta
@@ -84,11 +98,52 @@ uv run python modulos/04-evals/por_etapas.py
    reranker-k5  33 de 42  [ 64%,  88%]
    densa-k3 → reranker-k3: gana ['m3-11', 'm3-19', 'm3-21', 'm3-24', 'm3-26', 'n-07', 'n-15'], pierde ['m3-15', 'n-04'], p = 0.18
    reranker-k3 → reranker-k5: gana ['m3-01', 'm3-15'], pierde ['m3-26', 'n-05'], p = 1.00
+
+4. Las cuatro métricas de RAG (preguntas con respuesta: 42)
+                    recall ctx  precisión ctx      fidelidad     relevancia     corrección
+   densa-k3                88%            32%            82%            98%            67%
+   reranker-k3             95%            36%            82%           100%            79%
+   reranker-k5            100%            23%            88%            92%            79%
+   (fidelidad y relevancia, sobre las respuestas que no se abstienen)
+   comprobación del juez de relevancia (reranker-k3): de las 33 correctas, dice que responden 33
 ```
 
 La configuración densa-k3 da 28 de 42, lo mismo que en la lección 02: es el mismo sistema con el mismo dataset.
 
-<ConUnaApi practicas={['modulos/04-evals/por_etapas.py']}>
+### El juez de relevancia, comprobado
+
+La relevancia la da un juez, y un juez hay que comprobarlo antes de fiarse de sus cifras (lección 04). El de la lección 06 del módulo 3 ya mostraba el problema: decía que respuestas correctas no contestaban. El v2 sigue la misma idea que el juez de fidelidad v2: el modelo no da el veredicto, sino que copia la frase de la respuesta que da lo que se pide, y el código comprueba que esa frase está en la respuesta.
+
+```python
+def relevancia_v2(cliente, pregunta, respuesta, rol="judge") -> bool:
+    mensajes = prompts.renderizar(
+        prompts.cargar("rag/juez-relevancia-cita"), pregunta=pregunta, respuesta=respuesta
+    )
+    try:
+        r, _ = cliente.extraer(mensajes, Contesta, rol=rol, opciones=OPCIONES)
+    except ErrorFormato:
+        return False
+    return cita_valida(r.frase, respuesta)
+```
+
+Para comprobarlo no hace falta etiquetar nada a mano. [`juez_relevancia.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/04-evals/juez_relevancia.py) toma las respuestas correctas, que con su propia pregunta contestan, y las empareja también con la pregunta de otro caso, donde no contestan. Lo hace con las respuestas de dos modelos: las del de 1,5B de esta lección y las del de 7B del sistema vigente (lección 07), que responden de otra forma. Unos 30 minutos:
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/04-evals/juez_relevancia.py
+```
+
+```text
+Respuestas correctas, con su pregunta y con la de otro caso
+                   con su pregunta  con otra  kappa  s/juicio
+   1,5B juez v1            23 de 33         0   0.70      6.3s
+   1,5B juez v2            33 de 33         0   1.00      7.0s
+   7B   juez v1            16 de 38         0   0.42      5.8s
+   7B   juez v2            33 de 38         2   0.82      6.0s
+   (con su pregunta deberían contestar todas; con la de otro caso, ninguna)
+   juez v2: dice que no contestan m3-09 (7B), m3-26 (7B), n-02 (7B), n-15 (7B), n-16 (7B)
+```
+
+<ConUnaApi practicas={['modulos/04-evals/por_etapas.py', 'modulos/04-evals/juez_relevancia.py']}>
 	<p>Lo que guarda la práctica va a <code>resultados/&lt;proveedor&gt;/</code> y no pisa los resultados grabados con el modelo local.</p>
 </ConUnaApi>
 
@@ -130,7 +185,27 @@ Lo útil es cruzar la fidelidad con la corrección caso a caso:
 - **Correcta y no fiel, según el juez.** En la n-15 con reranker-k3, la respuesta contiene el dato clave ("5 minutos") y el comprobador la da por buena. El juez la marca como no fiel, pero por una razón discutible: la frase sin cita es la introducción ("sigue estos pasos:"), que no afirma nada. Es un tipo de falsa alarma del juez que conviene conocer.
 - **Sin respuesta.** Las preguntas que no deben responderse se quedan en 9 de 16 con las dos primeras configuraciones y bajan a 8 con k5. La recuperación no las arregla: el modelo responde a lo que no está, sigue la inyección del guardarraíl o contesta fuera de ámbito tenga el contexto que tenga. En la s-02, el juez sí detecta la invención (la afirmación de los 3 nodos no tiene cita).
 
+### Las cuatro métricas, cada una con lo suyo
+
+La sección 4 pone las cuatro métricas en paralelo, y cada una cuenta algo que las otras no:
+
+- **Recall y precisión del contexto se mueven en sentidos contrarios.** De k3 a k5, el recall llega al 100 % y la precisión baja del 36 % al 23 %: el dato llega siempre, pero ahora tres de cada cuatro fragmentos sobran. Es el "más contexto no es gratis" de arriba, con cifra. La precisión es baja en todas las configuraciones porque casi todas las preguntas tienen un solo segmento anclado y llegan 3 o 5 fragmentos: con k3, el máximo habitual es el 33 %.
+- **La fidelidad no ve el contexto equivocado.** Es del 82 % con densa-k3 y con reranker-k3, aunque la corrección sube del 67 % al 79 %. El juez mide si la respuesta se apoya en lo que recibió, no si recibió lo que hacía falta.
+- **La relevancia casi no se mueve, y lo que se mueve es del juez.** Baja del 100 % al 92 % de k3 a k5, pero son 3 respuestas, y las tres son correctas según el comprobador. Leídas, dos contestan sin duda: la m3-15 ("La tienda está enseñando precios viejos. ¿Qué hago?") da el procedimiento, y la n-15 es una pregunta que solo es el nombre de una alerta. La tercera, la n-12, dice que "la severidad más alta que se puede asignar es alta", y es discutible. Con 3 casos, esa diferencia está dentro del margen del juez (el apartado siguiente). Antes de leer una bajada de una métrica juzgada, lee los casos que la forman.
+
+Una respuesta puede ser fiel, relevante e incorrecta a la vez. La n-05 con k5 lo es: da la disponibilidad de pagos cuando se pregunta por la de búsqueda, con una cita que existe (la anatomía de abajo), y contesta a lo que se pregunta, una disponibilidad. Por eso la corrección, cuando tienes el dataset, sigue siendo la que decide.
+
+### El juez de relevancia: dos fallos antes de servir
+
+El juez de la lección 06 del módulo 3 rechaza respuestas que contestan exactamente a lo que se pregunta. En las respuestas del 1,5B dice que 10 de 33 correctas no contestan, y en las del 7B, 22 de 38. Uno de sus motivos, ante "¿Qué requisitos tiene una migración que borra una columna?" y "necesita la aprobación de dos personas del equipo y una copia de seguridad verificada", es que la respuesta "se desvía del tema, hablando de aprobación y copia de seguridad en lugar de requisitos técnicos". Con ese juez, la relevancia de la sección 4 salió entre el 65 % y el 68 %, y la conclusión, que el sistema se va por las ramas una de cada tres veces, era falsa.
+
+La primera versión del v2 corregía eso con las respuestas del 1,5B, pero dejaba la frase vacía cuando la respuesta entera era el dato: "No", "47 minutos", "Descubrimiento". El sistema vigente, con el modelo de 7B, responde así a menudo, y por eso la comprobación usa los dos modelos: con uno solo, este fallo no se habría visto. La versión 2 del prompt dice que, en ese caso, copie la respuesta entera. El ejemplo del prompt ("3 horas") no sale del dataset, para no enseñarle al juez la respuesta del examen.
+
+Lo que queda está en la salida. Con el 7B, el v2 da 5 de 38 correctas por no relevantes, la mayoría respuestas de una palabra o preguntas que son solo un nombre (la n-15 es "ReplicaCatalogoRetraso"). Y en 2 de 38 dice que contesta una respuesta que no es de esa pregunta: "47 minutos" a "¿A qué hora se hace la copia de seguridad?". Tiene forma de respuesta, y el juez no juzga si es verdad. La relevancia es útil para comparar versiones del mismo sistema; como valor exacto, con este juez, tiene un margen de unos puntos.
+
 ## Errores frecuentes
+
+**Fiarse de un juez sin comprobarlo.** El juez de relevancia de la lección 06 del módulo 3 daba un 65-68 % donde el v2 da un 92-100 %. Antes de leer una métrica que da un modelo, compruébala con casos cuya respuesta conoces, y con respuestas de más de un modelo: cada uno responde de una forma, y el juez puede fallar con una y no con otra.
 
 **Mirar solo la cifra final.** "28 de 42" no dice si el problema está en la búsqueda o en el modelo. Sin el desglose, puedes pasarte una semana afinando el chunking cuando el dato ya llega y es el modelo el que falla.
 

@@ -7,9 +7,13 @@ correcta y si el juez v2 la considera fiel (generación).
 1. El embudo de cada configuración: recuperado → correcto, y en qué etapa se pierde cada fallo.
 2. La fidelidad según el juez v2, y las preguntas sin respuesta.
 3. ¿Son reales las diferencias entre configuraciones?
+4. Las cuatro métricas de RAG: recall y precisión del contexto (sin modelo, con los
+   segmentos anclados), fidelidad (juez v2) y relevancia de la respuesta (juez de
+   relevancia v2, comprobado en juez_relevancia.py), por configuración.
 
-Necesita el reranker de la lección 05 del módulo 3 en marcha. Con --grabadas no llama a nada.
-Uso: `uv run python modulos/04-evals/por_etapas.py [--grabadas]`
+Necesita el reranker de la lección 05 del módulo 3 en marcha. Con --grabadas no llama a nada;
+con --completar, solo juzga la relevancia de las respuestas grabadas que no la tienen.
+Uso: `uv run python modulos/04-evals/por_etapas.py [--grabadas | --completar]`
 """
 
 from __future__ import annotations
@@ -22,7 +26,7 @@ from pathlib import Path
 import dataset
 import jueces
 import sistema
-from curso_core import ClienteLLM
+from curso_core import ClienteLLM, prompts
 from curso_core import config as cfg
 from curso_core.evals import Informe, ResultadoCaso, comparar, intervalo_wilson, prueba_mcnemar
 from curso_core.rag import Resultado
@@ -34,6 +38,8 @@ CONFIGURACIONES = {
     "reranker-k3": {"reranker": True, "k": 3},
     "reranker-k5": {"reranker": True, "k": 5},
 }
+# Qué versión del prompt del juez dio la relevancia grabada: si cambia, --completar la repite.
+JUEZ_RELEVANCIA = prompts.cargar("rag/juez-relevancia-cita").id
 CAUSAS = [
     "correcta",
     "correcta sin el segmento",
@@ -68,11 +74,39 @@ def ejecutar(cliente: ClienteLLM, nombre: str, casos: list[dataset.Caso]) -> Inf
                     "se_abstiene": abstiene,
                     "citas": r.citas,
                     "fiel": None if juicio is None else juicio.fiel,
+                    "relevante": None if abstiene else relevancia(cliente, c.pregunta, r.texto),
+                    "juez_relevancia": JUEZ_RELEVANCIA,
                     "juez": None if juicio is None else juicio.detalle,
                 },
             )
         )
     return Informe(version=nombre, resultados=resultados)
+
+
+def relevancia(cliente: ClienteLLM, pregunta: str, respuesta: str) -> bool:
+    """¿La respuesta contesta a lo que se pregunta? Con el juez de relevancia v2. Solo sobre
+    las que no se abstienen: abstenerse "no responde", aunque sea lo correcto."""
+    return jueces.relevancia_v2(cliente, pregunta, respuesta)
+
+
+def completar(cliente: ClienteLLM, informe: Informe, por_id: dict) -> int:
+    """Añade la relevancia (juez v2) a las respuestas grabadas que no la tienen, sin
+    regenerarlas."""
+    nuevas = 0
+    for r in informe.resultados:
+        if r.detalle["se_abstiene"]:
+            r.detalle["relevante"] = None
+        elif r.detalle.get("juez_relevancia") != JUEZ_RELEVANCIA:
+            r.detalle["relevante"] = relevancia(cliente, por_id[r.caso].pregunta, r.salida)
+            nuevas += 1
+        r.detalle["juez_relevancia"] = JUEZ_RELEVANCIA
+    return nuevas
+
+
+def precision(r: ResultadoCaso, caso: dataset.Caso, todos: dict) -> float:
+    """Precisión del contexto: la fracción de fragmentos recuperados con un segmento anclado."""
+    ids = r.detalle["recuperados"]
+    return sum(dataset.relevante(todos[i], caso) for i in ids) / len(ids) if ids else 0.0
 
 
 def causa(r: ResultadoCaso) -> str:
@@ -89,6 +123,9 @@ def causa(r: ResultadoCaso) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--grabadas", action="store_true", help="no llama a ningún modelo")
+    parser.add_argument(
+        "--completar", action="store_true", help="juzga solo la relevancia que falte en lo grabado"
+    )
     args = parser.parse_args()
     casos = dataset.cargar()
     por_id = {c.id: c for c in casos}
@@ -98,7 +135,7 @@ def main() -> int:
     cliente = None if args.grabadas else ClienteLLM()
     for nombre in CONFIGURACIONES:
         ruta = RESULTADOS / f"etapas-{nombre}.jsonl"
-        if args.grabadas:
+        if args.grabadas or args.completar:
             informes[nombre] = Informe.cargar(ruta)
             # Puntuación y segmento se recalculan con el dataset actual.
             for r in informes[nombre].resultados:
@@ -106,6 +143,8 @@ def main() -> int:
                 r.detalle["segmento_recuperado"] = any(
                     dataset.relevante(todos[i], por_id[r.caso]) for i in r.detalle["recuperados"]
                 )
+            if args.completar and completar(cliente, informes[nombre], por_id):
+                informes[nombre].guardar(ruta)
         else:
             informes[nombre] = ejecutar(cliente, nombre, casos)
             informes[nombre].guardar(ruta)
@@ -146,6 +185,28 @@ def main() -> int:
         c = comparar(ia, ib)
         p = prueba_mcnemar(len(c.ganados), len(c.perdidos))
         print(f"   {a} → {b}: gana {c.ganados}, pierde {c.perdidos}, p = {p:.2f}")
+
+    print(f"\n4. Las cuatro métricas de RAG (preguntas con respuesta: {n})")
+    cabecera = ["recall ctx", "precisión ctx", "fidelidad", "relevancia", "corrección"]
+    print(f"   {'':12}" + "".join(f"{x:>15}" for x in cabecera))
+    for nombre, rs in con.items():
+        contestan = [r for r in rs if not r.detalle["se_abstiene"]]
+        fila = [
+            sum(r.detalle["segmento_recuperado"] for r in rs) / len(rs),
+            sum(precision(r, por_id[r.caso], todos) for r in rs) / len(rs),
+            sum(bool(r.detalle["fiel"]) for r in contestan) / len(contestan),
+            sum(bool(r.detalle.get("relevante")) for r in contestan) / len(contestan),
+            sum(r.ok for r in rs) / len(rs),
+        ]
+        print(f"   {nombre:12}" + "".join(f"{x:>15.0%}" for x in fila))
+    print("   (fidelidad y relevancia, sobre las respuestas que no se abstienen)")
+    referencia = con[nombres[1]]
+    correctas = [r for r in referencia if r.ok and not r.detalle["se_abstiene"]]
+    relevantes = sum(bool(r.detalle.get("relevante")) for r in correctas)
+    print(
+        f"   comprobación del juez de relevancia ({nombres[1]}): de las {len(correctas)} correctas,"
+        f" dice que responden {relevantes}"
+    )
     return 0
 
 
