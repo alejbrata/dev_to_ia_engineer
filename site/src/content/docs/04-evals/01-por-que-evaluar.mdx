@@ -40,7 +40,7 @@ Guardar el detalle, y no solo el total, tiene dos ventajas. Puedes comparar dos 
 
 ## Práctica
 
-El sistema que evaluamos es el RAG del módulo 3, con búsqueda densa y 3 fragmentos. El cambio: pasar del prompt de texto libre (`rag/con-contexto`) al de JSON con citas (`rag/con-citas`), como en la lección 06 de ese módulo. Esta vez sin reranker, para que solo cambie el prompt.
+El sistema que evaluamos es el RAG del módulo 3, con búsqueda densa y 3 fragmentos. El cambio: pasar del prompt de texto libre (`rag/con-contexto`) al de JSON con citas (`rag/con-citas`), como en la lección 06 de ese módulo. Esta vez sin reranker, para que solo cambie el prompt. En las salidas y en el laboratorio, las dos versiones se llaman **`v1-texto-libre`** (la de antes) y **`v2-con-citas`** (la nueva). Las preguntas son las 30 de la eval del módulo 3 ([`modulos/03-rag/datos/preguntas.jsonl`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/03-rag/datos/preguntas.jsonl)): 26 con respuesta en la documentación y 4 sin ella.
 
 ```sh title="Terminal de VS Code · raíz del repo"
 uv run python modulos/04-evals/parece_que_funciona.py
@@ -81,7 +81,7 @@ uv run python modulos/04-evals/parece_que_funciona.py --grabadas
 
 ### Prueba tú a mano
 
-El laboratorio usa esos resultados grabados. Marca las preguntas que probarías tú, o pide una muestra al azar, y mira qué concluirías.
+El laboratorio usa esos resultados grabados: las mismas 30 preguntas, con lo que respondió cada versión. Imagina que eres quien hace el cambio y lo prueba a mano antes de darlo por bueno. Marca las preguntas que probarías tú, o pide una muestra al azar, y mira qué concluirías.
 
 <LabMuestras />
 

@@ -5,6 +5,8 @@
 import datos from '../data/parece_que_funciona.json';
 
 const [v1, v2] = datos.versiones;
+// Nombres legibles: los identificadores (v1-texto-libre...) solo dicen algo a quien ha leído la práctica.
+const nombre = (v: string) => (v.includes('citas') ? 'con citas' : 'texto libre');
 ---
 
 <div class="laboratorio lab-muestras not-content" data-preguntas={JSON.stringify(datos.preguntas)}>
@@ -13,6 +15,11 @@ const [v1, v2] = datos.versiones;
 		<span>resultados reales de las 30 preguntas, dos versiones del RAG</span>
 	</div>
 	<div class="laboratorio-cuerpo">
+		<p class="instrucciones">
+			Dos versiones del mismo RAG que solo cambian en el prompt: <b>texto libre</b> (<code>{v1}</code>, la de
+			antes) y <b>con citas</b> (<code>{v2}</code>, la nueva, que responde en JSON citando los fragmentos). Las
+			preguntas son las 30 del dataset del módulo 3, y cada una tiene ya la respuesta grabada de las dos.
+		</p>
 		<p class="instrucciones">
 			Marca las preguntas que probarías a mano, o pide una muestra al azar. Debajo, lo que concluirías con esa
 			muestra.
@@ -36,10 +43,10 @@ const [v1, v2] = datos.versiones;
 							</span>
 							<span class="marcas" data-marcas={p.id} hidden>
 								<span class={p.resultados[0].ok ? 'bien' : 'mal'} title={p.resultados[0].salida}>
-									{v1} {p.resultados[0].ok ? '✓' : '✗'}
+									{nombre(v1)} {p.resultados[0].ok ? '✓' : '✗'}
 								</span>
 								<span class={p.resultados[1].ok ? 'bien' : 'mal'} title={p.resultados[1].salida}>
-									{v2} {p.resultados[1].ok ? '✓' : '✗'}
+									{nombre(v2)} {p.resultados[1].ok ? '✓' : '✗'}
 								</span>
 							</span>
 						</label>
