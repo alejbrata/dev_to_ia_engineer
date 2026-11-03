@@ -10,86 +10,23 @@ Cómo escribirlo:
 - **Datos, si los tienes:** cuánto tardaste, cuánto costó, qué cambió.
 - **No hace falta** escribir bien ni mucho, ni responder a todas las preguntas, ni rellenar todas las secciones. Viñetas y frases sueltas valen. Escribe debajo de cada sección lo que quieras, en el orden que quieras.
 
-Las preguntas de cada sección son solo una ayuda.
 
-## Del folio en blanco al TFM (módulo 0)
+## Mi proceso
 
-- ¿Cómo empezó la rotación?
-- ¿Qué no entendías al empezar?
-- ¿Qué error o bloqueo te costó más? ¿Cómo lo resolviste?
-- ¿Qué harías distinto si empezaras hoy?
-- ¿Qué te sirvió de tu experiencia como backend Java?
+Publicado en el anexo H el 2026-11-03, con el estilo corregido.
 
+Hace algo más de un año empecé a pensar en el futuro como desarrollador "clásico" al ver los avances en IA generativa.
 
+La idea era clara, quería pivotar hacia ese terreno, pero estaba un poco perdido. Todo eran vídeos de youtube sobre prompts sueltos, demos sobre algo que iba a cambiar tu vida, casos útiles (o inútiles) donde la IA podía ayudarte... Nada que diferenciase a un desarrollador de cualquier otro área.
 
-## Fundamentos de LLMs (módulo 1)
+Así encontré un máster en EBIS de Desarrollo e inginería de IA generativa, vi su temario, estudié un poco sobre ellos y de entre más opciones me decanté por esto. Esto cambió mi perspectiva y mi forma de verlo todo. Aconsejo el máster y agradezco a profesores y tutores por las clases, ejercicios y el gusanillo que metieron en mi para cambiar por completo mi forma de ver eso que decían que revolucionaría el mundo, "la IA generativa" pero que yo solo veía que servía para demos bonitas cuya utilidad, seguridad, escalado, etc no veía tan claro.
 
-- ¿Qué no entendías al empezar este tema?
-- ¿Qué error o bloqueo te costó más? ¿Cómo lo resolviste?
-- ¿Qué harías distinto si empezaras hoy?
-- ¿Qué te sirvió de tu experiencia como backend Java?
+Tras terminarlo, me di cuenta de la diferencia de una formación pensada para el mundo laboral o cursos pensados para trastear con herramientas, pero no todo el mundo quiere o tiene acceso a un máster.
 
+Así nace este curso, hecho con claude a través de especificaciones módulo por módulo y revisado por mi. Un curso con la idea de autoaprendizaje gratuito y que busca tocar todos los puntos que para mi me parecen los principales de cara a convertirse en ai engineer. 
 
+Por supuesto, nada del contenido del máster que realicé está aquí, respeto demasiado el trabajo de la gente como para hacer algo así.
 
-## Prompting y salida estructurada (módulo 2)
+Espero que os guste y cualquier problema, bug o duda estaré encantado de leeros.
 
-- ¿Qué no entendías al empezar este tema?
-- ¿Qué error o bloqueo te costó más? ¿Cómo lo resolviste?
-- ¿Qué harías distinto si empezaras hoy?
-- ¿Qué te sirvió de tu experiencia como backend Java?
-
-
-
-## RAG (módulo 3)
-
-- ¿Qué no entendías al empezar este tema?
-- ¿Qué error o bloqueo te costó más? ¿Cómo lo resolviste?
-- ¿Qué harías distinto si empezaras hoy?
-- ¿Qué te sirvió de tu experiencia como backend Java?
-
-
-
-## Evals (módulo 4)
-
-- ¿Qué no entendías al empezar este tema?
-- ¿Qué error o bloqueo te costó más? ¿Cómo lo resolviste?
-- ¿Qué harías distinto si empezaras hoy?
-- ¿Qué te sirvió de tu experiencia como backend Java?
-
-
-
-## Agentes (módulo 5)
-
-- ¿Qué no entendías al empezar este tema?
-- ¿Qué error o bloqueo te costó más? ¿Cómo lo resolviste?
-- ¿Qué harías distinto si empezaras hoy?
-- ¿Qué te sirvió de tu experiencia como backend Java?
-
-
-
-## Producción (módulo 6)
-
-- ¿Qué no entendías al empezar este tema?
-- ¿Qué error o bloqueo te costó más? ¿Cómo lo resolviste?
-- ¿Qué harías distinto si empezaras hoy?
-- ¿Qué te sirvió de tu experiencia como backend Java?
-
-
-
-## Modelos propios (módulo 7)
-
-- ¿Qué no entendías al empezar este tema?
-- ¿Qué error o bloqueo te costó más? ¿Cómo lo resolviste?
-- ¿Qué harías distinto si empezaras hoy?
-- ¿Qué te sirvió de tu experiencia como backend Java?
-
-
-
-## Proyecto final (módulo 8)
-
-- ¿Qué no entendías al empezar este tema?
-- ¿Qué error o bloqueo te costó más? ¿Cómo lo resolviste?
-- ¿Qué harías distinto si empezaras hoy?
-- ¿Qué te sirvió de tu experiencia como backend Java?
-
-
+Un saludo!

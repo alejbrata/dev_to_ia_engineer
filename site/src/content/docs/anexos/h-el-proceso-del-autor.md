@@ -1,44 +1,28 @@
 ---
 title: "H. El proceso del autor"
-description: "El proceso del autor: la rotación de Alex de backend Java a AI Engineering, módulo a módulo. Opcional y aparte del aprendizaje"
-# Borrador: no se publica hasta que Alex escriba su parte. Para publicarlo, quita esta línea.
-draft: true
+description: "El proceso del autor: por qué pasó de desarrollador clásico a AI Engineering y por qué existe este curso. Opcional y aparte del aprendizaje"
 ---
 
-Este apartado es opcional. Las lecciones no lo necesitan: aquí está la experiencia personal del autor del curso al pasar de backend Java a AI Engineering, para quien quiera leerla. El contenido sale solo de lo que el autor escribe en `bitacora/proceso.md`.
+Este apartado es opcional: las lecciones no lo necesitan. Es la parte personal del curso, escrita por su autor, para quien quiera leerla.
 
-## Del folio en blanco al TFM
+## Por qué cambié
 
-TODO(alex)
+Hace algo más de un año empecé a pensar en mi futuro como desarrollador "clásico" al ver los avances de la IA generativa. La idea estaba clara: quería pivotar hacia ese terreno. Pero estaba un poco perdido. Todo eran vídeos de YouTube sobre prompts sueltos, demos de algo que iba a cambiarte la vida y casos útiles (o inútiles) en los que la IA podía ayudarte. Nada que diferenciase a un desarrollador de alguien de cualquier otra área.
 
-## Fundamentos de LLMs
+## El máster
 
-TODO(alex)
+Así encontré un máster de EBIS de Desarrollo e Ingeniería de IA Generativa. Vi su temario, investigué un poco y, entre varias opciones, me decanté por él. Me cambió la perspectiva y la forma de verlo todo.
 
-## Prompting y salida estructurada
+Lo recomiendo, y agradezco a los profesores y tutores las clases, los ejercicios y el gusanillo que me metieron. Cambiaron por completo mi forma de ver eso que decían que revolucionaría el mundo, "la IA generativa", y en lo que yo solo veía demos bonitas cuya utilidad, seguridad y escalado no tenía tan claros.
 
-TODO(alex)
+## Por qué este curso
 
-## RAG
+Al terminarlo me di cuenta de la diferencia entre una formación pensada para el mundo laboral y los cursos pensados para trastear con herramientas. Pero no todo el mundo quiere o puede hacer un máster.
 
-TODO(alex)
+Así nace este curso, hecho con Claude a partir de especificaciones, módulo a módulo, y revisado por mí. Es un curso gratuito, para aprender por tu cuenta, que busca tocar los puntos que para mí son los principales para convertirse en AI Engineer.
 
-## Evals
+Por supuesto, aquí no hay nada del contenido del máster que hice: respeto demasiado el trabajo de la gente como para hacer algo así.
 
-TODO(alex)
+Espero que os guste. Cualquier problema, error o duda, estaré encantado de leeros: [abrid un *issue* en el repositorio](https://github.com/alejbrata/dev_to_ia_engineer/issues).
 
-## Agentes
-
-TODO(alex)
-
-## Producción
-
-TODO(alex)
-
-## Modelos propios
-
-TODO(alex)
-
-## Proyecto final
-
-TODO(alex)
+Un saludo.
