@@ -1,0 +1,197 @@
+---
+title: "Permisos y actualizaciones del índice"
+description: "Permisos y ciclo de vida en un RAG: filtrar por los grupos del usuario antes de elegir los fragmentos, medir las fugas, y mantener el índice al día documento a documento sin que lo borrado siga respondiendo"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
+
+:::note[Revisado: 2026-11]
+Las medidas son reales, con bge-m3 para los embeddings y Qwen2.5 1,5B (rol `chat`) para responder, en Ollama sobre CPU. Los documentos son los de la lección 07, y las personas y sus grupos, inventados.
+:::
+
+## Objetivos
+
+Al terminar esta lección podrás:
+
+- Aplicar los permisos de cada usuario en la búsqueda, con los grupos de cada documento en los metadatos, y comprobar que no hay fugas.
+- Explicar por qué se filtra antes de elegir los fragmentos y no después, con una medida.
+- Mantener el índice al día documento a documento: embeber solo lo que cambió y borrar lo que cambió o desapareció.
+- Comprobar que un documento retirado deja de responder.
+
+## Teoría
+
+### El índice no sabe quién pregunta
+
+En un RAG, quien busca en el índice es el servicio, no el usuario. El servicio tiene acceso a todo lo que se indexó, incluidas las nóminas, el postmortem con nombres y los contratos con su precio. Si la búsqueda no tiene en cuenta quién pregunta, cualquiera recibe en el contexto lo que encuentre parecido a su pregunta, y el modelo lo cuenta.
+
+Los permisos no se pueden dejar al modelo. Un prompt que dice "no reveles información de Finanzas a quien no sea de Finanzas" es una petición, no un control, y la lección 6.04 mostró cómo se salta una petición así. El control es que el fragmento no llegue al contexto.
+
+### Los grupos, en los metadatos
+
+Cada documento tiene en su origen (el gestor documental, la wiki, la carpeta compartida) los grupos que pueden verlo. La ingesta los copia en los metadatos de cada fragmento, igual que la fuente y la fecha (lección 07). Así, cada fragmento hereda los permisos de su documento. En la búsqueda, el servicio pasa los grupos del usuario que pregunta y el índice solo considera los fragmentos que alguno de esos grupos puede ver.
+
+Si los permisos cambian en el origen, también hay que llevar el cambio al índice. Es una actualización más, como cambiar el texto.
+
+### Filtrar antes o después
+
+Hay dos sitios donde aplicar el filtro, y no dan lo mismo:
+
+- **Después.** Se buscan los k fragmentos más parecidos y se quitan los que el usuario no puede ver. Es fácil de añadir a un buscador que ya existe, pero si los más parecidos eran prohibidos, el usuario recibe menos de k, o ninguno, aunque hubiera otros permitidos un poco menos parecidos.
+- **Antes.** Se buscan los k más parecidos entre los permitidos. El usuario recibe siempre k, si existen.
+
+En una base vectorial, el filtro antes es el filtrado por metadatos de la consulta (un `WHERE` en pgvector, por ejemplo). En el índice del curso es el parámetro `filtro` de `buscar`.
+
+### El índice envejece
+
+Los documentos cambian, y el índice tiene que seguirlos. Hay tres formas de hacerlo:
+
+- **Reindexar todo.** Se tira el índice y se vuelve a construir. Es correcto y caro: se embebe todo cada vez.
+- **Añadir lo nuevo.** Se embebe solo lo que cambió, pero sin borrar lo anterior, así que las versiones viejas siguen ahí y los documentos retirados también.
+- **Sincronizar documento a documento.** Se guarda una huella (un hash) de cada documento indexado. En cada pasada, lo que desapareció se borra; lo que cambió se borra y se vuelve a añadir; y solo se embebe eso.
+
+Que lo borrado desaparezca del índice no es solo una cuestión de calidad. Si alguien ejerce su derecho de supresión (artículo 17 del RGPD), sus datos tienen que desaparecer también de las copias, y un índice vectorial es una copia.
+
+## Práctica
+
+[`permisos.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/03-rag/permisos.py) parte de la ingesta de la lección 07, con tablas, sin duplicados y solo con las versiones vigentes. Cada fragmento lleva en `meta["acceso"]` los grupos de su documento, sacados del manifiesto: el PDF de proveedores solo lo ve Finanzas, el postmortem interno solo Cobros, y el resto, cualquiera (`todos`). Hay tres personas: Ana, de Plataforma; Luis, de Finanzas; y Marta, de Cobros.
+
+Las tres formas de buscar:
+
+```python
+def buscar(indice, pregunta, grupos, forma):
+    if forma == "sin filtro":
+        return indice.buscar(pregunta, K)
+    if forma == "filtro después":  # se eligen los 3 mejores y luego se quitan los prohibidos
+        return [r for r in indice.buscar(pregunta, K) if puede_ver(grupos, r.fragmento)]
+    return indice.buscar(pregunta, K, filtro=lambda f: puede_ver(grupos, f))  # filtro antes
+```
+
+Y la sincronización, documento a documento:
+
+```python
+for nombre in [n for n in registro if n not in textos]:
+    indice.quitar(nombre)  # el documento ya no existe en el origen
+    del registro[nombre]
+for nombre, texto in textos.items():
+    if registro.get(nombre) == huella(texto):
+        continue  # no ha cambiado: no se toca
+    indice.quitar(nombre)  # si cambió, fuera la versión anterior
+    indice.añadir(ingesta_real.fragmentos({nombre: texto}, manifiesto))
+    registro[nombre] = huella(texto)
+```
+
+La segunda parte simula los dos cambios más habituales: una versión nueva del SLA, en la que notificaciones pasa del 99,5 % al 99,7 %, y la retirada del postmortem interno. Tarda un par de minutos.
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/03-rag/permisos.py
+```
+
+```text
+1. Permisos: 3 personas, 11 preguntas cada una
+                     fugas  menos de 3  evidencia que puede ver
+   sin filtro           14           0                 25 de 25
+   filtro después        0          10                 25 de 25
+   filtro antes          0           0                 25 de 25
+
+   Ana pregunta: ¿Quién lideró la respuesta a la caída de pagos de marzo de 2026?
+   sin filtro    fuentes ['postmortem-pagos-2026-03-interno.docx', 'postmortem-pagos-2026-03-interno.docx', 'postmortem-pagos-2026-03-interno.docx']
+                 respuesta: 'Laura Méndez lideró la respuesta a la caída de pagos de marzo de 2026.'
+   filtro antes  fuentes ['runbook-pagos-conexiones.md', 'runbook-pagos-conexiones.md', 'runbook-pagos-conexiones.md']
+                 respuesta: 'No aparece en la documentación.'
+
+2. Actualizaciones: nueva versión del SLA (notificaciones pasa a 99,7 %)
+   y se retira el postmortem interno
+   SLA: versiones de la tabla de disponibilidad en el índice. e06: la cifra que da.
+   e11: lo que le responde a Marta (Cobros) sobre el postmortem que se ha retirado.
+                       embebidos  fragmentos  SLA  postmortem  e06        e11
+   reindexar todo             17          17    1           0  ✓ 99,7%    'No aparece en la documentación.'
+   añadir sin borrar           3          23    2           3  ✓ 99,7%    'Laura Méndez lideró la respuesta a la caída de'
+   sincronizar                 3          17    1           0  ✓ 99,7%    'No aparece en la documentación.'
+   sincronizar: 1 documento cambiado, 1 borrado, 0 nuevos
+```
+
+<ConUnaApi practicas={['modulos/03-rag/permisos.py']} />
+
+## Mide y depura
+
+### Sin filtro, 14 fragmentos que no tocaban
+
+Con las 11 preguntas de las tres personas, la búsqueda sin filtro pone en el contexto 14 fragmentos que quien pregunta no puede ver. El ejemplo es Ana, de Plataforma, que pregunta quién lideró la respuesta al incidente de marzo. Recibe los tres fragmentos del postmortem interno de Cobros, y el modelo le responde con el nombre. Con el filtro aplicado, recibe fragmentos del runbook, que no tienen el dato, y el modelo dice que no aparece en la documentación. Es lo correcto para Ana.
+
+### Filtrar después deja huecos
+
+Filtrar los resultados ya elegidos también deja las fugas en 0, pero 10 de las 33 búsquedas se quedan con menos de tres fragmentos: los que se quitan no se sustituyen. Aquí no costó ninguna evidencia (25 de 25), porque en estas preguntas el fragmento con la respuesta estaba entre los permitidos. Con preguntas que se parecen más a documentos prohibidos, el contexto puede quedarse vacío para alguien que sí tenía documentos con la respuesta. Filtrar antes da las mismas 0 fugas y ningún hueco.
+
+"Evidencia que puede ver" solo cuenta las preguntas cuya respuesta está en un documento que esa persona puede ver: 25 de las 33. Las otras 8 (los proveedores para Ana y Marta, el postmortem para Ana y Luis) tienen que quedarse sin respuesta. Medir la recuperación sin tener en cuenta los permisos daría por fallos lo que es el comportamiento correcto.
+
+### Sincronizar cuesta lo que cambió
+
+Reindexar todo embebe los 17 fragmentos del índice. Sincronizar embebe 3, los del SLA nuevo, y borra los del postmortem. El resultado es el mismo índice. Con 7 documentos la diferencia es pequeña; con decenas de miles, reindexarlo todo cada noche es un coste fijo de embeddings y de tiempo que la sincronización evita.
+
+### Añadir sin borrar: lo retirado sigue respondiendo
+
+Añadir solo lo nuevo también embebe 3 fragmentos, pero el índice crece a 23. Tiene las dos versiones de la tabla de disponibilidad y los 3 fragmentos del postmortem retirado. En la e06 el modelo acertó igualmente el 99,7 %: con las dos versiones delante, eligió la buena, y no hay nada que garantice que lo vuelva a hacer (lección 07). El fallo grave está en la e11: el postmortem se retiró, y a Marta se lo sigue citando. Es la anatomía.
+
+## Errores frecuentes
+
+- **Pedir los permisos en el prompt.** Si el fragmento llega al contexto, el modelo puede contarlo. El control es que no llegue.
+- **Filtrar después de elegir los fragmentos.** No hay fugas, pero hay huecos: 10 de 33 búsquedas aquí.
+- **Medir la recuperación sin permisos.** Una persona sin acceso que no recibe la respuesta no es un fallo de recuperación.
+- **Añadir versiones nuevas sin borrar las viejas.** El índice acumula versiones y documentos retirados, y cualquiera puede ganar la búsqueda.
+- **No probar las fugas.** Un test que recorre usuarios y preguntas y cuenta fragmentos prohibidos en el contexto cuesta poco, y es la única forma de saber que el filtro está en todas las rutas de búsqueda.
+
+### Anatomía de un error: el documento que se borró y sigue respondiendo
+
+**El síntoma.** Cobros retira el postmortem interno de la carpeta compartida. El índice se actualiza con la versión nueva del SLA, sin borrar nada. Marta pregunta por el incidente:
+
+```text
+   añadir sin borrar           3          23    2           3  ✓ 99,7%    'Laura Méndez lideró la respuesta a la caída de'
+```
+
+**Cómo leerlo.** El documento ya no existe en el origen, pero su contenido sale en la respuesta. La columna `postmortem` dice que en el índice quedan 3 fragmentos suyos, y la de fragmentos, que el índice tiene 23 cuando los documentos vigentes dan 17. El índice tiene más de lo que hay en el origen.
+
+**La causa.** La actualización solo miraba lo nuevo: qué documentos habían cambiado, para embeberlos. Nadie miraba qué documentos ya no estaban. Un índice vectorial no tiene relación con el origen: si no se borra, no se olvida. Aquí era un postmortem con el nombre de una persona y una nota sobre otra: si cualquiera de las dos pide la supresión de sus datos, borrar el fichero del origen no basta.
+
+**La solución.** Sincronizar documento a documento, con un registro de lo que hay indexado y su huella. Lo que no está en el origen se borra (`quitar`) y lo que cambió se reemplaza. Con eso, el índice queda en 17 fragmentos, sin el postmortem, y Marta recibe "No aparece en la documentación". Para comprobarlo de forma continua, compara de vez en cuando el número de documentos del índice con el del origen.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'Tu asistente indexa documentos de Finanzas que el resto de la empresa no puede ver. ¿Dónde aplicas el permiso?',
+			opciones: [
+				{ texto: 'En el prompt: "no reveles datos de Finanzas a quien no sea de Finanzas".', porque: 'Es una petición al modelo, no un control. Si el fragmento llega al contexto, puede contarlo ("El índice no sabe quién pregunta").' },
+				{ texto: 'En la búsqueda: solo entre los fragmentos que los grupos del usuario pueden ver.', correcta: true, porque: 'Así el fragmento no llega nunca al contexto. Sin filtro, aquí hubo 14 fugas.' },
+			],
+		},
+		{
+			pregunta: 'Añades el permiso quitando de los 3 resultados los que el usuario no puede ver. No hay fugas. ¿Qué problema queda?',
+			opciones: [
+				{ texto: 'Ninguno: el usuario solo ve lo que puede ver.', porque: 'Los que se quitan no se sustituyen: 10 de 33 búsquedas se quedaron con menos de 3 fragmentos ("Filtrar después deja huecos").' },
+				{ texto: 'Que el contexto puede quedarse corto o vacío aunque haya fragmentos permitidos que responden.', correcta: true, porque: 'Filtrar antes de elegir los k da las mismas 0 fugas y ningún hueco.' },
+			],
+		},
+		{
+			pregunta: 'Cada noche añades al índice los documentos que han cambiado. ¿Qué falta?',
+			opciones: [
+				{ texto: 'Nada, si solo embebes lo que cambió.', porque: 'Las versiones viejas y los documentos retirados siguen en el índice. Aquí, un postmortem retirado siguió respondiendo ("Añadir sin borrar").' },
+				{ texto: 'Borrar la versión anterior de lo que cambió y lo que ya no existe en el origen.', correcta: true, porque: 'Es la sincronización documento a documento: el mismo índice que reindexar todo, embebiendo solo 3 fragmentos.' },
+			],
+		},
+		{
+			pregunta: 'Mides el recall de tu RAG con permisos y Ana no recibe la respuesta a una pregunta sobre proveedores. ¿Es un fallo de recuperación?',
+			opciones: [
+				{ texto: 'Sí: la evidencia existe en el índice y no llegó.', porque: 'Existe, pero Ana no puede verla. Quedarse sin ella es lo correcto ("Filtrar después deja huecos").' },
+				{ texto: 'No: solo cuenta la evidencia que esa persona puede ver.', correcta: true, porque: 'La recuperación se mide sobre las preguntas cuya respuesta está en documentos visibles para quien pregunta: aquí, 25 de 33.' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- OWASP, [LLM08:2025 Vector and Embedding Weaknesses](https://genai.owasp.org/llmrisk/llm082025-vector-and-embedding-weaknesses/): fugas entre usuarios en bases vectoriales y cómo evitarlas.
+- [pgvector: Filtering](https://github.com/pgvector/pgvector#filtering): el filtro por metadatos en la misma consulta, con sus índices.
+- Reglamento (UE) 2016/679, [RGPD](https://eur-lex.europa.eu/eli/reg/2016/679/oj), artículo 17: el derecho de supresión.
