@@ -1,8 +1,8 @@
 """Piezas de RAG: trocear documentos e indexarlos para buscar por similitud.
 
 El índice vive en memoria con numpy, para que se vea cómo funciona, o en PostgreSQL con
-pgvector. Crece en el módulo 3: troceado, índice vectorial, búsqueda léxica, híbrida y
-reranking.
+pgvector. Crece en el módulo 3: troceado, índice vectorial, búsqueda léxica, híbrida,
+reranking, y metadatos para la procedencia, las versiones y los permisos (3.07 y 3.08).
 """
 
 from __future__ import annotations
@@ -11,8 +11,9 @@ import math
 import re
 import unicodedata
 from collections import Counter
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 from pydantic import BaseModel
@@ -36,6 +37,9 @@ class Fragmento(BaseModel):
     doc: str
     titulo: str
     texto: str
+    # De dónde sale y quién puede verlo: fichero, página, versión, grupos con acceso... No se
+    # embebe: sirve para filtrar y para citar la fuente (lecciones 3.07 y 3.08).
+    meta: dict[str, Any] = {}
 
     def para_indexar(self) -> str:
         """El texto que se convierte en embedding: con su título, que da contexto."""
@@ -135,14 +139,31 @@ class IndiceVectorial:
         self._matriz = nuevos if not self.fragmentos else np.vstack([self._matriz, nuevos])
         self.fragmentos += list(fragmentos)
 
-    def buscar(self, consulta: str, k: int = 3) -> list[Resultado]:
+    def buscar(
+        self, consulta: str, k: int = 3, filtro: Callable[[Fragmento], bool] | None = None
+    ) -> list[Resultado]:
+        """Los `k` fragmentos más parecidos. Con `filtro`, solo entre los que lo cumplen: se
+        filtra antes de elegir los k, no después (lección 3.08)."""
+        if not self.fragmentos:
+            return []
         vector = self._vectores([self.prefijo_consulta + consulta])[0]
         puntuaciones = self._matriz @ vector
-        mejores = np.argsort(-puntuaciones)[:k]
+        if filtro is not None:
+            permitidos = np.array([filtro(f) for f in self.fragmentos])
+            puntuaciones = np.where(permitidos, puntuaciones, -np.inf)
+        mejores = [i for i in np.argsort(-puntuaciones)[:k] if np.isfinite(puntuaciones[i])]
         return [
             Resultado(fragmento=self.fragmentos[i], puntuacion=float(puntuaciones[i]))
             for i in mejores
         ]
+
+    def quitar(self, doc: str) -> int:
+        """Quita del índice los fragmentos de un documento. Devuelve cuántos había."""
+        quedan = [i for i, f in enumerate(self.fragmentos) if f.doc != doc]
+        quitados = len(self.fragmentos) - len(quedan)
+        self.fragmentos = [self.fragmentos[i] for i in quedan]
+        self._matriz = self._matriz[quedan] if quedan else np.zeros((0, 0), dtype=np.float32)
+        return quitados
 
 
 class IndicePgvector(IndiceVectorial):

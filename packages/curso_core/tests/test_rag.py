@@ -78,6 +78,26 @@ def test_indice_vectorial_ordena_por_coseno(tmp_path) -> None:
     _comprobar_orden(IndiceVectorial(_cliente_falso(tmp_path)))
 
 
+def test_el_filtro_actua_antes_de_elegir_los_k(tmp_path) -> None:
+    indice = IndiceVectorial(_cliente_falso(tmp_path))
+    fragmentos = trocear_por_secciones("runbook", DOC)[:2]
+    fragmentos[1].meta = {"acceso": ["cobros"]}  # el más parecido a la consulta
+    indice.añadir(fragmentos)
+    visibles = indice.buscar("consulta", k=1, filtro=lambda f: not f.meta.get("acceso"))
+    # Filtrando antes, se devuelve el siguiente permitido; filtrando después, nada.
+    assert [r.fragmento.titulo for r in visibles] == ["Runbook"]
+    assert indice.buscar("consulta", k=2, filtro=lambda f: False) == []
+
+
+def test_quitar_los_fragmentos_de_un_documento(tmp_path) -> None:
+    indice = IndiceVectorial(_cliente_falso(tmp_path))
+    indice.añadir(trocear_por_secciones("runbook", DOC)[:2])
+    indice.añadir([Fragmento(id="otro#0", doc="otro", titulo="Otro", texto="x")])
+    assert indice.quitar("runbook") == 2
+    assert [r.fragmento.doc for r in indice.buscar("consulta", k=3)] == ["otro"]
+    assert indice.quitar("otro") == 1 and indice.buscar("consulta") == []
+
+
 def test_indice_pgvector_ordena_por_coseno(tmp_path) -> None:
     """Necesita el PostgreSQL de `compose.yaml`; si no está levantado, se salta."""
     psycopg = pytest.importorskip("psycopg")

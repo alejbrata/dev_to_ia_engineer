@@ -33,7 +33,9 @@ certifi==2026.10.23
 cffi==2.1.1 ; platform_python_implementation != 'PyPy'
     # via cryptography
 charset-normalizer==3.5.2
-    # via requests
+    # via
+    #   pdfminer-six
+    #   requests
 click==8.5.0
     # via
     #   huggingface-hub
@@ -43,7 +45,9 @@ colorama==0.4.6 ; sys_platform == 'win32'
     #   pytest
     #   tqdm
 cryptography==50.0.2
-    # via pyjwt
+    # via
+    #   pdfminer-six
+    #   pyjwt
 distro==1.9.0
     # via langsmith
 docstring-parser==0.18.0
@@ -52,6 +56,9 @@ fastapi==0.162.0
     # via curso-ai-engineering
 filelock==4.2.4
     # via huggingface-hub
+fonttools==4.68.0
+    # via fpdf2
+fpdf2==2.9.0
 fsspec==2026.7.0
     # via huggingface-hub
 googleapis-common-protos==1.76.0
@@ -131,6 +138,8 @@ langgraph-sdk==0.4.11
     # via langgraph
 langsmith==0.14.16
     # via langchain-core
+lxml==6.1.3
+    # via python-docx
 mcp==2.3.0
     # via curso-ai-engineering
 mcp-types==2.3.0
@@ -179,8 +188,16 @@ packaging==26.3
     #   langchain-core
     #   langsmith
     #   pytest
+pdfminer-six==20260107
+    # via pdfplumber
+pdfplumber==0.11.10
+    # via curso-ai-engineering
 pgvector==0.5.1
     # via curso-core
+pillow==13.0.0
+    # via
+    #   fpdf2
+    #   pdfplumber
 pluggy==1.7.0
     # via pytest
 prometheus-client==0.26.0
@@ -213,7 +230,13 @@ pygments==2.21.0
     # via pytest
 pyjwt==2.15.1
     # via mcp
+pypdf==6.21.4
+    # via curso-ai-engineering
+pypdfium2==5.14.0
+    # via pdfplumber
 pytest==9.2.0
+python-docx==1.2.0
+    # via curso-ai-engineering
 python-dotenv==1.2.4
     # via
     #   curso-ai-engineering
@@ -287,6 +310,7 @@ typing-extensions==4.16.0
     #   psycopg
     #   pydantic
     #   pydantic-core
+    #   python-docx
     #   referencing
     #   starlette
     #   typing-inspection
