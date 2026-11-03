@@ -42,7 +42,7 @@ Las lecciones no llevan contenido personal. La experiencia de Alex va en un apar
 ## REGLA CRÍTICA: el contenido personal
 
 - **NUNCA inventes experiencias, anécdotas, opiniones ni datos biográficos de Alex.**
-- El contenido personal sale **solo** de los ficheros `bitacora/NN-*.md`, que escribe Alex, y se publica solo en el anexo H.
+- El contenido personal sale **solo** de `bitacora/proceso.md`, que escribe Alex, y se publica solo en el anexo H.
 - Puedes corregir el estilo, ordenar e integrar ese texto. **No añadas hechos.**
 - Mientras una parte esté vacía, queda como `TODO(alex)`. El anexo H lleva `draft: true` (no se publica) hasta que Alex lo escriba.
 

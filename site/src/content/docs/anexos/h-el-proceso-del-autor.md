@@ -5,7 +5,7 @@ description: "El proceso del autor: la rotación de Alex de backend Java a AI En
 draft: true
 ---
 
-Este apartado es opcional. Las lecciones no lo necesitan: aquí está la experiencia personal del autor del curso al pasar de backend Java a AI Engineering, para quien quiera leerla. El contenido sale solo de lo que el autor escribe en `bitacora/`.
+Este apartado es opcional. Las lecciones no lo necesitan: aquí está la experiencia personal del autor del curso al pasar de backend Java a AI Engineering, para quien quiera leerla. El contenido sale solo de lo que el autor escribe en `bitacora/proceso.md`.
 
 ## Del folio en blanco al TFM
 
@@ -24,5 +24,21 @@ TODO(alex)
 TODO(alex)
 
 ## Evals
+
+TODO(alex)
+
+## Agentes
+
+TODO(alex)
+
+## Producción
+
+TODO(alex)
+
+## Modelos propios
+
+TODO(alex)
+
+## Proyecto final
 
 TODO(alex)
