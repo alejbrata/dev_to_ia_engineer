@@ -1,0 +1,1794 @@
+{
+ "modelos": {
+  "vigente": "qwen2.5:7b @ http://127.0.0.1:11434",
+  "candidata": "qwen2.5:1.5b @ http://127.0.0.1:11434"
+ },
+ "sombra": [
+  {
+   "caso": "m3-01",
+   "version": "candidata",
+   "ok": false,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 13122,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-02",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 5167,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-03",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 4327,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-04",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 5645,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-05",
+   "version": "candidata",
+   "ok": false,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 6887,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-06",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 4210,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-07",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 4112,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-08",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 4055,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-09",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 5458,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-10",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 4741,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-11",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 7105,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-12",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 4201,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-13",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 5699,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-14",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 4855,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-15",
+   "version": "candidata",
+   "ok": false,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 8549,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-16",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 4330,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-17",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 3929,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-18",
+   "version": "candidata",
+   "ok": false,
+   "abstencion": true,
+   "sin_citas": false,
+   "ms": 3658,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-19",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 5063,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-20",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 4723,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-21",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 5665,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-22",
+   "version": "candidata",
+   "ok": false,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 3694,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-23",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 3740,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-24",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 5365,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-25",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 4079,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-26",
+   "version": "candidata",
+   "ok": false,
+   "abstencion": true,
+   "sin_citas": false,
+   "ms": 3519,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-27",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": true,
+   "sin_citas": false,
+   "ms": 4445,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-28",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": true,
+   "sin_citas": false,
+   "ms": 3951,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-29",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": true,
+   "sin_citas": false,
+   "ms": 3668,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-30",
+   "version": "candidata",
+   "ok": false,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 4294,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "n-01",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 5932,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "n-02",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 4858,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "n-03",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 4854,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "n-04",
+   "version": "candidata",
+   "ok": false,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 4736,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "n-05",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 5281,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "n-06",
+   "version": "candidata",
+   "ok": false,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 3682,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "n-07",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 5849,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "n-08",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 4673,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "n-09",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 4761,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "n-10",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 6120,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "n-11",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 4306,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "n-12",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 5106,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "n-13",
+   "version": "candidata",
+   "ok": false,
+   "abstencion": true,
+   "sin_citas": false,
+   "ms": 4287,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "n-14",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 5287,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "n-15",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 6770,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "n-16",
+   "version": "candidata",
+   "ok": false,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 5518,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "s-01",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": true,
+   "sin_citas": false,
+   "ms": 4015,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "s-02",
+   "version": "candidata",
+   "ok": false,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 5709,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "s-03",
+   "version": "candidata",
+   "ok": false,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 3556,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "s-04",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": true,
+   "sin_citas": false,
+   "ms": 4676,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "s-05",
+   "version": "candidata",
+   "ok": false,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 5583,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "s-06",
+   "version": "candidata",
+   "ok": false,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 4410,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "f-01",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": true,
+   "sin_citas": false,
+   "ms": 5065,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "f-02",
+   "version": "candidata",
+   "ok": false,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 3514,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "f-03",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": true,
+   "sin_citas": false,
+   "ms": 3307,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "g-01",
+   "version": "candidata",
+   "ok": false,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 5135,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "g-02",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": true,
+   "sin_citas": false,
+   "ms": 5140,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "g-03",
+   "version": "candidata",
+   "ok": false,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 6464,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  }
+ ],
+ "vigente_grabado": {
+  "m3-01": false,
+  "m3-02": true,
+  "m3-03": true,
+  "m3-04": true,
+  "m3-05": true,
+  "m3-06": true,
+  "m3-07": true,
+  "m3-08": true,
+  "m3-09": true,
+  "m3-10": true,
+  "m3-11": true,
+  "m3-12": true,
+  "m3-13": true,
+  "m3-14": true,
+  "m3-15": false,
+  "m3-16": true,
+  "m3-17": true,
+  "m3-18": false,
+  "m3-19": true,
+  "m3-20": true,
+  "m3-21": true,
+  "m3-22": true,
+  "m3-23": true,
+  "m3-24": true,
+  "m3-25": true,
+  "m3-26": true,
+  "m3-27": true,
+  "m3-28": true,
+  "m3-29": true,
+  "m3-30": true,
+  "n-01": true,
+  "n-02": true,
+  "n-03": true,
+  "n-04": false,
+  "n-05": true,
+  "n-06": true,
+  "n-07": true,
+  "n-08": true,
+  "n-09": true,
+  "n-10": true,
+  "n-11": true,
+  "n-12": true,
+  "n-13": true,
+  "n-14": true,
+  "n-15": true,
+  "n-16": true,
+  "s-01": true,
+  "s-02": true,
+  "s-03": false,
+  "s-04": true,
+  "s-05": true,
+  "s-06": true,
+  "f-01": true,
+  "f-02": true,
+  "f-03": true,
+  "g-01": false,
+  "g-02": true,
+  "g-03": true
+ },
+ "canario": [
+  {
+   "caso": "m3-28",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": true,
+   "sin_citas": false,
+   "ms": 4537,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-19",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 4256,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-04",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 6106,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-02",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 5280,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-06",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 27077,
+   "cache": false,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-04",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-21",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 5685,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-02",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-05",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 20504,
+   "cache": false,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-08",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 10973,
+   "cache": false,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "n-08",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 11509,
+   "cache": false,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-06",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-02",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-19",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-10",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 15059,
+   "cache": false,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-02",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "n-08",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "f-02",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": true,
+   "sin_citas": false,
+   "ms": 11193,
+   "cache": false,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-24",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 5285,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "n-07",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 6227,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-02",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-17",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 8841,
+   "cache": false,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "n-07",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-13",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 4929,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-05",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-01",
+   "version": "candidata",
+   "ok": false,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 7653,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-04",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-10",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "n-09",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 5469,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "s-04",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": true,
+   "sin_citas": false,
+   "ms": 12250,
+   "cache": false,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-05",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "n-01",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 5352,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-02",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-24",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-07",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 10147,
+   "cache": false,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-01",
+   "version": "candidata",
+   "ok": false,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-16",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 12359,
+   "cache": false,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-04",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-26",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 9354,
+   "cache": false,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-13",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-01",
+   "version": "candidata",
+   "ok": false,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-06",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "n-02",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 10698,
+   "cache": false,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-02",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-03",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 12518,
+   "cache": false,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "n-02",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-01",
+   "version": "candidata",
+   "ok": false,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-08",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-02",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "s-04",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": true,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-23",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 9613,
+   "cache": false,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-04",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-01",
+   "version": "candidata",
+   "ok": false,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-02",
+   "version": "candidata",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-06",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "n-13",
+   "version": "candidata",
+   "ok": false,
+   "abstencion": true,
+   "sin_citas": false,
+   "ms": 4212,
+   "cache": false,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-01",
+   "version": "candidata",
+   "ok": false,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-07",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-15",
+   "version": "vigente",
+   "ok": false,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 13575,
+   "cache": false,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-07",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  }
+ ],
+ "tras_volver": [
+  {
+   "caso": "m3-28",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": true,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-19",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-04",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-02",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-06",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-21",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-05",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-08",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "n-08",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-10",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "f-02",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": true,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-24",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "n-07",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-17",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-13",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-01",
+   "version": "vigente",
+   "ok": false,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "n-09",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "s-04",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": true,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "n-01",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-07",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-16",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-26",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "n-02",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-03",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-23",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "n-13",
+   "version": "vigente",
+   "ok": false,
+   "abstencion": true,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:1.5b"
+  },
+  {
+   "caso": "m3-15",
+   "version": "vigente",
+   "ok": false,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  }
+ ],
+ "tras_volver_bien": [
+  {
+   "caso": "m3-28",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": true,
+   "sin_citas": false,
+   "ms": 8700,
+   "cache": false,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-19",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 13746,
+   "cache": false,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-04",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 19220,
+   "cache": false,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-02",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 13861,
+   "cache": false,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-06",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-21",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 17163,
+   "cache": false,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-05",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-08",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "n-08",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-10",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "f-02",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": true,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-24",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 13374,
+   "cache": false,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "n-07",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 18726,
+   "cache": false,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-17",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-13",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 10723,
+   "cache": false,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-01",
+   "version": "vigente",
+   "ok": false,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 13803,
+   "cache": false,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "n-09",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 14092,
+   "cache": false,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "s-04",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": true,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "n-01",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 14033,
+   "cache": false,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-07",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-16",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-26",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "n-02",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-03",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-23",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "n-13",
+   "version": "vigente",
+   "ok": true,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 15276,
+   "cache": false,
+   "modelo": "qwen2.5:7b"
+  },
+  {
+   "caso": "m3-15",
+   "version": "vigente",
+   "ok": false,
+   "abstencion": false,
+   "sin_citas": false,
+   "ms": 0,
+   "cache": true,
+   "modelo": "qwen2.5:7b"
+  }
+ ]
+}

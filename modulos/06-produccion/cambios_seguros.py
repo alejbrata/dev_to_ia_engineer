@@ -57,13 +57,15 @@ def senales(filas: list[dict]) -> dict:
     n = len(filas)
     if not n:
         return {"n": 0}
-    ms = sorted(f["ms"] for f in filas)
+    # La latencia, sin las respuestas de la caché: milisegundos que no dicen nada del modelo.
+    ms = sorted(f["ms"] for f in filas if not f.get("cache")) or [0]
     return {
         "n": n,
+        "de_cache": sum(bool(f.get("cache")) for f in filas) / n,
         "abstenciones": sum(f["abstencion"] for f in filas) / n,
         "sin_citas": sum(f["sin_citas"] for f in filas) / n,
         "p50_ms": median(ms),
-        "p95_ms": ms[min(n - 1, int(0.95 * n))],
+        "p95_ms": ms[min(len(ms) - 1, int(0.95 * len(ms)))],
         "aciertos": sum(f["ok"] for f in filas) / n,  # esto no se ve en producción
     }
 
@@ -153,11 +155,24 @@ def medir() -> dict:
     }
 
 
+def repartos(r: dict) -> dict:
+    """Qué parte del tráfico llevó de verdad el canario: por preguntas y por peticiones."""
+    distintas = {f["caso"]: f["version"] for f in r["canario"]}
+    return {
+        "distintas": sum(v == "candidata" for v in distintas.values()),
+        "total_distintas": len(distintas),
+        "peticiones": sum(f["version"] == "candidata" for f in r["canario"]) / len(r["canario"]),
+    }
+
+
 def postmortem(r: dict, motivos: list[str], comparacion: dict) -> str:
     """El informe sin culpas, con lo que se midió. Lo que no está en los datos va como
     pregunta abierta, no como hecho."""
     vig, cand = r["modelos"]["vigente"].split(" @")[0], r["modelos"]["candidata"].split(" @")[0]
     contaminadas = sum(f["cache"] and f["modelo"] != vig for f in r["tras_volver"])
+    reparto = repartos(r)
+    distintas, total = reparto["distintas"], reparto["total_distintas"]
+    peticiones = reparto["peticiones"] * 100
     canario = (
         "pidieron volver atrás: " + "; ".join(motivos) if motivos else "no pidieron volver atrás"
     )
@@ -170,7 +185,9 @@ En sombra perdía {pierde} casos de la eval y ganaba {gana} (p = {p:.3f}). En ca
 señales de producción {canario}.
 
 ## Impacto
-Durante el canario, el {PORCENTAJE} % de las preguntas lo respondió el candidato. Tras volver
+El canario debía llevar el {PORCENTAJE} % de las preguntas. Llevó {distintas} de las {total}
+distintas del tráfico y el {peticiones:.0f} % de las peticiones: con pocas preguntas, el
+reparto no es uniforme, y las que más se repetían cayeron de su lado. Tras volver
 atrás, {contaminadas} respuestas del vigente salieron de la caché con el modelo del candidato.
 
 ## Causa
@@ -220,23 +237,34 @@ def main() -> int:
         f" · p50 {s_sombra['p50_ms'] / 1000:.1f} s"
     )
 
-    print(f"\n2. Canario: el {PORCENTAJE} % del tráfico ({PETICIONES} peticiones) a la candidata")
     print(
-        f"   {'':10} {'n':>3} {'abstenciones':>13} {'sin citas':>10} {'p50':>7} {'p95':>7}"
-        f" {'aciertos*':>10}"
+        f"\n2. Canario: el {PORCENTAJE} % de las preguntas a la candidata,"
+        f" {PETICIONES} peticiones con repeticiones"
+    )
+    print(
+        f"   {'':10} {'n':>3} {'tráfico':>8} {'de caché':>9} {'abstenciones':>13}"
+        f" {'sin citas':>10} {'p50':>7} {'p95':>7} {'aciertos*':>10}"
     )
     por_version = {}
+    total = len(r["canario"])
     for version in ("vigente", "candidata"):
         filas = [f for f in r["canario"] if f["version"] == version]
         s = por_version[version] = senales(filas)
         print(
-            f"   {version:10} {s['n']:>3} {s['abstenciones']:>13.0%} {s['sin_citas']:>10.0%}"
+            f"   {version:10} {s['n']:>3} {s['n'] / total:>8.0%} {s['de_cache']:>9.0%}"
+            f" {s['abstenciones']:>13.0%} {s['sin_citas']:>10.0%}"
             f" {s['p50_ms'] / 1000:>6.1f}s {s['p95_ms'] / 1000:>6.1f}s {s['aciertos']:>10.0%}"
         )
+    print("   (p50 y p95, sin las respuestas de la caché)")
     print(
         "   * los aciertos no se ven en producción: aquí se conocen porque el tráfico es el dataset"
     )
     motivos = volver_atras(por_version["vigente"], por_version["candidata"])
+    rep = repartos(r)
+    print(
+        f"   el canario llevó {rep['distintas']} de {rep['total_distintas']} preguntas distintas"
+        f" y el {rep['peticiones'] * 100:.0f} % de las peticiones"
+    )
     print(f"   regla de vuelta atrás: {'; '.join(motivos) if motivos else 'no salta'}")
 
     print("\n3. Vuelta atrás: todo al vigente, con la caché compartida entre versiones")

@@ -1,0 +1,204 @@
+---
+title: "Cambios seguros: en sombra, canario y vuelta atrás"
+description: "Cambios seguros en un servicio de LLM: el cambio de modelo de la 6.07 hecho con cuidado, en sombra contra la eval, con un canario y su regla de vuelta atrás, la caché compartida entre versiones y el postmortem"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
+
+:::note[Revisado: 2026-11]
+Salidas reales con el asistente del módulo: el sistema vigente (Qwen2.5 7B) y, como candidato, Qwen2.5 1,5B, en Ollama sobre CPU, con el reranker. El tráfico del canario sale del dataset del módulo 4, para poder saber si cada respuesta era correcta.
+:::
+
+## Objetivos
+
+Al terminar esta lección podrás:
+
+- Probar un cambio de modelo o de prompt en sombra, contra la eval, antes de servirle tráfico.
+- Montar un canario con un reparto estable por pregunta o usuario, y comprobar qué parte del tráfico lleva de verdad.
+- Escribir una regla de vuelta atrás sobre las señales de producción, y saber qué fallos no puede ver.
+- Volver a la versión anterior sin que la caché siga sirviendo respuestas de la nueva.
+- Escribir un postmortem sin culpas a partir de los datos de un cambio que salió mal.
+
+## Teoría
+
+### Por qué un cambio de LLM necesita desplegarse por fases
+
+En la lección 6.07, alguien cambiaba el modelo principal por el pequeño y nadie se enteraba: el servicio respondía, sin errores y más rápido. La lección dejaba la idea de que una versión de un sistema con LLM son el código, el modelo, el prompt y los datos. Esta lección hace el mismo cambio, pero bien.
+
+Un cambio de modelo o de prompt tiene dos rasgos que lo hacen delicado. El primero es que **no falla con errores**: falla con respuestas peores, que nadie marca como fallo. El segundo es que **no se puede probar del todo antes**: la eval cubre los casos que conoces, y el tráfico real trae los demás. Por eso se despliega por fases, como cualquier cambio arriesgado en backend:
+
+1. **En sombra** (*shadow*). La versión nueva recibe las mismas peticiones que la vigente, pero sus respuestas no se sirven: solo se guardan y se comparan. Con un LLM, la comparación más útil es la eval: las mismas preguntas, caso a caso, con McNemar (módulo 4). Es la puerta: si pierde casos, no pasa.
+2. **Canario.** Una parte pequeña del tráfico real va a la versión nueva y se comparan sus señales con las de la vigente. Si algo empeora, se vuelve atrás; si no, se amplía poco a poco.
+3. **Vuelta atrás.** Volver a la versión anterior tiene que ser inmediato y completo. Con un LLM, "completo" incluye lo que la versión nueva haya dejado guardado: la caché.
+
+### El reparto del canario
+
+El canario no puede elegir al azar en cada petición. Si la misma pregunta (o el mismo usuario) cae unas veces en una versión y otras en la otra, recibe respuestas distintas y las señales se mezclan. Lo habitual es repartir por un *hash* estable: de la pregunta normalizada, del usuario o de la sesión. Así, cada uno cae siempre del mismo lado.
+
+Tiene una consecuencia que conviene medir. "El 25 % de los usuarios" no es "el 25 % de las peticiones": si unos pocos usuarios o preguntas concentran el tráfico, el lado donde caigan carga con mucho más. Y con pocos usuarios o preguntas, el *hash* tampoco reparte exactamente el 25 %.
+
+### Lo que ven las señales, y lo que no
+
+En producción no sabes si una respuesta es correcta. Lo que tienes son **señales indirectas**: la latencia, la tasa de abstención ("No aparece en la documentación"), las respuestas sin citas, la tasa de respaldo o de errores. Una regla de vuelta atrás solo puede usar esas señales. Son buenas para detectar fallos de forma (respuestas sin citas, un modelo que no responde) y malas para detectar fallos de calidad: un modelo que inventa con buena redacción no cambia ninguna.
+
+Por eso la eval en sombra no es opcional. Es la única fase que ve la calidad.
+
+### El postmortem sin culpas
+
+Cuando un cambio sale mal, se escribe un **postmortem**: qué pasó, qué impacto tuvo, cuál fue la causa, qué funcionó y qué acciones impiden que se repita. Es "sin culpas" (*blameless*): busca el fallo del sistema que permitió el error, no a la persona que lo cometió. Cada afirmación del postmortem tiene que salir de los datos (las trazas, las métricas, la eval). Lo que no está en los datos va como pregunta abierta, no como hecho.
+
+## Práctica
+
+[`cambios_seguros.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/06-produccion/cambios_seguros.py) lleva a producción el cambio de la lección 6.07, cambiar el modelo principal del de 7B al de 1,5B, en cuatro partes:
+
+1. **En sombra.** El candidato responde las 58 preguntas del módulo 4 sin servir nada, y se compara caso a caso con el vigente grabado.
+2. **Canario.** 60 peticiones con repeticiones (las de la lección 6.01: unas pocas preguntas se repiten mucho). El 25 % de las preguntas, por un *hash* de la pregunta normalizada, va al candidato. Las dos versiones comparten la caché, como compartirían un Redis.
+3. **Vuelta atrás.** Todo vuelve al vigente. Primero con la clave de caché de la lección 6.01, que es la huella del sistema; después, repitiendo el canario, con una clave que incluye el modelo que responde.
+4. **Postmortem.** Generado con los datos de las tres partes, en `resultados/postmortem.md`.
+
+El reparto y la regla de vuelta atrás son unas líneas:
+
+```python
+def en_canario(pregunta: str, porcentaje: int) -> bool:
+    cubo = int(hashlib.sha256(normalizar(pregunta).encode()).hexdigest(), 16) % 100
+    return cubo < porcentaje
+
+def volver_atras(vigente: dict, canario: dict) -> list[str]:
+    if canario.get("n", 0) < MINIMO:
+        return []
+    motivos = []
+    for senal in ("sin_citas", "abstenciones"):
+        if canario[senal] - vigente[senal] > TOLERANCIA[senal]:
+            motivos.append(f"{senal}: {canario[senal]:.0%} frente a {vigente[senal]:.0%}")
+    if canario["p95_ms"] > TOLERANCIA["p95_ms"] * vigente["p95_ms"]:
+        motivos.append(f"p95: {canario['p95_ms']:.0f} ms frente a {vigente['p95_ms']:.0f} ms")
+    return motivos
+```
+
+Necesita lo mismo que el resto del módulo: Ollama con los modelos del módulo 4 y el reranker en llama-server. Tarda unos 20 minutos; con `--grabadas`, un segundo.
+
+```sh
+uv run python modulos/06-produccion/cambios_seguros.py
+uv run python modulos/06-produccion/cambios_seguros.py --grabadas
+```
+
+```text
+1. En sombra: qwen2.5:1.5b responde las 58 preguntas, sin servir nada
+   vigente (qwen2.5:7b): 52 de 58 (grabado en el módulo 4)
+   candidata (qwen2.5:1.5b): 40 de 58
+   la candidata gana 0 y pierde 12, p = 0.000
+   abstenciones 19% · sin citas 0% · p50 4.8 s
+
+2. Canario: el 25 % de las preguntas a la candidata, 60 peticiones con repeticiones
+                n  tráfico  de caché  abstenciones  sin citas     p50     p95  aciertos*
+   vigente     27      45%       44%           11%         0%   11.5s   27.1s        96%
+   candidata   33      55%       64%            6%         0%    5.3s    7.7s        79%
+   (p50 y p95, sin las respuestas de la caché)
+   * los aciertos no se ven en producción: aquí se conocen porque el tráfico es el dataset
+   el canario llevó 12 de 27 preguntas distintas y el 55 % de las peticiones
+   regla de vuelta atrás: no salta
+
+3. Vuelta atrás: todo al vigente, con la caché compartida entre versiones
+   clave con la huella        27 preguntas, 27 de la caché, 12 respondidas por qwen2.5:1.5b
+   clave con huella y modelo  27 preguntas, 15 de la caché, 0 respondidas por qwen2.5:1.5b
+
+4. Postmortem: resultados/postmortem.md
+   ## Resumen
+   Se propuso pasar el modelo principal del asistente de qwen2.5:7b a qwen2.5:1.5b, más rápido.
+   En sombra perdía 12 casos de la eval y ganaba 0 (p = 0.000). En canario, las
+   señales de producción no pidieron volver atrás.
+```
+
+El postmortem completo sigue con el impacto, la causa, lo que funcionó y las acciones, cada una con su dato.
+
+<ConUnaApi practicas={['modulos/06-produccion/cambios_seguros.py']} />
+
+## Mide y depura
+
+### La sombra decide; el canario no lo habría visto
+
+En sombra, la candidata pierde 12 casos y no gana ninguno (p = 0,000). Es la misma caída que midió la lección 6.01 para el modelo de respaldo: de 52 a 40. Con esa puerta, el cambio no habría llegado nunca al canario.
+
+En el canario, en cambio, la candidata parece mejor en todo lo que se ve. Es más rápida (5,3 s de mediana frente a 11,5, sin contar la caché), se abstiene menos (6 % frente a 11 %) y no da ninguna respuesta sin citas. La regla de vuelta atrás no salta. Y acierta el 79 % de sus peticiones frente al 96 % del vigente, una diferencia que en producción no se habría visto, porque no hay forma de saber qué respuesta es correcta.
+
+Que se abstenga menos no es una mejora. En el dataset hay 16 preguntas que no deben responderse: el vigente se abstiene en 15 de las 58 y la candidata en 11. Lo que sube no es la utilidad, sino las respuestas a lo que no está en la documentación. Una señal de producción puede moverse en la dirección "buena" justo cuando la calidad baja.
+
+### El 25 % no fue el 25 %
+
+El canario debía llevar el 25 % de las preguntas y llevó el 55 % de las peticiones. Hay dos causas. Con 58 preguntas, el *hash* no reparte exactamente: le tocaron 21, el 36 %. Y el tráfico se concentra: de las 27 preguntas distintas que llegaron, el canario tenía 12, entre ellas algunas de las que más se repetían. Mide qué parte del tráfico lleva de verdad tu canario, en peticiones y en usuarios, antes de interpretar sus señales.
+
+### La caché también es una versión
+
+Tras volver atrás con la clave de la lección 6.01, las 27 preguntas salieron de la caché, y 12 eran respuestas del modelo pequeño. La vuelta atrás estaba hecha en la configuración y no en lo que veían los usuarios. Con la clave que incluye el modelo, ninguna: las 12 que solo había respondido el candidato volvieron a pasar por el modelo de 7B. Es la anatomía.
+
+### El postmortem, desde los datos
+
+El postmortem que genera la práctica no tiene ninguna afirmación que no salga de las partes anteriores. Dice cuánto perdía la candidata en sombra, qué parte del tráfico llevó, cuántas respuestas contaminó la caché y por qué. La última acción ("revisar qué señales de producción habrían detectado la pérdida de calidad") queda como pregunta abierta: esta práctica muestra que las que hay no bastan, pero no mide cuáles bastarían.
+
+## Errores frecuentes
+
+- **Saltarse la sombra porque "es solo un cambio de modelo".** Es la fase que ve la calidad. Las demás solo ven señales indirectas.
+- **Repartir el canario al azar en cada petición.** La misma pregunta o el mismo usuario recibiría respuestas de las dos versiones, y las señales se mezclarían.
+- **Fijar el porcentaje y no medirlo.** El 25 % de las preguntas puede ser el 55 % del tráfico.
+- **Leer las señales como si fueran la calidad.** Más rápido y con menos abstenciones puede ser peor.
+- **Una caché compartida con una clave que no distingue versiones.** La vuelta atrás no vuelve atrás. Es la anatomía.
+- **Un postmortem con culpables o con suposiciones.** Busca el fallo del sistema y apoya cada frase en un dato.
+
+### Anatomía de un error: la vuelta atrás que no volvió
+
+**El síntoma.** La parte 3, con la clave de caché de la lección 6.01:
+
+```text
+   clave con la huella        27 preguntas, 27 de la caché, 12 respondidas por qwen2.5:1.5b
+```
+
+El canario está apagado: todas las peticiones van al vigente, que usa el modelo de 7B. Y aun así, 12 de las 27 respuestas las generó el de 1,5B.
+
+**Cómo leerlo.** "27 de la caché" ya es raro: el vigente nunca había respondido las 12 preguntas del canario, así que no debería tenerlas en su caché. Que estén, y con `modelo: qwen2.5:1.5b`, dice que las dos versiones escriben en las mismas claves. Sin el campo `modelo` en la respuesta (lección 6.01), esto no se vería: las respuestas llegan con 200 y sus citas.
+
+**La causa.** La clave de la caché era la huella del sistema más la pregunta. La huella resume los ficheros (el prompt, `models.toml`, el corpus), y el candidato no cambiaba ninguno: el modelo se elegía por configuración, como `CURSO_ROLES` en la lección 6.07. Para la caché, vigente y candidato eran la misma versión. Con una caché por proceso no se notaría, porque cada versión tendría la suya. Con una compartida, como un Redis entre réplicas, la versión nueva deja sus respuestas para la vieja.
+
+**La solución.** Que la clave diga lo que de verdad responde: `Asistente.version_cache` es la huella más el modelo del rol principal, y con ella la parte 3 da 0 respuestas ajenas. Y, en general, que todo lo que guarda una versión lleve su identidad completa: la caché, los resultados grabados y las trazas. Es la misma lección de la 6.07 vista desde el otro lado: la versión de un sistema de LLM no es solo su código.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'Quieres cambiar el modelo principal por uno más barato. ¿Qué haces antes de mandarle tráfico real?',
+			opciones: [
+				{ texto: 'Un canario con el 5 % del tráfico y una regla de vuelta atrás.', porque: 'El canario solo ve señales indirectas. Aquí, la candidata parecía mejor en todas y acertaba el 79 % frente al 96 % ("Lo que ven las señales, y lo que no").' },
+				{ texto: 'Pasarlo en sombra por la eval y compararlo caso a caso con el vigente.', correcta: true, porque: 'Es la fase que ve la calidad: aquí detectó 12 casos perdidos (p = 0,000) sin servir una sola respuesta.' },
+			],
+		},
+		{
+			pregunta: 'Tu canario va al 25 % de los usuarios, por hash. Sus métricas parecen buenas. ¿Qué compruebas primero?',
+			opciones: [
+				{ texto: 'Nada: el hash reparte el 25 %.', porque: 'Con pocos usuarios no reparte exacto, y si unos pocos concentran el tráfico, el porcentaje de peticiones puede ser otro. Aquí fue el 55 % ("El 25 % no fue el 25 %").' },
+				{ texto: 'Qué parte de las peticiones y de los usuarios lleva de verdad, antes de interpretar sus señales.', correcta: true, porque: 'Las señales de un lado que lleva más (o menos) tráfico del previsto no se comparan igual.' },
+			],
+		},
+		{
+			pregunta: 'En el canario, la versión nueva se abstiene menos ("No aparece en la documentación") que la vigente. ¿Es buena señal?',
+			opciones: [
+				{ texto: 'Sí: responde más preguntas.', porque: 'Puede estar respondiendo lo que no debe. Aquí, la candidata se abstenía menos y acertaba menos ("La sombra decide...").' },
+				{ texto: 'No se sabe sin la eval: menos abstenciones pueden ser más respuestas inventadas.', correcta: true, porque: 'Una señal indirecta puede moverse en la dirección "buena" justo cuando la calidad baja.' },
+			],
+		},
+		{
+			pregunta: 'Vuelves atrás un cambio de modelo y los usuarios siguen viendo respuestas del modelo nuevo durante horas. ¿Dónde miras?',
+			opciones: [
+				{ texto: 'En la configuración: el cambio no se deshizo.', porque: 'La configuración ya apunta al vigente; las peticiones van a él ("La caché también es una versión").' },
+				{ texto: 'En la caché: si la clave no incluye el modelo, la versión vieja sirve lo que guardó la nueva.', correcta: true, porque: 'Es la anatomía: con la clave de la huella, 12 de 27 respuestas tras volver atrás eran del modelo nuevo.' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- Google, [Canarying Releases](https://sre.google/workbook/canarying-releases/), en el workbook de SRE: cómo elegir el tamaño del canario, cuánto dejarlo y qué métricas comparar.
+- Martin Fowler, [Canary Release](https://martinfowler.com/bliki/CanaryRelease.html): el patrón, y cómo repartir el tráfico.
+- Google, [Postmortem Culture: Learning from Failure](https://sre.google/sre-book/postmortem-culture/): el postmortem sin culpas.
+- [What We Learned from a Year of Building with LLMs](https://applied-llms.org/): la parte de operación, con las evaluaciones antes y después de cada cambio de modelo o prompt.
