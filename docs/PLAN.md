@@ -36,6 +36,7 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 4. Tool calling básico
 5. Prompts como código: versionado y plantillas
 6. **Tu primera eval**: 10 casos, una aserción, un número
+7. Reto del módulo: el extractor que valida pero miente
 - **Errores clave**: JSON inválido, fallos de validación, truncamiento por `max_tokens`, regresiones al cambiar un prompt
 
 ## Módulo 3 — RAG 🟨
