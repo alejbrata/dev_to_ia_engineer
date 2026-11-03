@@ -214,11 +214,11 @@ Hay que leer con cuidado la validación de 22 ejemplos. Es poca, y una diferenci
 
 La tabla del apartado 3 de los datos es el comportamiento que el alumno va a imitar:
 
-- **Se abstiene en el 17 % de las preguntas que sí tienen respuesta.** El alumno aprenderá a abstenerse con esa frecuencia, también donde no debe.
-- **En las preguntas sin respuesta, responde en el 26 %.** O la pregunta generada sí tenía respuesta en el fragmento, o el maestro inventa. Con estos datos no se puede saber cuál de las dos sin leer los casos, y el alumno aprende las dos cosas.
+- **Se abstiene en el 17 % de las preguntas «con respuesta».** Pero esa etiqueta la puso el modelo que generó las preguntas, no alguien que comprobó el fragmento. O el maestro se equivoca, o la pregunta pide un dato que el fragmento no tiene. La lección 06 revisa los 29 casos uno a uno: en 15, abstenerse era lo correcto.
+- **En las preguntas sin respuesta, responde en el 26 %.** El mismo problema al revés: o la pregunta generada sí tenía respuesta en el fragmento, o el maestro inventa. Sin leer los casos no se puede saber, y el alumno aprende las dos cosas.
 - **Fuera de ámbito y manipulación: se abstiene siempre.** Es lo que se quiere.
 
-Antes de entrenar con datos destilados, lee una muestra de cada grupo. Si el maestro se equivoca de forma sistemática, corrige o quita esos ejemplos: entrenar con ellos cuesta horas y fija el error en el alumno.
+Antes de entrenar con datos destilados, lee una muestra de cada grupo, con el fragmento delante. Hay dos fuentes de error, no una: el maestro y las etiquetas del generador. Si cualquiera de los dos se equivoca de forma sistemática, corrige o quita esos ejemplos: entrenar con ellos cuesta horas y fija el error en el alumno.
 
 ### Lo que ocupa
 
@@ -230,6 +230,7 @@ El adaptador de una época son 74 MB, y el modelo fusionado, 3,10 GB, lo mismo q
 - **Entrenar con un prompt distinto del de producción.** El modelo aprende la relación entre ese prompt y la respuesta. Si en producción el prompt cambia, lo aprendido se aplica peor.
 - **No terminar la respuesta en el token de fin de turno.** El modelo aprende a responder, pero no a parar, y sigue generando hasta el límite de tokens.
 - **Dejar que la eval se cuele en los datos.** Aunque las preguntas se generen aparte, salen parecidas: aquí se descartaron 24 de 334. Filtra por similitud, no solo por texto idéntico.
+- **Dar por buenas las etiquetas de los datos sintéticos.** Que el generador diga que una pregunta tiene respuesta no significa que la tenga. Compruébalo con el fragmento antes de juzgar al maestro.
 - **Fiarse de la pérdida.** Una pérdida baja dice que el modelo imita al maestro, no que acierte. Lo decide la eval (lección 06).
 - **No guardar nada hasta el final.** Un entrenamiento de horas tiene que guardar el adaptador de cada época y los resultados antes de cualquier paso que pueda fallar. La anatomía de abajo es por qué.
 
@@ -283,10 +284,10 @@ providers.openai.razonar_por_defecto
 			],
 		},
 		{
-			pregunta: 'El maestro se abstiene en el 17 % de las preguntas que sí tienen respuesta. ¿Qué esperas del alumno y qué harías antes de entrenar?',
+			pregunta: 'El maestro se abstiene en el 17 % de las preguntas que el generador marcó «con respuesta». ¿Qué harías antes de entrenar?',
 			opciones: [
-				{ texto: 'El alumno lo hará mejor que el maestro, porque aprende de muchos ejemplos.', porque: 'Aprende a imitar al maestro, defectos incluidos ("Lo que enseña el maestro, incluidos sus fallos").' },
-				{ texto: 'Que se abstenga parecido; leer una muestra de esos casos y corregir o quitar los ejemplos en los que el maestro falla.', correcta: true, porque: 'En destilación, la calidad de los datos pone el techo. Corregir antes cuesta minutos; entrenar con el error, horas.' },
+				{ texto: 'Quitar todas esas abstenciones: el maestro se equivoca en todas.', porque: 'La etiqueta es del generador, no está comprobada. En la lección 06, en 15 de los 29 casos el fragmento no daba el dato y abstenerse era lo correcto ("Lo que enseña el maestro, incluidos sus fallos").' },
+				{ texto: 'Leer esos casos con su fragmento delante, y corregir solo aquellos en los que la respuesta estaba en el contexto.', correcta: true, porque: 'Puede fallar el maestro o la etiqueta. En destilación, la calidad de los datos pone el techo; corregir antes cuesta minutos, entrenar con el error, horas.' },
 			],
 		},
 		{

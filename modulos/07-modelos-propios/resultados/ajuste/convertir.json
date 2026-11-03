@@ -1,0 +1,32 @@
+{
+ "base": {
+  "conversion_s": 19.648997699958272,
+  "f16_bytes": 3093669024,
+  "q4_bytes": 986048160,
+  "prompt_tps": 783.922107,
+  "generacion_tps": 52.40282,
+  "aciertos": 40,
+  "total": 58,
+  "p50_s": 1.2197645000414923
+ },
+ "ajustado-epoca-2": {
+  "conversion_s": 20.061792599968612,
+  "f16_bytes": 3093669120,
+  "q4_bytes": 986048256,
+  "prompt_tps": 801.153469,
+  "generacion_tps": 52.300918,
+  "aciertos": 42,
+  "total": 58,
+  "p50_s": 0.7663879999890924
+ },
+ "corregido-epoca-2": {
+  "conversion_s": 22.4774220000254,
+  "f16_bytes": 3093669152,
+  "q4_bytes": 986048288,
+  "prompt_tps": 789.396447,
+  "generacion_tps": 54.358799,
+  "aciertos": 42,
+  "total": 58,
+  "p50_s": 0.798623500042595
+ }
+}

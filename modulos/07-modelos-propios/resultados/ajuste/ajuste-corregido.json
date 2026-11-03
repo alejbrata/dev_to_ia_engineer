@@ -1,0 +1,57 @@
+{
+ "entrenables": 18464768,
+ "totales": 1562179072,
+ "ejemplos": {
+  "entrenamiento": 279,
+  "validacion": 22
+ },
+ "pasos": 69,
+ "curva": [
+  {
+   "epoca": 0.0,
+   "validacion": 0.2994973278191399
+  },
+  {
+   "epoca": 0.5,
+   "entrenamiento": 0.1792063195670439,
+   "validacion": 0.16776526349786713,
+   "minutos": 60.15845587333509
+  },
+  {
+   "epoca": 1.0,
+   "entrenamiento": 0.13645290874996685,
+   "validacion": 0.16330359440589792,
+   "minutos": 114.0459091383343
+  },
+  {
+   "epoca": 1.0,
+   "entrenamiento": 0.007844081148505211,
+   "validacion": 0.16288546929340086,
+   "minutos": 117.29452875000037
+  },
+  {
+   "epoca": 1.5,
+   "entrenamiento": 0.069151889708265,
+   "validacion": 0.1666229283427317,
+   "minutos": 170.29973359666764
+  },
+  {
+   "epoca": 2.0,
+   "entrenamiento": 0.0782570215874886,
+   "validacion": 0.15977604157838288,
+   "minutos": 223.68863051166798
+  },
+  {
+   "epoca": 2.0,
+   "entrenamiento": 0.08557594567537308,
+   "validacion": 0.15977604157838288,
+   "minutos": 226.89023799833376
+  }
+ ],
+ "minutos": 226.89381190333515,
+ "adaptador_bytes": 73917852,
+ "fusionado_bytes": {
+  "1": 3098894010,
+  "2": 3098894010
+ }
+}

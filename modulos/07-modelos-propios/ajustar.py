@@ -119,7 +119,9 @@ def entrenar(variante: str = "original") -> dict:
     print(curva[-1], flush=True)
     orden = random.Random(0)
     n = len(datos["entrenamiento"])
-    cada = n // VALIDACIONES_POR_EPOCA
+    # Los ejemplos tras los que se mide la validación: con un número impar de ejemplos,
+    # `i % (n // 2) == 0 or i == n` mediría una vez de más al final de cada época.
+    medir_en = {round(n * k / VALIDACIONES_POR_EPOCA) for k in range(1, VALIDACIONES_POR_EPOCA + 1)}
     inicio = time.perf_counter()
     modelo.train()
     for epoca in range(EPOCAS):
@@ -136,7 +138,7 @@ def entrenar(variante: str = "original") -> dict:
                 optimizador.step()
                 planificador.step()
                 optimizador.zero_grad()
-            if i % cada == 0 or i == n:
+            if i in medir_en:
                 curva.append(
                     {
                         "epoca": round(epoca + i / n, 2),
@@ -162,12 +164,26 @@ def entrenar(variante: str = "original") -> dict:
     }
 
 
+# Los ficheros del tokenizador, que LoRA no cambia.
+TOKENIZADOR = ("tokenizer.json", "tokenizer_config.json", "vocab.json", "merges.txt")
+
+
+def copiar_tokenizador(origen: Path, destino: Path) -> None:
+    """Copia el tokenizador del modelo base tal cual. Volver a guardarlo con transformers 5
+    cambia el formato de `tokenizer_config.json`, y el conversor a GGUF de llama.cpp, que
+    usa transformers 4, ya no lo lee (lección 06)."""
+    import shutil
+
+    for nombre in TOKENIZADOR:
+        shutil.copy(origen / nombre, destino / nombre)
+
+
 def fusionar(variante: str = "original") -> dict:
     """El modelo base con cada adaptador fusionado, en bfloat16 como el original, para
     servirlo con cualquier servidor que lea safetensors (vLLM, en la lección 06)."""
     import torch
     from peft import PeftModel
-    from transformers import AutoModelForCausalLM, AutoTokenizer
+    from transformers import AutoModelForCausalLM
 
     ruta = base()
     sufijo = VARIANTES[variante][1]
@@ -178,7 +194,7 @@ def fusionar(variante: str = "original") -> dict:
         fusionado = modelo.merge_and_unload().to(torch.bfloat16)
         destino = TRABAJO / f"fusionado{sufijo}-epoca-{epoca}"
         fusionado.save_pretrained(destino)
-        AutoTokenizer.from_pretrained(ruta).save_pretrained(destino)
+        copiar_tokenizador(Path(ruta), destino)
         tamanos[str(epoca)] = sum(f.stat().st_size for f in destino.iterdir())
     return tamanos
 
@@ -215,7 +231,13 @@ def main() -> int:
     print(
         f"   {'época':>6} {'pérdida entrenamiento':>22} {'pérdida validación':>19} {'minutos':>8}"
     )
+    anterior = None
     for punto in r["curva"]:
+        # La primera ejecución con datos corregidos midió dos veces al final de cada época
+        # (el fallo de `medir_en`): se muestra solo la primera de las dos.
+        if punto["epoca"] == anterior:
+            continue
+        anterior = punto["epoca"]
         ent = f"{punto['entrenamiento']:.3f}" if "entrenamiento" in punto else "-"
         mins = f"{punto['minutos']:.0f}" if "minutos" in punto else "-"
         print(f"   {punto['epoca']:>6.1f} {ent:>22} {punto['validacion']:>19.3f} {mins:>8}")
