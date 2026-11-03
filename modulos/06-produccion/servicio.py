@@ -5,13 +5,15 @@
   id; un trabajador la procesa y el cliente consulta el resultado después. Para lotes o
   para cuando el cliente no puede esperar con la conexión abierta.
 - GET /salud: si el servicio está en marcha y con qué versión del sistema.
+- POST /valoraciones: el 👍 o 👎 de un usuario a una respuesta, por su id (lección 6.10).
 - GET /metrics: las métricas en formato Prometheus (lección 6.03, metricas_servicio.py).
 
 Configuración por variables de entorno: ASISTENTE_CACHE=0 desactiva la caché;
 ASISTENTE_TRAZAS=1 activa las trazas de OpenTelemetry (lección 6.02, observabilidad.py);
 ASISTENTE_GUARDRAILS=1 activa los guardrails de entrada y salida (lección 6.05);
 ASISTENTE_CALIDAD=0.1 juzga en segundo plano el 10 % de las respuestas generadas y publica
-su fidelidad, relevancia y precisión del contexto en /metrics (lección 6.09, calidad.py).
+su fidelidad, relevancia y precisión del contexto en /metrics (lección 6.09, calidad.py);
+ASISTENTE_VALORACIONES=<fichero> guarda las valoraciones en JSONL para revisarlas (6.10).
 Arranque: `uv run uvicorn servicio:app --app-dir modulos/06-produccion --port 8100`
 """
 
@@ -22,8 +24,10 @@ import queue
 import threading
 import uuid
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Literal
 
+import feedback
 import metricas_servicio
 from asistente import Asistente, Resultado
 from curso_core import ClienteLLM, tracing
@@ -56,11 +60,14 @@ def trabajador() -> None:
 
 def responder(pregunta: str) -> Resultado:
     a = estado["asistente"]
-    resultado = a.responder(pregunta)
+    # Un id por respuesta servida, también si sale de la caché: es lo que el usuario valora.
+    resultado = a.responder(pregunta).model_copy(update={"id": uuid.uuid4().hex[:16]})
     metricas_servicio.observar_pregunta(resultado)
+    # La versión, como etiqueta de Prometheus: el modelo principal (pocas combinaciones).
+    version = a.modelos[a.roles[0]]
+    estado["registro"].guardar(resultado.id, pregunta, resultado, version)
     if estado["calidad"]:
-        # La versión, como etiqueta de Prometheus: el modelo principal (pocas combinaciones).
-        estado["calidad"].enviar(pregunta, resultado, version=a.modelos[a.roles[0]])
+        estado["calidad"].enviar(pregunta, resultado, version=version)
     return resultado
 
 
@@ -77,6 +84,8 @@ async def ciclo_de_vida(_: FastAPI):
         guardrails=os.environ.get("ASISTENTE_GUARDRAILS") == "1",
     )
     estado["cola"], estado["trabajos"] = queue.Queue(), {}
+    ruta = os.environ.get("ASISTENTE_VALORACIONES")
+    estado["registro"] = feedback.Registro(ruta=Path(ruta) if ruta else None)
     estado["calidad"] = None
     if muestreo := float(os.environ.get("ASISTENTE_CALIDAD", "0")):
         import calidad
@@ -124,6 +133,15 @@ def consultar(id: str) -> Trabajo:
     if id not in estado["trabajos"]:
         raise HTTPException(status_code=404, detail="No existe ese trabajo")
     return estado["trabajos"][id]
+
+
+@app.post("/valoraciones", status_code=201)
+def valorar(v: feedback.Valoracion) -> dict:
+    fila = estado["registro"].valorar(v)
+    if fila is None:
+        raise HTTPException(status_code=404, detail="No existe esa respuesta o ya caducó")
+    metricas_servicio.observar_valoracion(fila["version"], v.util)
+    return {"id": v.id, "registrada": True}
 
 
 @app.get("/salud")

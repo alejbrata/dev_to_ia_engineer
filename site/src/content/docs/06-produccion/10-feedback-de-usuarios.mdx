@@ -1,0 +1,203 @@
+---
+title: "Feedback de usuarios: del 👎 al dataset"
+description: "Feedback de usuarios en un servicio de LLM: recoger el 👍/👎 de cada respuesta, leerlo sin confundirlo con la tasa de error, revisar una cola de 👎 y convertir los fallos confirmados en casos nuevos de la eval"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
+
+:::note[Revisado: 2026-11]
+Las respuestas son las reales del sistema vigente (Qwen2.5 7B) y del candidato (Qwen2.5 1,5B), grabadas en las lecciones 4.07 y 6.09. Los usuarios que votan son simulados, con probabilidades fijas: no hay usuarios reales a los que medir. La práctica no llama a ningún modelo.
+:::
+
+## Objetivos
+
+Al terminar esta lección podrás:
+
+- Recoger la valoración de cada respuesta en el servicio, unida a la pregunta, la respuesta y la versión que la dio.
+- Leer el 👎 como una pista sesgada, no como la tasa de error, y usarlo para comparar versiones sobre el mismo tráfico.
+- Montar una cola de revisión que convierta los 👎 en veredictos de una persona.
+- Añadir los fallos confirmados al dataset de la eval, y saber qué deja de medir la eval al hacerlo.
+
+## Teoría
+
+### El círculo que faltaba
+
+El módulo 4 construyó una eval con un dataset fijo, y la lección 4.07 la puso en CI para detectar regresiones. La lección 6.09 midió la calidad en producción con jueces. Falta la otra dirección: que lo que falla en producción acabe en la eval. Si no, la eval se queda con las preguntas que alguien imaginó al principio, y el tráfico real trae otras.
+
+La fuente más directa es el usuario. Un botón 👍/👎 en cada respuesta cuesta poco de montar y dice algo que ningún juez dice: si a quien preguntó le sirvió.
+
+### Lo que dice un 👎, y lo que no
+
+Un 👎 no es una etiqueta. Tiene tres sesgos que se ven en cualquier producto:
+
+- **Se vota poco.** La mayoría de las respuestas no recibe ningún voto, ni bueno ni malo. Una respuesta mal sin 👎 no es una respuesta bien.
+- **Se vota más cuando algo va mal.** Quien recibe lo que esperaba sigue con lo suyo; quien no, a veces protesta. Por eso la proporción de 👎 entre los votos no es la proporción de respuestas malas: los votos son una muestra que se elige sola (*sesgo de selección*).
+- **El 👎 mide la satisfacción, no la corrección.** "No aparece en la documentación" molesta aunque sea lo correcto. Y una respuesta inventada con buena redacción puede llevarse un 👍.
+
+Con esos sesgos, el 👎 sirve sobre todo para dos cosas. La primera es comparar versiones sobre el mismo tráfico, como en un canario, porque los sesgos afectan a las dos por igual. La segunda es encontrar qué revisar.
+
+### De la cola al dataset
+
+Revisar cada 👎 por separado no escala. Lo habitual es agruparlos por pregunta y versión, ordenarlos por número de votos, y que una persona decida en cada grupo:
+
+1. **¿Es un fallo real?** Con la pregunta, la respuesta y los fragmentos delante. Si la respuesta era correcta, o la abstención era lo que tocaba, se descarta: es una falsa alarma del usuario.
+2. **¿Ya está en la eval?** Si lo está, el fallo ya se mide. Lo que hay que mirar es por qué sigue pasando.
+3. **Si es nuevo,** se convierte en un caso del dataset, anclado a los segmentos del corpus como en la lección 4.02, y desde ese momento la regresión lo vigila.
+
+Hay un efecto que conviene conocer antes de hacerlo. Los casos que entran así no son una muestra al azar del tráfico: son los que fallaron, y a menudo los que fallaron con una versión concreta. La eval ampliada detecta mejor esos fallos, pero deja de ser imparcial para comparar esa versión con otra.
+
+## Práctica
+
+### En el servicio
+
+Cada respuesta que da el servicio lleva un `id`, también las que salen de la caché. El registro de [`feedback.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/06-produccion/feedback.py) guarda las últimas respuestas servidas, con su pregunta, sus fragmentos y la versión, para unir cada valoración con lo que se valoró. Un endpoint nuevo recoge la valoración:
+
+```python
+@app.post("/valoraciones", status_code=201)
+def valorar(v: feedback.Valoracion) -> dict:
+    fila = estado["registro"].valorar(v)
+    if fila is None:
+        raise HTTPException(status_code=404, detail="No existe esa respuesta o ya caducó")
+    metricas_servicio.observar_valoracion(fila["version"], v.util)
+    return {"id": v.id, "registrada": True}
+```
+
+`Valoracion` lleva el `id`, `util` (👍 o 👎) y un comentario opcional de hasta 500 caracteres. Las valoraciones se cuentan en `/metrics` por versión (`asistente_valoraciones_total{version, valor}`) y, con `ASISTENTE_VALORACIONES=<fichero>`, se guardan en JSONL para revisarlas. El registro es en memoria y se queda con las últimas 10.000 respuestas: en producción iría junto a las trazas o en una base de datos, y un 👎 de una respuesta que ya no está no se puede revisar.
+
+### La medición
+
+[`bucle_feedback.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/06-produccion/bucle_feedback.py) recorre el círculo entero con un día de tráfico: 600 peticiones con las repeticiones y el reparto del canario de la lección 6.08. Las respuestas son las reales del vigente y del candidato. Los usuarios votan con estas probabilidades, inventadas pero con los tres sesgos de arriba:
+
+| La respuesta | 👍 | 👎 |
+| --- | --- | --- |
+| correcta | 12 % | 2 % |
+| incorrecta | 4 % | 25 % |
+| abstención correcta | 2 % | 15 % |
+| abstención incorrecta | 1 % | 35 % |
+
+Para el paso al dataset hace falta saber si cada pregunta nueva estaba bien o mal, y en producción eso lo decide una persona. Aquí se simula así: la eval inicial son las 30 preguntas del módulo 3, y el resto del dataset del módulo 4 hace de preguntas nuevas de los usuarios, con su respuesta conocida.
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/06-produccion/bucle_feedback.py
+```
+
+```text
+1. ¿Qué dice el 👎? 600 peticiones del canario de la 6.08, usuarios simulados
+              peticiones  con voto     👍     👎   👎 / votos  errores reales
+   vigente           277       19%    42    11         21%              5%
+   candidata         323       20%    24    41         63%             45%
+   de los 52 👎, 43 son de respuestas mal (83%) y 5 de abstenciones correctas
+   de las 161 respuestas mal servidas, reciben 👎 43 (27%)
+
+2. La cola de revisión: los 👎 agrupados por pregunta y versión
+   15 grupos; los 10 con más 👎:
+    34 👎 · candidata · fallo real          · en la eval · ¿Qué hago si pagos devuelve 'too many connection
+     3 👎 · vigente   · fallo real          · en la eval · La tienda está enseñando precios viejos. ¿Qué ha
+     3 👎 · candidata · fallo real          · en la eval · ¿Tiene copia de seguridad la cola de Redis de no
+     1 👎 · vigente   · abstención correcta · nueva      · Dame el comando SQL para borrar la tabla de usua
+     1 👎 · vigente   · abstención correcta · nueva      · Escríbeme un poema sobre las guardias de fin de
+     1 👎 · vigente   · respuesta correcta  · en la eval · La base de datos de cobros ha dejado de aceptar
+     1 👎 · vigente   · fallo real          · nueva      · Los emails no salen y en los logs veo Connection
+     1 👎 · candidata · respuesta correcta  · en la eval · ¿A partir de qué porcentaje de uso de disco salt
+     1 👎 · vigente   · abstención correcta · nueva      · ¿Cuál es la capital de Australia?
+     1 👎 · vigente   · abstención correcta · en la eval · ¿Cuánto cuesta al mes la pasarela de pago?
+   fallo real            6 grupos (3 de preguntas que no están en la eval)
+   abstención correcta   5 grupos (3 de preguntas que no están en la eval)
+   respuesta correcta    4 grupos (0 de preguntas que no están en la eval)
+
+3. Al dataset: la eval inicial tiene las 30 preguntas del módulo 3
+   fallos confirmados de preguntas nuevas: 3 → n-04, n-13, s-02
+   eval inicial  vigente 27 de 30 [74%, 97%] · candidata 23 de 30 [59%, 88%] · la candidata gana 0, pierde 4, p = 0.125
+   eval ampliada vigente 29 de 33 [73%, 95%] · candidata 23 de 33 [53%, 83%] · la candidata gana 0, pierde 6, p = 0.031
+```
+
+<ConUnaApi practicas={['modulos/06-produccion/bucle_feedback.py']} />
+
+## Mide y depura
+
+### El 👎 separa versiones, pero no mide errores
+
+Sobre el mismo tráfico, el 👎 separa las dos versiones con claridad: el 63 % de los votos del candidato son 👎, frente al 21 % del vigente. Es una señal útil para un canario, y llega antes que cualquier eval, porque la dan los usuarios mientras usan el servicio.
+
+Como medida de error, en cambio, no vale. El vigente falla en el 5 % de sus respuestas y recibe un 21 % de 👎 entre sus votos. La diferencia sale de dos sitios: se vota más cuando algo falla, y 5 de los 52 👎 son de abstenciones correctas. Y en la otra dirección, de las 161 respuestas mal servidas en el día, solo 43 recibieron un 👎. Las otras 118 pasaron sin que nadie protestara.
+
+### Una cola dominada por una pregunta
+
+De los 52 👎, 34 son de una sola pregunta, "¿Qué hago si pagos devuelve 'too many connections'?", respondida por el candidato. Es la pregunta que más se repite en el tráfico (los pesos de Zipf de la lección 6.01) y el candidato la falla. La cola refleja lo que más se pregunta, no la variedad de los fallos. Ordenarla por votos sirve para arreglar primero lo que más usuarios sufren. Pero los fallos de preguntas raras quedan al fondo con un voto, o sin ninguno.
+
+### La revisión filtra la mitad
+
+De los 15 grupos, solo 6 son fallos reales. Los otros 9 son falsas alarmas: 5 abstenciones correctas (una inyección, un poema, la capital de Australia, el coste de la pasarela, que no está en la documentación) y 4 respuestas correctas. Sin revisión, esos 9 habrían entrado en el dataset como "fallos", y la eval habría acabado penalizando justo el comportamiento que el módulo 4 enseñó a valorar: abstenerse cuando el dato no está.
+
+Los 3 fallos nuevos son claros. En la n-04, el vigente responde solo "Diagnóstico". En la n-13, el candidato se abstiene teniendo el dato. En la s-02, el candidato se inventa que "El clúster de OpenSearch tiene 3 nodos".
+
+### La eval ampliada, y su sesgo
+
+Con los 3 casos nuevos, la eval pasa de 30 a 33 casos, y la comparación entre versiones cambia: el candidato pierde 6 casos y no gana ninguno (p = 0,031), donde antes perdía 4 (p = 0,125). La eval ampliada detecta mejor la diferencia, que ya se sabía real por la lección 6.08.
+
+Pero mira de dónde salen esos casos. Entran porque fallaron, y 2 de los 3 son fallos del candidato. Una eval que crece con los fallos de una versión se vuelve más dura con esa versión. Para la regresión es lo que quieres: esos fallos no deben volver. Para afirmar cuánto mejor es una versión que otra, necesitas casos que no se hayan elegido por cómo responde ninguna de las dos. Por eso conviene marcar en el dataset de dónde sale cada caso, como el campo `origen` de la lección 4.02, y poder medir con y sin los que vienen del feedback.
+
+## Errores frecuentes
+
+- **Leer la tasa de 👎 como la tasa de error.** Los votos se eligen solos, y una respuesta mal sin voto sigue estando mal.
+- **Pedir la valoración sin guardar qué se valoró.** Un 👎 sin la pregunta, la respuesta, los fragmentos y la versión no se puede revisar.
+- **Pasar los 👎 al dataset sin revisarlos.** Aquí, 9 de los 15 grupos eran falsas alarmas, y más de la mitad de ellas, abstenciones correctas.
+- **Ordenar la cola solo por votos y no mirar el fondo.** Lo más votado es lo más preguntado.
+- **Mezclar en la misma cifra los casos del feedback y los del dataset original.** La eval ampliada es buena para la regresión y está sesgada para comparar versiones.
+
+### Anatomía de un error: el 21 % que no era
+
+**El síntoma.** En el panel, el vigente tiene un 21 % de 👎 entre sus votos. Alguien lo lee como que "una de cada cinco respuestas está mal", y se propone cambiar el modelo.
+
+```text
+              peticiones  con voto     👍     👎   👎 / votos  errores reales
+   vigente           277       19%    42    11         21%              5%
+```
+
+**Cómo leerlo.** El 21 % es una proporción sobre los 53 votos, no sobre las 277 respuestas. Solo vota el 19 % de las peticiones, y quien vota no es un usuario al azar: es más probable que vote quien tuvo un problema, o quien recibió un "No aparece en la documentación".
+
+**La causa.** Es un sesgo de selección: la muestra que vota no representa al tráfico. Además, de los 11 👎 del vigente, 4 son de abstenciones correctas, que el usuario valora mal y el sistema hace bien. En la práctica se sabe cuál es la tasa de error real, el 5 %, porque el tráfico sale del dataset. En producción no se sabe, y por eso es tan fácil confundir las dos cifras.
+
+**La solución.** No conviertas el 👎 en una tasa de error. Úsalo para comparar versiones sobre el mismo tráfico, con el mismo sesgo en los dos lados, y para encontrar qué revisar. Para la tasa de error, la eval del módulo 4. Para la calidad en producción, una muestra juzgada como en la lección 6.09, que no depende de quién decide votar.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'El 18 % de los votos de tu asistente son 👎. ¿Qué puedes concluir?',
+			opciones: [
+				{ texto: 'Que el 18 % de las respuestas están mal.', porque: 'Los votos se eligen solos: se vota más cuando algo falla, y un "no lo sé" correcto también se lleva 👎. Aquí, un 21 % de 👎 con un 5 % de errores ("El 👎 separa versiones, pero no mide errores").' },
+				{ texto: 'Poco por sí solo; sirve para comparar con otra versión sobre el mismo tráfico y para saber qué revisar.', correcta: true, porque: 'Los sesgos afectan igual a las dos versiones de un canario, y la cola de 👎 dice por dónde empezar a revisar.' },
+			],
+		},
+		{
+			pregunta: 'Vas a añadir un botón 👍/👎 a tu servicio. ¿Qué tiene que guardar cada valoración?',
+			opciones: [
+				{ texto: 'El voto y la hora, para la métrica.', porque: 'Con eso tienes un número, pero no puedes revisar ningún 👎: no sabes qué se preguntó ni qué se respondió.' },
+				{ texto: 'El id de la respuesta, unido a la pregunta, la respuesta, los fragmentos y la versión que la dio.', correcta: true, porque: 'Es lo que la persona que revisa necesita para decidir si es un fallo real ("En el servicio").' },
+			],
+		},
+		{
+			pregunta: 'La cola tiene 15 grupos de 👎. ¿Los pasas al dataset para que la regresión los vigile?',
+			opciones: [
+				{ texto: 'Sí, todos: son fallos que han visto los usuarios.', porque: 'Aquí, 9 de los 15 eran falsas alarmas, entre ellas abstenciones correctas: la eval acabaría castigando abstenerse ("La revisión filtra la mitad").' },
+				{ texto: 'Solo los que una persona confirma como fallo real y no están ya en la eval, anclados a sus segmentos.', correcta: true, porque: 'Son los 3 casos nuevos de la práctica. Los fallos que ya están en la eval se investigan, no se duplican.' },
+			],
+		},
+		{
+			pregunta: 'Tras añadir los casos del feedback, la candidata pierde 6 casos en vez de 4. ¿Es más fiable la comparación?',
+			opciones: [
+				{ texto: 'Sí: con más casos, la prueba de McNemar tiene más potencia.', porque: 'Los casos nuevos entraron porque fallaban, sobre todo con la candidata: la eval ampliada es más dura con ella ("La eval ampliada, y su sesgo").' },
+				{ texto: 'Es mejor para la regresión, pero está sesgada para comparar versiones: los casos nuevos se eligieron por sus fallos.', correcta: true, porque: 'Marca el origen de cada caso y mide con y sin los que vienen del feedback.' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- Google PAIR, [People + AI Guidebook: Feedback + Control](https://pair.withgoogle.com/chapter/feedback-controls/): cómo pedir feedback a los usuarios de un producto con IA, y qué hacer con él.
+- Hamel Husain, [Your AI Product Needs Evals](https://hamel.dev/blog/posts/evals/): el ciclo entre revisar trazas reales, etiquetar fallos y hacer crecer la eval.
+- Shankar et al., [Who Validates the Validators?](https://arxiv.org/abs/2404.12272) (2024): cómo cambian los criterios al revisar datos reales, y por qué la revisión humana no se puede saltar.

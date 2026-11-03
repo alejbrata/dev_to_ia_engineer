@@ -94,3 +94,15 @@ def observar_calidad(version: str, juicio: dict) -> None:
         CALIDAD_CONTESTAN.labels(version).inc()
         CALIDAD_FIELES.labels(version).inc(bool(juicio["fiel"]))
         CALIDAD_RELEVANTES.labels(version).inc(bool(juicio["relevante"]))
+
+
+# Valoraciones de los usuarios (lección 6.10). `valor`: util o no_util.
+VALORACIONES = Counter(
+    "asistente_valoraciones_total",
+    "Valoraciones de los usuarios, por versión",
+    ["version", "valor"],
+)
+
+
+def observar_valoracion(version: str, util: bool) -> None:
+    VALORACIONES.labels(version, "util" if util else "no_util").inc()

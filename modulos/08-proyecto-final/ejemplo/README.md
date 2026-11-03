@@ -79,6 +79,9 @@ Cada cifra se reproduce con el comando de su lección; la del sistema vigente, c
 - **Calidad en producción con jueces sobre una muestra.** Fidelidad, relevancia y precisión
   del contexto por versión en `/metrics` (`ASISTENTE_CALIDAD`). Con las 58 preguntas, la
   regla de vuelta atrás salta por fidelidad (79 % frente a 95 %). Lección 6.09.
+- **Valoraciones de los usuarios, revisadas antes de entrar en la eval.** Cada respuesta lleva
+  un id para valorarla (`POST /valoraciones`). En el canario simulado, 9 de los 15 grupos de 👎
+  eran falsas alarmas; los 3 fallos nuevos confirmados entraron en el dataset. Lección 6.10.
 - **Guardrails de entrada y salida.** De nueve ataques, seis funcionan sin guardrails y uno
   con ellos, sin estropear ninguna de las 58 respuestas normales. Lección 6.05.
 

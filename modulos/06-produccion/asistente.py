@@ -53,6 +53,7 @@ class Resultado(BaseModel):
     bloqueado: bool = False  # un guardrail sustituyó la respuesta (lección 6.05)
     guardrails: list[str] = []  # qué guardrails actuaron y por qué
     ms: int = 0
+    id: str = ""  # para valorarla (lección 6.10); lo pone el servicio en cada respuesta
 
 
 def normalizar(pregunta: str) -> str:

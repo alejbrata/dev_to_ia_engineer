@@ -34,7 +34,7 @@ En producción no hay dataset. Pero de las cuatro métricas de RAG de la lecció
 | *Faithfulness* (fidelidad) | No: compara la respuesta con su contexto | juez de fidelidad v2 (lección 4.04) |
 | *Answer relevancy* (relevancia) | No: compara la respuesta con la pregunta | juez de relevancia v2 (lección 4.05) |
 
-Las tres de abajo se calculan con la pregunta, los fragmentos recuperados y la respuesta, que el servicio tiene en cada petición. Es lo que se llama **evaluación en línea** (*online evaluation*): los mismos jueces de la eval, sobre el tráfico real.
+Las tres de abajo se calculan con la pregunta, los fragmentos recuperados y la respuesta, que el servicio tiene en cada petición. Es lo que se llama **evaluación en línea** (*online evaluation*): los mismos jueces de la eval, sobre el tráfico real. La otra fuente de calidad en producción son los propios usuarios, con su 👍 o su 👎: es la lección siguiente, [Feedback de usuarios](../10-feedback-de-usuarios/).
 
 ### Muestrear, y en segundo plano
 

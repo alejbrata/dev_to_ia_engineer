@@ -55,6 +55,7 @@ LOCALES = {
 # No llaman a ningún modelo: leen resultados o trazas grabadas.
 SIN_MODELOS = {
     "modulos/04-evals/regresion.py": "compara los resultados grabados (lo usa la CI)",
+    "modulos/06-produccion/bucle_feedback.py": "usa respuestas grabadas y usuarios simulados",
     "modulos/05-agentes/ver_caso.py": "muestra un caso grabado",
     "modulos/07-modelos-propios/corregir_datos.py": "corrige a mano los datos de ajuste",
 }

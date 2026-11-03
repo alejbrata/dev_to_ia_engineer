@@ -70,6 +70,10 @@ Para detectarlo, el dataset se divide en dos particiones. **Desarrollo** es la q
 
 La otra forma de contaminación es la inversa: que los casos de evaluación acaben dentro del sistema, por ejemplo como ejemplos *few-shot* (módulo 2) o como documentos del corpus. Entonces el sistema "acierta" porque se sabe las respuestas.
 
+### Un dataset que crece
+
+El dataset no se cierra al terminar esta lección. Las preguntas que alguien imaginó al principio no son las que trae el tráfico real, y los fallos que aparecen en producción tienen que acabar aquí, anclados igual que el resto. La lección [Feedback de usuarios](../../06-produccion/10-feedback-de-usuarios/) del módulo 6 lo hace con los 👎 de los usuarios, revisados por una persona. Por eso cada caso lleva su origen: los que entran por haber fallado no son una muestra al azar, y conviene poder medir con y sin ellos.
+
 ## Práctica
 
 El dataset del módulo está en `modulos/04-evals/datos/casos.jsonl`: las 30 preguntas del módulo 3 y 28 nuevas, 58 en total. Al lado está `casos_sin_anclar.jsonl`, con 10 preguntas escritas a propósito sin mirar los documentos, con lo que uno supondría que dice la documentación de una plataforma así.
@@ -139,7 +143,7 @@ La salida es la de los resultados grabados en el repo, puntuados con el comproba
 
 ## Mide y depura
 
-### El test de anclaje encontró fallos en nuestro propio dataset
+### El test de anclaje encontró fallos en el propio dataset
 
 La primera vez que se ejecutó el test, falló con tres casos que venían del módulo 3:
 
