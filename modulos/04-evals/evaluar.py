@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import hashlib
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 import dataset
@@ -80,9 +81,12 @@ def main() -> int:
                 },
             )
         )
-    informe = Informe(
-        version="vigente", resultados=resultados, meta={"huella": huella(), "sistema": SISTEMA}
-    )
+    # La fecha deja constancia de cada ejecución: si las respuestas salen idénticas, el
+    # fichero cambia igual, y quien compare fechas (el comprobador del módulo 8) ve que la
+    # eval se repitió después del último cambio del sistema.
+    evaluado = datetime.now(UTC).isoformat(timespec="seconds")
+    meta = {"huella": huella(), "sistema": SISTEMA, "evaluado": evaluado}
+    informe = Informe(version="vigente", resultados=resultados, meta=meta)
     informe.guardar(VIGENTE)
     print(
         f"{informe.aciertos} de {informe.total} · huella {informe.meta['huella']} · {VIGENTE.name}"
