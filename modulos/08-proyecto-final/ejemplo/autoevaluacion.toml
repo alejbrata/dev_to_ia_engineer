@@ -26,7 +26,7 @@ evidencia = "modulos/04-evals/analisis_errores.py"  # de ahí salió el prompt c
 
 [observabilidad]
 nivel = "solido"
-evidencia = "modulos/06-produccion/incidentes.py"  # qué señales detectan cada fallo (6.07)
+evidencia = "modulos/06-produccion/incidentes.py"  # qué señales detectan cada fallo (6.07); la calidad en línea, en calidad_en_produccion.py (6.09)
 
 [coste]
 nivel = "suficiente"  # medido con un precio de referencia, sin proyección de volumen

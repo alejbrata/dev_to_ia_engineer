@@ -70,8 +70,15 @@ Cada cifra se reproduce con el comando de su lección; la del sistema vigente, c
   prueba. Lección 4.06.
 - **Modelo de 7B y no el de 1,5B.** 52 frente a 40 aciertos, a cambio de unos 11,5 s por
   respuesta frente a 2,6 s en CPU. El de 1,5B queda como respaldo. Lecciones 6.01 y 7.01.
-- **Caché con la huella del sistema en la clave.** Con preguntas repetidas, la mediana baja
-  de 13,4 s a 3 ms; la huella invalida la caché cuando cambia el sistema. Lección 6.01.
+- **Caché con la huella del sistema y el modelo en la clave.** Con preguntas repetidas, la
+  mediana baja de 13,4 s a 3 ms; la huella invalida la caché cuando cambia el sistema
+  (lección 6.01), y el modelo, cuando cambia por configuración: con solo la huella, tras
+  volver atrás un canario, 12 de 27 respuestas seguían siendo del modelo nuevo (lección 6.08).
+- **Cambios de modelo en sombra antes del canario.** El de 1,5B como principal perdía 12
+  casos en sombra (p = 0,000) y en canario parecía mejor en todas las señales. Lección 6.08.
+- **Calidad en producción con jueces sobre una muestra.** Fidelidad, relevancia y precisión
+  del contexto por versión en `/metrics` (`ASISTENTE_CALIDAD`). Con las 58 preguntas, la
+  regla de vuelta atrás salta por fidelidad (79 % frente a 95 %). Lección 6.09.
 - **Guardrails de entrada y salida.** De nueve ataques, seis funcionan sin guardrails y uno
   con ellos, sin estropear ninguna de las 58 respuestas normales. Lección 6.05.
 
@@ -98,3 +105,7 @@ Cada cifra se reproduce con el comando de su lección; la del sistema vigente, c
   edición que no tiene una forma reconocible. Lecciones 6.04 y 6.05.
 - **La huella no ve el cambio de modelo por entorno** (`CURSO_ROLES`); `/salud` muestra el
   modelo que sirve cada rol para detectarlo. Lección 6.07.
+- **La calidad en línea es cara y lenta de decidir:** juzgar una respuesta tarda unas tres
+  veces lo que generarla, y ver una caída de fidelidad como la del 1,5B pide unas 63
+  evaluaciones por versión (630 respuestas del canario con un muestreo del 10 %). El juez de
+  relevancia falla más con las respuestas de una palabra del 7B. Lección 6.09.
