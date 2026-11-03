@@ -13,6 +13,7 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 3. Cómo usar este curso: estructura, prerrequisitos, ritmo, tu fork del repo
 4. Entorno de trabajo: Python, uv, Ollama, claves API, `.env`, primer "hola mundo" con un LLM
 5. Tu proyecto en VS Code: terminal integrada, tareas, depuración y tests
+6. Reto del módulo: el diagnóstico del entorno
 
 ## Módulo 1 — Fundamentos de LLMs 🟨
 

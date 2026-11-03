@@ -37,6 +37,8 @@ Todas las lecciones siguen estas secciones, en este orden:
 6. **Comprueba lo que has entendido**: 3-4 preguntas de aplicar (no de memorizar) con el componente `Autoevaluacion`; cada opción lleva su porqué y, si es incorrecta, qué sección releer. Sin nota ni registro. La lección tiene que ser `.mdx`.
 7. **Para profundizar**: fuentes primarias (papers, documentación oficial).
 
+Cada módulo termina con un **reto del módulo**, que no es una lección y no sigue esa estructura: objetivos, el enunciado, criterios de aceptación, cómo se comprueba, pistas desplegables y la solución explicada. El código vive en `modulos/NN-*/reto/`: el de partida con fallos a propósito, `comprobar.py` (que usa `curso_core.retos`) y `solucion/`. Un test comprueba que el código de partida no supera el reto y la solución sí (decisión de Alex, 2026-11-03).
+
 Las lecciones no llevan contenido personal. La experiencia de Alex va en un apartado aparte y opcional, el anexo H ("El proceso del autor"), para que quien lo quiera lo lea y no se mezcle con el aprendizaje (decisión de Alex, 2026-10-31).
 
 ## REGLA CRÍTICA: el contenido personal
