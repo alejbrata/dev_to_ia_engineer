@@ -47,7 +47,9 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 4. Recuperación: densa, léxica (BM25) e híbrida
 5. Reranking
 6. Generación con citas y control de alucinaciones
-7. Reto del módulo: el RAG que no encuentra
+7. Ingesta de documentos reales: PDF, tablas, copias y versiones
+8. Permisos y actualizaciones del índice
+9. Reto del módulo: el RAG que no encuentra
 - **Métricas**: recall@k, MRR, fidelidad de la respuesta al contexto
 - **Errores clave**: chunks que parten la idea, recuperación vacía, alucinación pese a buen contexto, modelo de embeddings distinto en indexación y consulta
 

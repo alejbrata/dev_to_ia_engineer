@@ -1,0 +1,220 @@
+---
+title: "Ingesta de documentos reales: PDF, tablas, copias y versiones"
+description: "Ingesta de documentos reales para un RAG: extraer texto y tablas de PDF y DOCX, quitar copias por contenido, quedarse con la versión vigente y guardar la procedencia, medido con recuperación y respuestas"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
+
+:::note[Revisado: 2026-11]
+Las medidas son reales, con bge-m3 para los embeddings y Qwen2.5 1,5B (rol `chat`) para responder, en Ollama sobre CPU. La extracción usa pypdf 6.21, pdfplumber 0.11 y python-docx 1.2. Los documentos son los del módulo, convertidos a los formatos en que suelen estar en una empresa; los genera un script del repositorio.
+:::
+
+## Objetivos
+
+Al terminar esta lección podrás:
+
+- Extraer el texto de un PDF y de un DOCX sin perder sus tablas ni su estructura, y comprobar que no se pierden.
+- Encontrar documentos repetidos por su contenido, aunque tengan otro nombre y otro formato.
+- Quedarte con la versión vigente de cada documento con los metadatos, no con el nombre del fichero.
+- Guardar con cada fragmento de dónde sale, para citarlo y para filtrarlo después.
+
+## Teoría
+
+### Lo que pasa antes del índice
+
+Las lecciones anteriores partían de Markdown limpio: un documento por tema, con sus secciones y sin repetirse. En una empresa, la documentación llega como llega. Hay PDF exportados de una wiki o de una hoja de cálculo, DOCX con tablas, una copia que alguien guardó "por si acaso" y la versión del año pasado, que nadie borró de la carpeta compartida.
+
+Cada uno de esos problemas pasa antes de que el texto llegue al índice, y ninguno da error. Una tabla que no se extrae no avisa: su contenido no existe para la búsqueda. Una versión vieja tampoco: compite con la buena, y a veces gana.
+
+### Formatos con y sin estructura
+
+**PDF.** Un PDF no guarda párrafos ni tablas: guarda texto colocado en posiciones de la página. Extraer "el texto" (pypdf) devuelve las líneas en el orden en que aparecen. En una tabla con celdas de varias líneas, eso mezcla las filas: el final de una celda queda junto al principio de la siguiente. Las librerías que detectan tablas (pdfplumber) buscan las líneas y los huecos que las delimitan y devuelven las celdas por filas. Un PDF escaneado no tiene texto, solo una imagen, y necesita OCR antes de todo esto. No se trata aquí.
+
+**DOCX.** Un DOCX sí guarda la estructura: párrafos con su estilo (título, normal), tablas con sus celdas. La trampa es la API cómoda. En python-docx, `Document.paragraphs` devuelve solo los párrafos, y las tablas son otros objetos que hay que recorrer aparte.
+
+La forma de no perder una tabla es convertirla en texto que se entienda fuera de la tabla: cada fila con su cabecera ("Proveedor: Mensatel; Coste mensual: 850 euros"). Así cada fila se sostiene sola en cualquier fragmento.
+
+### Copias y versiones
+
+**Copias.** Comparar nombres o hashes de fichero no encuentra la exportación a PDF de un Markdown: tienen otro nombre, otro formato y otros saltos de línea. Lo que se compara es el contenido: los trozos de varias palabras seguidas (*shingles*) que comparten. Dos documentos que comparten casi todos sus trozos son el mismo, y se conserva el que guarda mejor la estructura.
+
+**Versiones.** Dos documentos con el mismo tema y cifras distintas no son copias: son versiones, y solo una está vigente. Decidir cuál por el nombre del fichero ("v2", "final", "2026") es frágil. Lo fiable es lo que diga el sistema que los gestiona, su familia y su fecha. Aquí hace ese papel un manifiesto, `manifiesto.toml`.
+
+### La procedencia, en los metadatos
+
+Cada fragmento lleva en `Fragmento.meta` de dónde sale: el fichero, su familia y su fecha (y, en la lección siguiente, quién puede verlo). No se embebe, porque no ayuda a buscar. Sirve para citar la fuente real en la respuesta, para saber qué versión se usó y para filtrar.
+
+## Práctica
+
+[`generar_empresa.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/03-rag/generar_empresa.py) crea en `datos/empresa/originales/` diez ficheros con la documentación del módulo en otros formatos:
+
+- un PDF de proveedores con una tabla de celdas de varias líneas;
+- el SLA de 2025 en PDF, con cifras que ya no valen, junto al vigente en Markdown;
+- la política de guardias en DOCX, con la compensación en una tabla;
+- un postmortem interno en DOCX;
+- el runbook de conexiones de pagos tres veces: el original, una copia y su exportación a PDF;
+- dos runbooks más, tal cual.
+
+Los documentos ya están en el repositorio. El script solo hace falta para cambiarlos, y necesita el grupo de desarrollo (`fpdf2`).
+
+[`ingesta_real.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/03-rag/ingesta_real.py) los ingiere de cuatro formas, cada una sobre la anterior: la ingenua, con tablas, sin duplicados y solo con las versiones vigentes. Después mide cada una con 11 preguntas ancladas a frases de los documentos.
+
+La extracción con tablas recorre el DOCX en orden, con sus párrafos y sus tablas, y convierte los títulos en secciones de Markdown:
+
+```python
+for bloque in documento.iter_inner_content():  # párrafos y tablas, en su orden
+    if isinstance(bloque, Table):
+        partes.append(filas_como_texto([[c.text for c in f.cells] for f in bloque.rows]))
+    elif isinstance(bloque, Paragraph) and bloque.text.strip():
+        nivel = bloque.style.name.removeprefix("Heading ")
+        prefijo = "#" * int(nivel) + " " if nivel.isdigit() else ""
+        partes.append(prefijo + bloque.text)
+```
+
+Las copias se buscan por contenido, con los trozos de cinco palabras que comparten:
+
+```python
+def trozos(texto: str, n: int = 5) -> set[str]:
+    palabras = re.findall(r"\w+", normalizar(texto))
+    return {" ".join(palabras[i : i + n]) for i in range(max(1, len(palabras) - n + 1))}
+```
+
+Solo usa los modelos de embeddings y el de 1,5B: minuto y medio en la máquina del curso.
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/03-rag/ingesta_real.py
+```
+
+```text
+1. La misma tabla, extraída de dos formas (proveedores-2026.pdf)
+   ingenua:
+     | 4.200 euros enero
+     | Mensatel
+     | Envío de SMS de verificación y de avisos de
+   con tablas:
+     | Proveedor: Pagonet; Servicio que presta: Pasarela de pago con tarjeta para los cobros de la tienda; Coste mensual: 4.200 euros; Renovación del contrato: enero.
+     | Proveedor: Mensatel; Servicio que presta: Envío de SMS de verificación y de avisos de envío; Coste mensual: 850 euros; Renovación del contrato: junio.
+     | Proveedor: Nubecast; Servicio que presta: CDN de las imágenes del catálogo; Coste mensual: 1.300 euros; Renovación del contrato: marzo.
+   guardias.docx, ingenua: ¿está la tabla de compensación? no
+
+2. Copias encontradas por contenido
+   'runbook-pagos-conexiones (copia).md' repite 'runbook-pagos-conexiones.md'
+   'Runbook pagos conexiones.pdf' repite 'runbook-pagos-conexiones.md'
+
+3. Recuperación y respuestas, 11 preguntas (modelo del rol chat)
+                    docs  frag.  evidencia@3  correctas  con obsoleto  con repetidos
+   ingenua            10     22            9          8             4              3
+   con tablas         10     26           11          9             4              2
+   sin duplicados      8     21           11          9             4              0
+   solo vigentes       7     20           11         10             0              0
+   (de 11; con obsoleto: alguno de los 3 fragmentos es de una versión anterior)
+
+4. Pregunta a pregunta: bien (✓) o mal (✗); «o», con un documento obsoleto delante
+                 ingenua      con tablas  sin duplicados   solo vigentes
+   e01               ✓               ✓ o             ✓ o             ✓
+   e02               ✓ o             ✓ o             ✓ o             ✓
+   e03               ✓ o             ✓               ✓               ✓
+   e04               ✗               ✓               ✓               ✓
+   e05               ✗               ✓               ✓               ✓
+   e06               ✓ o             ✗ o             ✗ o             ✓
+   e07               ✓ o             ✓ o             ✓ o             ✓
+   e08               ✓               ✓               ✓               ✓
+   e09               ✗               ✗               ✗               ✗
+   e10               ✓               ✓               ✓               ✓
+   e11               ✓               ✓               ✓               ✓
+```
+
+<ConUnaApi practicas={['modulos/03-rag/ingesta_real.py']} />
+
+## Mide y depura
+
+### La tabla que no estaba
+
+En la ingenua, la evidencia de las preguntas e04 y e05 (cuánto se paga por una guardia de fin de semana y por un festivo) no llega a ningún fragmento: 9 de 11. No es un problema de búsqueda. Esas cifras no están en el índice, porque `Document.paragraphs` se salta la tabla entera. Con las tablas extraídas por filas, las dos se recuperan y se responden bien. Es la anatomía de abajo.
+
+### La tabla del PDF, mezclada
+
+En la extracción ingenua del PDF de proveedores, la última línea de una fila ("4.200 euros enero") queda pegada al nombre del proveedor siguiente ("Mensatel"). Aquí el modelo acertó igual las tres preguntas de proveedores, porque cada cifra estaba cerca de su nombre. Con tablas más anchas o con columnas que se parecen, esa vecindad engaña: el coste de una fila acaba leído como el de la siguiente. Convertir cada fila en una frase con su cabecera quita la ambigüedad antes de que llegue al modelo.
+
+### Las copias ocupan el contexto
+
+El runbook de conexiones está tres veces, y en 3 de las 11 preguntas el contexto llevaba dos fragmentos que decían lo mismo. Es un hueco de tres perdido: el fragmento que habría completado la respuesta se queda fuera. La comparación por trozos encuentra las dos copias, también la exportación a PDF, que tiene otro nombre, otro formato y sin las secciones de Markdown. Se queda el original en Markdown, que conserva la estructura.
+
+### La versión vieja gana a veces
+
+Hasta la última configuración, 4 de las 11 preguntas tienen el SLA de 2025 entre los tres fragmentos. En la e06 ("¿Qué disponibilidad tiene comprometida el servicio de notificaciones?"), eso decide la respuesta. Con la extracción por tablas, la fila "Servicio: notificaciones; Disponibilidad: 99,9 %" del SLA de 2025 sale la primera, y el modelo responde 99,9 % en lugar del 99,5 % vigente. En la ingenua había acertado con el mismo documento delante, con más suerte que método.
+
+Una mejora en una etapa (extraer bien las tablas) empeoró otra (el documento obsoleto, ahora más fácil de encontrar). Por eso cada cambio de la ingesta se mide con las mismas preguntas. Con solo las versiones vigentes, ninguna pregunta tiene un documento obsoleto delante y la e06 vuelve a estar bien.
+
+### Lo que la ingesta no arregla
+
+La e09 ("¿Cuál es el límite del pool de conexiones de pagos?") falla en las cuatro configuraciones, con la evidencia en el contexto. El runbook dice "No subas el límite del pool por encima de 200 conexiones [...]: PostgreSQL tiene un máximo de 250", y el modelo de 1,5B responde 250. Es un fallo de generación, y no se arregla con la ingesta (lección 4.05).
+
+## Errores frecuentes
+
+- **Fiarse de la API cómoda.** `paragraphs` en DOCX, `extract_text` en PDF. Cuentan las tablas del original y comprueba que su contenido está en lo extraído.
+- **Quitar duplicados por nombre o por hash del fichero.** Una exportación a PDF no se parece en nada en bytes al Markdown del que sale.
+- **Elegir la versión por el nombre.** "sla-final-v2-definitivo.pdf" no dice nada. Usa la fecha y la familia del sistema que guarda los documentos.
+- **Borrar la procedencia al trocear.** Sin el fichero y la fecha en cada fragmento, no puedes citar la fuente ni saber qué versión respondió.
+- **Dar por buena una mejora de la ingesta sin medir lo demás.** Las tablas mejoraron la recuperación y, a la vez, dieron más peso a la versión vieja.
+
+### Anatomía de un error: la tabla que no existe
+
+**El síntoma.** La e04, con la extracción ingenua:
+
+```text
+e04 ¿Cómo se compensa una guardia de fin de semana?
+    respuesta: 'La compensación se cobra en la nómina del mes siguiente.'
+```
+
+El documento correcto llega al contexto (`guardias.docx`), y la respuesta no tiene el dato.
+
+**Cómo leerlo.** Que el documento llegue y el dato no, apunta a lo que se indexó de ese documento, no a la búsqueda. Si imprimes el texto que se extrajo de `guardias.docx`, tiene el título, las responsabilidades, la frase "La guardia se compensa según cuándo se haga:" y, justo después, "La compensación se cobra en la nómina del mes siguiente.". Entre las dos frases estaba la tabla.
+
+**La causa.** `Document.paragraphs` devuelve solo los párrafos del cuerpo. Las tablas son otros objetos del documento, y el bucle no las recorre. No hay error ni aviso: el texto extraído es válido, solo que incompleto.
+
+**La solución.** Recorre el cuerpo en orden con `iter_inner_content()`, que devuelve párrafos y tablas, y convierte cada fila en una frase con su cabecera. Y añade a la ingesta una comprobación que no dependa de las preguntas: para cada documento, el número de tablas del original y que el texto de sus celdas aparece en lo extraído. Así una tabla perdida falla en la ingesta, no en producción.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'Tu RAG recupera el documento correcto, pero la respuesta no trae el dato, que sabes que está en una tabla del DOCX. ¿Qué miras primero?',
+			opciones: [
+				{ texto: 'El prompt: el modelo no está leyendo bien el contexto.', porque: 'Antes de culpar al modelo, comprueba que el dato llegó al índice. Aquí no llegaba: la extracción se saltaba la tabla ("La tabla que no estaba").' },
+				{ texto: 'El texto que se extrajo de ese documento: si la tabla está en él.', correcta: true, porque: 'Document.paragraphs se salta las tablas sin avisar. Es la anatomía.' },
+			],
+		},
+		{
+			pregunta: 'En la carpeta compartida hay un runbook en Markdown y su exportación a PDF desde la wiki. ¿Cómo detectas que son el mismo documento?',
+			opciones: [
+				{ texto: 'Por el hash del fichero.', porque: 'Los bytes de un PDF y de un Markdown no se parecen en nada, aunque digan lo mismo.' },
+				{ texto: 'Por el contenido: la proporción de trozos de varias palabras que comparten.', correcta: true, porque: 'Es lo que encontró la exportación a PDF, con otro nombre, otro formato y sin secciones ("Las copias ocupan el contexto").' },
+			],
+		},
+		{
+			pregunta: 'Tienes el SLA de 2025 y el de 2026 en la misma carpeta. ¿Qué haces?',
+			opciones: [
+				{ texto: 'Indexar los dos: el modelo verá las fechas y elegirá el bueno.', porque: 'Aquí, con el de 2025 el primero en la búsqueda, el modelo respondió con su cifra ("La versión vieja gana a veces").' },
+				{ texto: 'Indexar solo la versión vigente, decidida por la familia y la fecha del gestor documental.', correcta: true, porque: 'Con solo las vigentes, ninguna pregunta tuvo un documento obsoleto delante.' },
+				{ texto: 'Indexar solo los que tengan "2026" en el nombre.', porque: 'El nombre del fichero no es una fuente fiable de la versión; los metadatos sí.' },
+			],
+		},
+		{
+			pregunta: 'Extraer bien las tablas subió la evidencia recuperada de 9 a 11, y una pregunta que antes acertaba empezó a fallar. ¿Qué concluyes?',
+			opciones: [
+				{ texto: 'Que la extracción por tablas está mal y hay que deshacerla.', porque: 'La extracción hizo su trabajo: el problema es que también hizo más fácil de encontrar una versión obsoleta.' },
+				{ texto: 'Que un cambio en la ingesta mueve más de una cosa, y por eso se mide entero con las mismas preguntas.', correcta: true, porque: 'Quitar las versiones obsoletas resolvió la pregunta sin renunciar a las tablas.' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- [pdfplumber](https://github.com/jsvine/pdfplumber): cómo detecta tablas en un PDF y cómo ajustar la detección cuando falla.
+- [python-docx: Working with Documents](https://python-docx.readthedocs.io/en/latest/user/documents.html) y la referencia de `iter_inner_content`: párrafos y tablas en su orden.
+- [pypdf: Extract Text from a PDF](https://pypdf.readthedocs.io/en/stable/user/extract-text.html): lo que la extracción de texto puede y no puede recuperar.
+- Andrei Broder, [On the resemblance and containment of documents](https://doi.org/10.1109/SEQUEN.1997.666900) (1997): la comparación por *shingles* para encontrar documentos casi iguales.

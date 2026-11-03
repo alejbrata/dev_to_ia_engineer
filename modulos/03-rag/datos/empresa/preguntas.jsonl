@@ -1,0 +1,11 @@
+{"id": "e01", "pregunta": "¿Cuánto cuesta al mes el proveedor de SMS?", "evidencias": ["Mensatel", "850"], "claves": ["850"], "prohibido": []}
+{"id": "e02", "pregunta": "¿Cuándo se renueva el contrato de la CDN de las imágenes?", "evidencias": ["Nubecast", "marzo"], "claves": ["marzo"], "prohibido": []}
+{"id": "e03", "pregunta": "¿Cuánto cuesta al mes el OpenSearch gestionado?", "evidencias": ["Indexa", "2.100"], "claves": ["2.100"], "prohibido": []}
+{"id": "e04", "pregunta": "¿Cómo se compensa una guardia de fin de semana?", "evidencias": ["150 euros"], "claves": ["150"], "prohibido": []}
+{"id": "e05", "pregunta": "¿Cómo se compensa una guardia en festivo?", "evidencias": ["200 euros"], "claves": ["200"], "prohibido": []}
+{"id": "e06", "pregunta": "¿Qué disponibilidad tiene comprometida el servicio de notificaciones?", "evidencias": ["notificaciones | 99,5"], "claves": ["99,5"], "prohibido": ["99,9"]}
+{"id": "e07", "pregunta": "¿Qué disponibilidad tiene comprometida la búsqueda?", "evidencias": ["busqueda | 99,5"], "claves": ["99,5"], "prohibido": ["99,0"]}
+{"id": "e08", "pregunta": "¿Qué hago si pagos devuelve too many connections y hubo un despliegue reciente?", "evidencias": ["vuelve a la versión anterior"], "claves": ["versión anterior"], "prohibido": []}
+{"id": "e09", "pregunta": "¿Cuál es el límite del pool de conexiones de pagos?", "evidencias": ["200 conexiones"], "claves": ["200"], "prohibido": []}
+{"id": "e10", "pregunta": "¿Cada cuánto caducan las credenciales de los proveedores de push?", "evidencias": ["caducan una vez al año"], "claves": ["una vez al año"], "prohibido": []}
+{"id": "e11", "pregunta": "¿Quién lideró la respuesta a la caída de pagos de marzo de 2026?", "evidencias": ["Laura Méndez"], "claves": ["Laura Méndez"], "prohibido": []}

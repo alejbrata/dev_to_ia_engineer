@@ -1,0 +1,55 @@
+# Lo que diría el gestor documental de cada fichero de originales/: a qué familia pertenece
+# (las versiones de un mismo documento comparten familia), su fecha y qué grupos pueden verlo.
+# "todos" es cualquier persona de la empresa. Lecciones 07 y 08 del módulo 3.
+
+["proveedores-2026.pdf"]
+familia = "proveedores"
+fecha = 2026-01-10
+acceso = ["finanzas"]
+
+["sla-2025.pdf"]
+familia = "sla"
+fecha = 2025-01-15
+acceso = ["todos"]
+
+["sla.md"]
+familia = "sla"
+fecha = 2026-09-01
+acceso = ["todos"]
+
+["guardias.docx"]
+familia = "guardias"
+fecha = 2026-02-01
+acceso = ["todos"]
+
+["postmortem-pagos-2026-03-interno.docx"]
+familia = "postmortem-pagos-2026-03-interno"
+fecha = 2026-03-20
+acceso = ["cobros"]
+
+["runbook-pagos-conexiones.md"]
+familia = "runbook-pagos-conexiones"
+fecha = 2026-05-04
+acceso = ["todos"]
+
+# Una copia que alguien guardó "por si acaso" y la exportación a PDF de la wiki: el gestor
+# documental no sabe que son el mismo documento.
+["runbook-pagos-conexiones (copia).md"]
+familia = "runbook-pagos-conexiones (copia)"
+fecha = 2026-05-04
+acceso = ["todos"]
+
+["Runbook pagos conexiones.pdf"]
+familia = "Runbook pagos conexiones"
+fecha = 2026-05-06
+acceso = ["todos"]
+
+["runbook-notificaciones-push.md"]
+familia = "runbook-notificaciones-push"
+fecha = 2026-04-12
+acceso = ["todos"]
+
+["runbook-busqueda-disco.md"]
+familia = "runbook-busqueda-disco"
+fecha = 2026-06-02
+acceso = ["todos"]
