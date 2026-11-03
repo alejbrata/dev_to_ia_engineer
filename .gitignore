@@ -28,3 +28,6 @@ trazas/
 
 # Checkpoints locales de los grafos del módulo 5
 checkpoints/
+
+# Registro local de las veces que se mira la prueba del reto del módulo 8.
+modulos/08-proyecto-final/reto/resultados/

@@ -1,0 +1,20 @@
+{"id": "p01", "pregunta": "Me incorporo en septiembre. ¿Cuántos días de vacaciones tengo este año?", "claves": [["proporcional"]]}
+{"id": "p02", "pregunta": "Quiero cogerme 12 días laborables seguidos en agosto. ¿Quién tiene que aprobarlo?", "claves": [["responsable"], ["dirección"]]}
+{"id": "p03", "pregunta": "¿Me pagan las vacaciones que no disfruto?", "claves": [["terminar", "fin de la relación", "final de la relación"]]}
+{"id": "p04", "pregunta": "Trabajo en el almacén. ¿Puedo teletrabajar?", "claves": [["no puede", "no puedes", "no pueden", "no es posible", "no está permitido"]]}
+{"id": "p05", "pregunta": "¿La empresa me deja una pantalla para trabajar desde casa?", "claves": [["soporte"]]}
+{"id": "p06", "pregunta": "Voy con mi coche a ver a un cliente. ¿Cuánto me pagan por kilómetro?", "claves": [["0,26", "0.26"]]}
+{"id": "p07", "pregunta": "¿Cuánto puede costar como máximo el hotel en Sevilla?", "claves": [["120"]]}
+{"id": "p08", "pregunta": "¿La dieta cubre el vino de la cena?", "claves": [["alcohol"]]}
+{"id": "p09", "pregunta": "¿Puedo instalar un programa que no está en el catálogo de Soporte?", "claves": [["petición", "solicitud"]]}
+{"id": "p10", "pregunta": "He perdido el portátil en el tren. ¿Qué hago?", "claves": [["4400", "soporte"]]}
+{"id": "p11", "pregunta": "Me han aprobado un curso de 1.500 euros. ¿Tiene alguna condición?", "claves": [["permanencia", "50"]]}
+{"id": "p12", "pregunta": "¿Puedo hacer la formación en horario de trabajo?", "claves": [["40 horas"]]}
+{"id": "p13", "pregunta": "¿A qué hora termina la jornada los viernes de julio?", "claves": [["15:00", "15 h", "tres de la tarde"]]}
+{"id": "p14", "pregunta": "Ayer se me olvidó registrar la salida. ¿Qué hago?", "claves": [["5 días", "cinco días"]]}
+{"id": "p15", "pregunta": "Estoy de baja médica. ¿Qué tengo que hacer?", "claves": [["responsable"], ["3 días", "tres días"]]}
+{"id": "p16", "pregunta": "¿Puedo mandar una nómina por correo a mi gestor, que es de fuera de la empresa?", "claves": [["enlace"]]}
+{"id": "p17", "pregunta": "¿Cuántos días de permiso tengo por el nacimiento de un hijo?", "claves": []}
+{"id": "p18", "pregunta": "¿Paga la empresa el aparcamiento de la oficina?", "claves": []}
+{"id": "p19", "pregunta": "¿Cuántas horas extra se pagan al mes?", "claves": []}
+{"id": "p20", "pregunta": "¿Qué seguro médico ofrece la empresa?", "claves": []}

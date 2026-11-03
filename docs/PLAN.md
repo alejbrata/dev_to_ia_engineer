@@ -122,6 +122,7 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 2. Requisitos mínimos: proyecto propio creado desde cero, desarrollo, evals, observabilidad, documentación y análisis de coste
 3. Rúbrica de evaluación
 4. Cómo presentarlo como proyecto de portafolio
+5. Reto del módulo: un problema que no conoces
 - **Decisiones** (Alex, 2026-11-02): práctica con plantilla de proyecto y comprobador de requisitos (`proyecto.toml` + `comprobar_proyecto.py`); rúbrica por niveles (insuficiente, suficiente, sólido) sin nota, contrastada con la evidencia (`rubrica.py`); explicar decisiones en entrevistas va en la lección 4. El ejemplo resuelto es el asistente del curso
 - **Estado** (2026-11-02): las 4 lecciones escritas, con salidas reales; pendiente de la revisión de Alex
 

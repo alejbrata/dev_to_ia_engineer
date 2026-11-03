@@ -1,0 +1,20 @@
+{"id": "d01", "pregunta": "¿Cuántos días de vacaciones tengo al año?", "claves": [["23"]]}
+{"id": "d02", "pregunta": "¿Con cuánta antelación hay que pedir las vacaciones?", "claves": [["15 días", "quince días"]]}
+{"id": "d03", "pregunta": "¿Hasta cuándo puedo usar los días de vacaciones que no gasté?", "claves": [["31 de enero"]]}
+{"id": "d04", "pregunta": "¿Cuántos días por semana puedo teletrabajar?", "claves": [["2 días", "dos días"]]}
+{"id": "d05", "pregunta": "¿Qué día de la semana es presencial para todos los equipos de oficina?", "claves": [["lunes"]]}
+{"id": "d06", "pregunta": "¿Cuánto me pagan al mes por teletrabajar?", "claves": [["30"]]}
+{"id": "d07", "pregunta": "¿Puedo ir en avión a un viaje de 3 horas?", "claves": [["tren"]]}
+{"id": "d08", "pregunta": "¿Cuánto puede costar como máximo el hotel en Barcelona?", "claves": [["180"]]}
+{"id": "d09", "pregunta": "¿Cuánto es la dieta diaria en un viaje internacional?", "claves": [["70"]]}
+{"id": "d10", "pregunta": "¿En cuánto tiempo tengo que justificar los gastos de un viaje?", "claves": [["30 días", "treinta días"]]}
+{"id": "d11", "pregunta": "Me han robado el portátil. ¿Qué hago?", "claves": [["4400", "soporte"], ["denuncia"]]}
+{"id": "d12", "pregunta": "¿Cada cuánto se renueva el portátil?", "claves": [["4 años", "cuatro años"]]}
+{"id": "d13", "pregunta": "¿Cuál es mi presupuesto de formación al año?", "claves": [["600"]]}
+{"id": "d14", "pregunta": "¿A qué hora puedo entrar a la oficina?", "claves": [["7:30"], ["9:30"]]}
+{"id": "d15", "pregunta": "¿Cuántos días de permiso tengo por mudanza?", "claves": [["1 día", "un día"]]}
+{"id": "d16", "pregunta": "¿Cada cuánto tengo que cambiar la contraseña?", "claves": [["sospecha"]]}
+{"id": "d17", "pregunta": "¿Cuántos días de vacaciones extra tengo por antigüedad?", "claves": []}
+{"id": "d18", "pregunta": "¿Cuánto paga la empresa por el gimnasio?", "claves": []}
+{"id": "d19", "pregunta": "¿Quién es la directora de Personas?", "claves": []}
+{"id": "d20", "pregunta": "¿Cuál es la capital de Portugal?", "claves": []}
