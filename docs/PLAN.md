@@ -98,6 +98,7 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 7. Lectura de incidentes: de la alerta a la causa raíz
 8. Cambios seguros: en sombra, canario y vuelta atrás
 9. Calidad en producción: evaluación en línea sin respuesta correcta
+10. Reto del módulo: la alerta de las 3:00
 - **Errores clave**: secretos en el repo y cómo limpiar el historial, degradación silenciosa, costes descontrolados
 - **Decisiones** (2026-11-01, tomadas por Claude y validadas por Alex el 2026-11-03, con la 6.08 y la 6.09): el caso del módulo es el sistema vigente del módulo 4 servido como API (FastAPI), "lo que se despliega es lo que se midió"; trazas con OpenTelemetry (curso_core emite los spans con los atributos `gen_ai.*`; Jaeger opcional con Docker) y métricas en formato Prometheus, los dos estándares abiertos
 - **Estado** (2026-11-03): las 9 lecciones escritas, con salidas reales; pendiente de la revisión de Alex. La 9 (petición de Alex, 2026-11-03: las cuatro métricas de RAG también en producción) juzga una muestra del tráfico con fidelidad, relevancia y precisión del contexto y las publica por versión. La 8 (decisión de Alex, 2026-11-02: profundizar en operación y recuperación de fallos) mide en sombra, canario y vuelta atrás el cambio de modelo de la 7
