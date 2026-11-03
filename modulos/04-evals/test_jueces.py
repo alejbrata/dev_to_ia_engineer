@@ -25,3 +25,23 @@ def test_cita_valida_ignora_el_formato_de_las_tablas() -> None:
     cita = "pagos | 99,95 % | busqueda | 99,5 %"
     assert not jueces.cita_literal(cita, ctx)
     assert jueces.cita_valida(cita, ctx)
+
+
+class _JuezFijo:
+    """Un cliente que devuelve siempre la misma salida del juez, sin modelo."""
+
+    def __init__(self, pide: str, frase: str):
+        self.salida = jueces.Contesta(pide=pide, frase=frase)
+
+    def extraer(self, mensajes, esquema, **_):
+        return self.salida, None
+
+
+def test_relevancia_v2_la_decide_el_codigo() -> None:
+    respuesta = "Necesita la aprobación de dos personas del equipo y una copia de seguridad."
+    pregunta = "¿Qué requisitos tiene una migración que borra una columna?"
+    copia = _JuezFijo("requisitos", "la aprobación de dos personas del equipo")
+    assert jueces.relevancia_v2(copia, pregunta, respuesta)
+    assert not jueces.relevancia_v2(_JuezFijo("requisitos", ""), pregunta, respuesta)
+    inventada = _JuezFijo("requisitos", "hace falta un ticket de cambio")  # no está
+    assert not jueces.relevancia_v2(inventada, pregunta, respuesta)

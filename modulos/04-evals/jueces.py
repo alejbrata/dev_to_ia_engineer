@@ -1,4 +1,4 @@
-"""Jueces de fidelidad y las etiquetas con las que se calibran.
+"""Jueces de fidelidad y relevancia, y las etiquetas con las que se calibran.
 
 - `Etiqueta`: una respuesta real (o alterada a propósito) con su contexto y si es fiel. Las
   fieles llevan los segmentos del contexto que las apoyan; las no fieles, la afirmación sin
@@ -6,6 +6,8 @@
 - `juez_v1`: el juez de la lección 06 del módulo 3. El modelo da el veredicto.
 - `juez_v2`: el modelo copia, para cada afirmación, la frase del contexto que la apoya, y el
   código comprueba que esa frase existe. El veredicto lo da el código.
+- `relevancia_v2`: lo mismo para la relevancia de la respuesta (lección 05): el modelo copia
+  la frase de la respuesta que da lo que se pide, y el código comprueba que existe.
 """
 
 from __future__ import annotations
@@ -159,3 +161,22 @@ def juzgar_v2(
             "citas": [a.model_dump() for a in r.afirmaciones],
         },
     )
+
+
+class Contesta(BaseModel):
+    pide: str
+    frase: str
+
+
+def relevancia_v2(cliente: ClienteLLM, pregunta: str, respuesta: str, rol: str = "judge") -> bool:
+    """El juez de relevancia con cita (lección 4.05): el modelo copia la frase de la respuesta
+    que da lo que se pide, y el código comprueba que esa frase está en la respuesta. El juez
+    de la lección 06 del módulo 3 daba el veredicto él mismo y rechazaba respuestas correctas."""
+    mensajes = prompts.renderizar(
+        prompts.cargar("rag/juez-relevancia-cita"), pregunta=pregunta, respuesta=respuesta
+    )
+    try:
+        r, _ = cliente.extraer(mensajes, Contesta, rol=rol, opciones=OPCIONES)
+    except ErrorFormato:
+        return False
+    return cita_valida(r.frase, respuesta)
