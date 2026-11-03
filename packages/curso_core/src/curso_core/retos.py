@@ -11,9 +11,11 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import sys
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType
+from typing import Any
 
 
 @dataclass
@@ -41,6 +43,33 @@ def elegir(carpeta: Path, fichero: str, descripcion: str) -> tuple[Path, argpars
     parser.add_argument("--solucion", action="store_true", help="comprueba la solución")
     args = parser.parse_args()
     return carpeta / ("solucion" if args.solucion else "") / fichero, args
+
+
+def probar(
+    nombre: str,
+    funcion: Callable[[], Any],
+    esperado: Any,
+    tolerancia: float = 0.0,
+    revelar: bool = True,
+) -> Criterio:
+    """Ejecuta un caso del alumno y lo compara con lo esperado.
+
+    Si el código lanza una excepción, el criterio falla con ella, sin parar el comprobador.
+    Con `tolerancia`, compara números con margen. Con `revelar=False`, el fallo no dice qué se
+    esperaba: para los criterios cuya respuesta es el propio reto.
+    """
+    try:
+        obtenido = funcion()
+    except Exception as e:  # noqa: BLE001 - cualquier excepción del alumno es un fallo del criterio
+        return Criterio(nombre, False, f"lanza {type(e).__name__}: {e}")
+    if tolerancia and isinstance(obtenido, int | float):
+        ok = abs(obtenido - esperado) <= tolerancia
+    else:
+        ok = obtenido == esperado
+    if ok:
+        return Criterio(nombre, True)
+    detalle = f"devuelve {obtenido!r}" + (f", se esperaba {esperado!r}" if revelar else "")
+    return Criterio(nombre, False, detalle)
 
 
 def informe(titulo: str, criterios: list[Criterio]) -> int:

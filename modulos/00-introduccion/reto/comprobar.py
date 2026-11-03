@@ -10,7 +10,7 @@ import tempfile
 from pathlib import Path
 
 import httpx
-from curso_core.retos import Criterio, cargar, elegir, informe
+from curso_core.retos import Criterio, cargar, elegir, informe, probar
 
 AQUI = Path(__file__).resolve().parent
 
@@ -24,16 +24,6 @@ def ollama(responde: bool) -> httpx.Client:
         return httpx.Response(200, json={"models": [{"name": "qwen2.5:1.5b"}]})
 
     return httpx.Client(base_url="http://ollama", transport=httpx.MockTransport(atender))
-
-
-def probar(nombre: str, funcion, esperado) -> Criterio:
-    """Ejecuta un caso; si el código del alumno lanza una excepción, el criterio falla con ella."""
-    try:
-        obtenido = funcion()
-    except Exception as e:  # noqa: BLE001 - cualquier excepción del alumno es un fallo del criterio
-        return Criterio(nombre, False, f"lanza {type(e).__name__}: {e}")
-    detalle = "" if obtenido == esperado else f"devuelve {obtenido!r}, se esperaba {esperado!r}"
-    return Criterio(nombre, obtenido == esperado, detalle)
 
 
 def con_gitignore(m, contenido: str, en_git: list[str]) -> bool:

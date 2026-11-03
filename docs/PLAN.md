@@ -24,6 +24,7 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 5. Modelos abiertos frente a cerrados; primer contacto con Hugging Face
 6. Coste y latencia: cómo se calculan y cómo medirlos
 7. Modelos que razonan: tokens de razonamiento, coste, latencia y límites
+8. Reto del módulo: la factura que subió
 - **Práctica transversal**: nace `curso_core` con un cliente LLM que registra tokens, latencia y coste por llamada
 - **Errores clave**: 401, 429 (rate limit), context length exceeded, timeouts; reintentos con backoff
 

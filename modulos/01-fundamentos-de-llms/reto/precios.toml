@@ -1,0 +1,4 @@
+# Precios del reto, en USD por millón de tokens. Son de referencia, inventados para el reto,
+# con la proporción habitual entre entrada y salida (la salida, unas cuatro veces más cara).
+entrada = 3.0
+salida = 12.0
