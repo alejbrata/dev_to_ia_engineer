@@ -9,7 +9,9 @@
 
 Configuración por variables de entorno: ASISTENTE_CACHE=0 desactiva la caché;
 ASISTENTE_TRAZAS=1 activa las trazas de OpenTelemetry (lección 6.02, observabilidad.py);
-ASISTENTE_GUARDRAILS=1 activa los guardrails de entrada y salida (lección 6.05).
+ASISTENTE_GUARDRAILS=1 activa los guardrails de entrada y salida (lección 6.05);
+ASISTENTE_CALIDAD=0.1 juzga en segundo plano el 10 % de las respuestas generadas y publica
+su fidelidad, relevancia y precisión del contexto en /metrics (lección 6.09, calidad.py).
 Arranque: `uv run uvicorn servicio:app --app-dir modulos/06-produccion --port 8100`
 """
 
@@ -24,7 +26,7 @@ from typing import Literal
 
 import metricas_servicio
 from asistente import Asistente, Resultado
-from curso_core import tracing
+from curso_core import ClienteLLM, tracing
 from fastapi import FastAPI, HTTPException
 from prometheus_client import make_asgi_app
 from pydantic import BaseModel, Field
@@ -48,9 +50,18 @@ def trabajador() -> None:
     SQS) con varios trabajadores, para que los trabajos sobrevivan a un reinicio."""
     while True:
         trabajo, pregunta = estado["cola"].get()
-        trabajo.resultado = estado["asistente"].responder(pregunta)
-        metricas_servicio.observar_pregunta(trabajo.resultado)
+        trabajo.resultado = responder(pregunta)
         trabajo.estado = "hecho"
+
+
+def responder(pregunta: str) -> Resultado:
+    a = estado["asistente"]
+    resultado = a.responder(pregunta)
+    metricas_servicio.observar_pregunta(resultado)
+    if estado["calidad"]:
+        # La versión, como etiqueta de Prometheus: el modelo principal (pocas combinaciones).
+        estado["calidad"].enviar(pregunta, resultado, version=a.modelos[a.roles[0]])
+    return resultado
 
 
 @asynccontextmanager
@@ -66,10 +77,23 @@ async def ciclo_de_vida(_: FastAPI):
         guardrails=os.environ.get("ASISTENTE_GUARDRAILS") == "1",
     )
     estado["cola"], estado["trabajos"] = queue.Queue(), {}
+    estado["calidad"] = None
+    if muestreo := float(os.environ.get("ASISTENTE_CALIDAD", "0")):
+        import calidad
+        import sistema
+
+        estado["calidad"] = calidad.EvaluadorEnLinea(
+            ClienteLLM(),
+            sistema.fragmentos(),
+            muestreo,
+            al_evaluar=metricas_servicio.observar_calidad,
+        )
     threading.Thread(target=trabajador, daemon=True).start()
     tracing.observadores.append(metricas_servicio.observar_llamada)
     yield
     tracing.observadores.remove(metricas_servicio.observar_llamada)
+    if estado["calidad"]:
+        estado["calidad"].esperar()
     if trazas:
         trazas.shutdown()  # envía los spans que quedan en el búfer antes de salir
 
@@ -84,9 +108,7 @@ def preguntar(p: Pregunta) -> Resultado:
     # llamada lenta al modelo no bloquea al resto de peticiones.
     # Con las trazas activas, FastAPI abre él mismo el span de la petición (POST /preguntas,
     # con método, ruta y código de respuesta): el del asistente cuelga de ese.
-    resultado = estado["asistente"].responder(p.pregunta)
-    metricas_servicio.observar_pregunta(resultado)
-    return resultado
+    return responder(p.pregunta)
 
 
 @app.post("/trabajos", status_code=202)

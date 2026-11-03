@@ -59,3 +59,38 @@ def observar_llamada(t: Traza) -> None:
     TOKENS.labels(t.rol, "entrada").inc(t.tokens_entrada or 0)
     TOKENS.labels(t.rol, "salida").inc(t.tokens_salida or 0)
     COSTE.labels(t.rol).inc(t.coste_usd or 0.0)
+
+
+# Calidad en línea (lección 6.09): una muestra de respuestas juzgada en segundo plano. La
+# etiqueta `version` es el modelo principal: pocos valores, así que no satura Prometheus.
+CALIDAD_EVALUADAS = Counter(
+    "asistente_calidad_evaluadas_total", "Respuestas juzgadas en línea, por versión", ["version"]
+)
+CALIDAD_CONTESTAN = Counter(
+    "asistente_calidad_contestan_total",
+    "Respuestas juzgadas que no se abstienen (denominador de fidelidad y relevancia)",
+    ["version"],
+)
+CALIDAD_FIELES = Counter(
+    "asistente_calidad_fieles_total", "Respuestas fieles al contexto, según el juez", ["version"]
+)
+CALIDAD_RELEVANTES = Counter(
+    "asistente_calidad_relevantes_total",
+    "Respuestas que contestan a la pregunta, según el juez",
+    ["version"],
+)
+CALIDAD_PRECISION = Histogram(
+    "asistente_calidad_precision_contexto",
+    "Fracción de fragmentos recuperados que sirven para la pregunta, según el juez",
+    ["version"],
+    buckets=(0.01, 0.34, 0.67, 1.0),
+)
+
+
+def observar_calidad(version: str, juicio: dict) -> None:
+    CALIDAD_EVALUADAS.labels(version).inc()
+    CALIDAD_PRECISION.labels(version).observe(juicio["precision"])
+    if not juicio["abstiene"]:
+        CALIDAD_CONTESTAN.labels(version).inc()
+        CALIDAD_FIELES.labels(version).inc(bool(juicio["fiel"]))
+        CALIDAD_RELEVANTES.labels(version).inc(bool(juicio["relevante"]))
