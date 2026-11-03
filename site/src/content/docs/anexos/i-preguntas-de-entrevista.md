@@ -235,9 +235,9 @@ Lo que las guías señalan como respuestas flojas:
 
 **Qué buscan:** primero los usuarios, después la causa.
 
-**Respuesta.** Proteger a los usuarios: volver a la versión anterior, desactivar la funcionalidad o pasar al modelo de respaldo. Guardar las trazas y las versiones exactas (prompt, modelo, índice, código) para reproducirlo. Encontrar la causa con la traza, no con suposiciones. El mensaje de error puede culpar al componente equivocado. Añadir el caso a la eval de regresión, y lanzar los próximos cambios de forma gradual y con un umbral para volver atrás.
+**Respuesta.** Proteger a los usuarios: volver a la versión anterior, desactivar la funcionalidad o pasar al modelo de respaldo. Guardar las trazas y las versiones exactas (prompt, modelo, índice, código) para reproducirlo. Encontrar la causa con la traza, no con suposiciones. El mensaje de error puede culpar al componente equivocado. Añadir el caso a la eval de regresión, y lanzar los próximos cambios por fases: primero en sombra contra la eval, después un canario con un umbral para volver atrás.
 
-**En el curso:** [Lectura de incidentes](../../06-produccion/07-lectura-de-incidentes/). Con el reranker caído, el error de la respuesta culpaba al modelo.
+**En el curso:** [Lectura de incidentes](../../06-produccion/07-lectura-de-incidentes/), donde con el reranker caído el error de la respuesta culpaba al modelo, y [Cambios seguros](../../06-produccion/08-cambios-seguros/), donde el canario de un modelo peor parecía mejor en todas las señales y solo la eval en sombra vio la pérdida.
 
 ### ¿Usarías una API comercial o un modelo propio?
 

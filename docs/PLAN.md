@@ -93,7 +93,7 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 8. Cambios seguros: en sombra, canario y vuelta atrás
 - **Errores clave**: secretos en el repo y cómo limpiar el historial, degradación silenciosa, costes descontrolados
 - **Decisiones** (2026-11-01, tomadas por Claude para que Alex las valide): el caso del módulo es el sistema vigente del módulo 4 servido como API (FastAPI), "lo que se despliega es lo que se midió"; trazas con OpenTelemetry (curso_core emite los spans con los atributos `gen_ai.*`; Jaeger opcional con Docker) y métricas en formato Prometheus, los dos estándares abiertos
-- **Estado** (2026-11-02): las 7 primeras lecciones escritas, con salidas reales; pendiente de la revisión de Alex. La 8 (decisión de Alex, 2026-11-02: profundizar en operación y recuperación de fallos), en curso
+- **Estado** (2026-11-03): las 8 lecciones escritas, con salidas reales; pendiente de la revisión de Alex. La 8 (decisión de Alex, 2026-11-02: profundizar en operación y recuperación de fallos) mide en sombra, canario y vuelta atrás el cambio de modelo de la 7
 
 ## Módulo 7 — Modelos propios 🟨
 
@@ -105,7 +105,7 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 6. Evaluar el modelo ajustado frente al base
 - **Errores clave**: falta de memoria en GPU, plantilla de chat incorrecta, sobreajuste, mejoras que no lo son
 - **Decisiones** (2026-11-02, tomadas por Claude para que Alex las valide): el caso sigue siendo el asistente. La 7.01 mide que los fallos del modelo de 1,5B con RAG frente al de 7B son de comportamiento, así que la hipótesis de las lecciones 5 y 6 es ajustar el de 1,5B con LoRA usando las respuestas del de 7B (destilación) y medirlo con la eval del módulo 4. La idea de desplegar modelos propios como en empresa queda repartida entre el módulo 6 (servir) y este (descargar, cuantizar, ajustar)
-- **Estado** (2026-11-02): las 6 lecciones escritas, con salidas reales; pendiente de la revisión de Alex. Resultado de la 7.06: el ajuste con LoRA (destilación del 7B) no compensa con estos datos (41 de 58 frente a 37 del base, p = 0,29; el maestro, 52)
+- **Estado** (2026-11-02): las 6 lecciones escritas, con salidas reales; pendiente de la revisión de Alex. Resultado de la 7.06, con dos iteraciones (la segunda con los datos corregidos) y servido en vLLM y en GGUF con llama.cpp: el ajuste con LoRA no compensa con estos datos (41-42 de 58, sin diferencia significativa con el base; el maestro, 52), aunque es 14 veces más rápido que el 7B
 
 ## Módulo 8 — Proyecto final 🟨
 
