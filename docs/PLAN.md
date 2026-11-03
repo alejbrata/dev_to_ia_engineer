@@ -120,7 +120,8 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 
 ## Anexos 🟨
 
-- **A. Claude y Claude Code**: consejos prácticos desde el uso real (sin copiar documentación oficial)
+- **A. La API de Claude**: el proveedor anthropic de curso_core, sus diferencias con el formato de OpenAI, modelos y coste
+  - **Decisiones** (Alex, 2026-11-03): sin secciones personales; Claude Code va en el anexo C
 - **B. Hugging Face**: el ecosistema más usado en empresa, como laboratorio: elegir modelo, arquitecturas, clasificación, datasets e infraestructura del Hub
   - **B.1 El Hub y elegir modelo**: fichas, licencias, datos de entrenamiento, búsqueda con `huggingface_hub`
   - **B.2 Encoder, decoder y encoder-decoder**: qué hace cada uno y cuándo usarlo
@@ -129,7 +130,7 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
   - **B.5 El Hub como infraestructura**: Inference Providers, buckets, Spaces, Inference Endpoints y planes de empresa
   - **Decisiones** (Alex, 2026-11-01): varias páginas; dependencias en un grupo opcional (`uv sync --group hf`, torch para CPU); repos de ejemplo privados en la cuenta de Alex; elegir modelo vive aquí y la lección 7.2 lo enlaza
 - **C. Herramientas y estrategias de desarrollo con IA**: agentes de código, graph prompting, flujos de trabajo y repos útiles
-  - **Decisiones** (Alex, 2026-11-02): «graph prompting» es Graph of Thoughts; lo escribe Claude sin contenido personal, con un hueco TODO(alex) para la experiencia de Alex
+  - **Decisiones** (Alex, 2026-11-02): «graph prompting» es Graph of Thoughts; lo escribe Claude sin contenido personal (2026-11-03: sin hueco personal)
 - **D. Glosario**
   - Generado con una comprobación de que cada lección enlazada contiene el término
 - **E. Recursos**: papers, blogs y cursos que merecen la pena
@@ -139,4 +140,4 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 - **H. El proceso del autor**: la rotación de Alex de backend Java a AI Engineering, módulo a módulo. Opcional y aparte del aprendizaje
 - **I. Preguntas de entrevista**: las preguntas que más se repiten en entrevistas de AI Engineer, qué buscan y cómo responderlas con lo medido en el curso
   - **Decisiones** (Alex, 2026-11-02): anexo propio, enlazado desde la 8.04; respuestas escritas para el curso a partir de guías públicas, con enlace a la lección que tiene el dato
-- **Estado** (2026-11-02): B, C, D, E, F, G e I escritos. Pendiente de Alex: las secciones personales de A (consejos desde el uso real y Claude Code), el hueco de C y el anexo H
+- **Estado** (2026-11-02): B, C, D, E, F, G e I escritos. Pendiente de Alex: el anexo H

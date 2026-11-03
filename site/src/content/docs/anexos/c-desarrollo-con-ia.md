@@ -9,12 +9,6 @@ Las herramientas de esta página cambian cada pocos meses: nombres, precios y fu
 
 Este anexo trata de usar la IA para **desarrollar**, no de desarrollar sistemas con IA, que es el resto del curso. Si vienes de backend, es probable que ya uses algún asistente de código. Aquí está lo que conviene saber para que te ahorre trabajo y no te lo cree.
 
-<!-- Sección personal, la escribe Alex:
-## Mi forma de trabajar
-
-TODO(alex)
--->
-
 ## Agentes de código
 
 Hay tres niveles de ayuda, y conviene saber en cuál estás:
