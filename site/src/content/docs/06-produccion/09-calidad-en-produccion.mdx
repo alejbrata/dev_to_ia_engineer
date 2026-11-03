@@ -1,0 +1,274 @@
+---
+title: "Calidad en producción"
+description: "Calidad en producción: medir la fidelidad, la relevancia y la precisión del contexto sobre una muestra del tráfico real, sin saber la respuesta correcta, publicarlas por versión y usarlas en la regla de vuelta atrás de un canario"
+---
+
+import Autoevaluacion from '../../../components/Autoevaluacion.astro';
+import ConUnaApi from '../../../components/ConUnaApi.astro';
+
+:::note[Revisado: 2026-11]
+Salidas reales con el asistente del módulo: el sistema vigente (Qwen2.5 7B) y, como candidato, Qwen2.5 1,5B, en Ollama sobre CPU, con el reranker. El juez es Qwen2.5 7B (rol `judge`). Puedes usar los modelos que quieras o puedas: los nombres están en `config/models.toml`.
+:::
+
+## Objetivos
+
+Al terminar esta lección podrás:
+
+- Decidir qué métricas de calidad de un RAG se pueden medir en producción, sin la respuesta correcta, y cuál no.
+- Juzgar una muestra del tráfico en segundo plano, sin retrasar la respuesta al usuario, y publicar el resultado en Prometheus por versión.
+- Comprobar los jueces de producción contra la eval antes de fiarte de sus cifras.
+- Escribir una regla de vuelta atrás sobre la calidad juzgada y calcular cuántas evaluaciones necesita para decidir algo.
+
+## Teoría
+
+### Lo que la 6.08 dejó abierto
+
+En la lección 6.08, el canario del modelo de 1,5B acertaba el 79 % de sus peticiones frente al 96 % del vigente, y ninguna señal de producción lo vio: era más rápido, se abstenía menos y siempre citaba. La única fase que vio la pérdida fue la eval en sombra, porque es la única que sabe cuál es la respuesta buena. El postmortem dejaba una acción abierta: revisar qué señales habrían detectado la pérdida de calidad.
+
+En producción no hay dataset. Pero de las cuatro métricas de RAG de la lección 4.05, solo una lo necesita de verdad:
+
+| Métrica | ¿Necesita la respuesta correcta? | En producción |
+| --- | --- | --- |
+| *Context recall* | Sí: hay que saber qué fragmento tenía el dato | no se puede medir; solo con la eval |
+| *Context precision* | No, si un juez decide qué fragmentos sirven | juez de precisión |
+| *Faithfulness* (fidelidad) | No: compara la respuesta con su contexto | juez de fidelidad v2 (lección 4.04) |
+| *Answer relevancy* (relevancia) | No: compara la respuesta con la pregunta | juez de relevancia v2 (lección 4.05) |
+
+Las tres de abajo se calculan con la pregunta, los fragmentos recuperados y la respuesta, que el servicio tiene en cada petición. Es lo que se llama **evaluación en línea** (*online evaluation*): los mismos jueces de la eval, sobre el tráfico real.
+
+### Muestrear, y en segundo plano
+
+Juzgar es caro. Cada respuesta pasa por tres jueces, y aquí eso tarda más que generarla. Por eso no se juzga todo, sino una **muestra**: un porcentaje de las respuestas, elegido al azar. Y no se juzga en la petición, sino después, en una cola aparte: el usuario recibe la respuesta en cuanto está, y el juicio llega a las métricas unos segundos o minutos más tarde. Es lo mismo que hace un APM con las trazas, que muestrea un porcentaje y las envía en segundo plano.
+
+No todas las respuestas entran en la muestra. Las de la caché ya se juzgaron (o no) cuando se generaron. La respuesta degradada y la que sustituye un guardrail no vienen del modelo. Juzgarlas mezclaría en la métrica cosas que no son la calidad del modelo.
+
+### Por versión, y con el denominador correcto
+
+Las métricas se publican con una etiqueta `version`, para comparar el canario con el vigente en el mismo panel. La etiqueta es el modelo principal: pocos valores distintos, como pide Prometheus (lección 6.03). Fidelidad y relevancia se cuentan solo sobre las respuestas que no se abstienen. Abstenerse "no contesta", pero en una pregunta sin respuesta es lo correcto, y no debe bajar la relevancia. Por eso hay un contador aparte para el denominador.
+
+### Cuántas evaluaciones hacen falta
+
+Una regla de vuelta atrás que compara dos proporciones necesita un número mínimo de casos para que la diferencia no sea ruido. Para dos versiones con fidelidades p₁ y p₂, la fórmula clásica de la prueba de dos proporciones da cuántas evaluaciones hacen falta por versión para detectar esa diferencia con un 95 % de confianza y un 80 % de potencia:
+
+```python
+def evaluaciones_necesarias(p1: float, p2: float) -> int | None:
+    if p1 == p2:
+        return None
+    media = (p1 + p2) / 2
+    a = Z_95 * math.sqrt(2 * media * (1 - media))
+    b = Z_80 * math.sqrt(p1 * (1 - p1) + p2 * (1 - p2))
+    return math.ceil(((a + b) / (p1 - p2)) ** 2)
+```
+
+Cuanto más pequeña es la diferencia, más evaluaciones hacen falta, y crece con el cuadrado: la mitad de diferencia pide unas cuatro veces más casos. Y con un muestreo del 10 %, cada evaluación cuesta diez respuestas generadas del canario.
+
+## Práctica
+
+La práctica tiene dos partes. La primera es la pieza de producción: [`calidad.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/06-produccion/calidad.py), con los tres jueces y el evaluador en línea, conectada al servicio. La segunda, [`calidad_en_produccion.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/06-produccion/calidad_en_produccion.py), la mide.
+
+### El evaluador en línea
+
+El evaluador decide qué respuestas entran en la muestra y las juzga en un hilo aparte, de una en una:
+
+```python
+class EvaluadorEnLinea:
+    def __init__(self, cliente, fragmentos, muestreo, semilla=0, al_evaluar=None):
+        self.cliente, self.fragmentos, self.muestreo = cliente, fragmentos, muestreo
+        self._azar = random.Random(semilla)
+        self._hilo = ThreadPoolExecutor(max_workers=1)
+        self._al_evaluar = al_evaluar
+        self.evaluadas: list[dict] = []
+        self.descartadas = 0
+
+    def enviar(self, pregunta: str, r: Resultado, version: str, **extra) -> bool:
+        if r.cache or r.rol is None or r.bloqueado:
+            return False
+        if self._azar.random() >= self.muestreo:
+            self.descartadas += 1
+            return False
+        self._hilo.submit(self._evaluar, pregunta, r, version, extra)
+        return True
+```
+
+`enviar` vuelve al momento: la petición no espera al juez. Un solo hilo hace de cola. Si el tráfico genera más evaluaciones de las que el juez puede hacer, la cola crece, y en un sistema real tendría un límite o iría a una cola externa, como los trabajos de la lección 6.01. Cada juicio llama a `al_evaluar`, que en el servicio es `metricas_servicio.observar_calidad`:
+
+```python
+def observar_calidad(version: str, juicio: dict) -> None:
+    CALIDAD_EVALUADAS.labels(version).inc()
+    CALIDAD_PRECISION.labels(version).observe(juicio["precision"])
+    if not juicio["abstiene"]:
+        CALIDAD_CONTESTAN.labels(version).inc()
+        CALIDAD_FIELES.labels(version).inc(bool(juicio["fiel"]))
+        CALIDAD_RELEVANTES.labels(version).inc(bool(juicio["relevante"]))
+```
+
+El juez de precisión es nuevo: un prompt ([`rag/juez-precision`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/prompts/rag/juez-precision.md)) que recibe la pregunta y los fragmentos numerados y devuelve la lista de los que sirven. El código descarta los números que no existen.
+
+Se activa con una variable de entorno, `ASISTENTE_CALIDAD`, que es la fracción que se muestrea. Con `1`, todo, para verlo funcionar:
+
+```sh title="Terminal de VS Code · raíz del repo"
+ASISTENTE_CALIDAD=1 uv run uvicorn servicio:app --app-dir modulos/06-produccion --port 8100
+```
+
+Con tres preguntas (la del pool de conexiones dos veces y "¿Cuál es la capital de Australia?"), `/metrics` muestra, al cabo de un minuto:
+
+```text
+asistente_calidad_evaluadas_total{version="qwen2.5:7b @ http://127.0.0.1:11434"} 2.0
+asistente_calidad_contestan_total{version="qwen2.5:7b @ http://127.0.0.1:11434"} 1.0
+asistente_calidad_fieles_total{version="qwen2.5:7b @ http://127.0.0.1:11434"} 1.0
+asistente_calidad_relevantes_total{version="qwen2.5:7b @ http://127.0.0.1:11434"} 1.0
+asistente_calidad_precision_contexto_count{version="qwen2.5:7b @ http://127.0.0.1:11434"} 2.0
+asistente_calidad_precision_contexto_sum{version="qwen2.5:7b @ http://127.0.0.1:11434"} 1.0
+```
+
+Tres peticiones, dos juzgadas: la repetida salió de la caché. De las dos, una contesta: la de Australia se abstiene, como debe. En un panel, la fidelidad por versión de la última hora es un cociente de contadores:
+
+```text
+sum by (version) (increase(asistente_calidad_fieles_total[1h]))
+  / sum by (version) (increase(asistente_calidad_contestan_total[1h]))
+```
+
+### La medición
+
+`calidad_en_produccion.py` responde tres preguntas:
+
+1. **¿Se puede uno fiar de los jueces?** Sobre las 58 respuestas grabadas del sistema vigente, donde se sabe la verdad: la precisión juzgada frente a la de los segmentos anclados, la relevancia frente a la corrección y lo que tarda cada evaluación.
+2. **¿Habría visto el canario de la 6.08 la pérdida?** El candidato responde las 58 preguntas, se reparte el mismo tráfico que en la 6.08 (60 peticiones, el 25 % de las preguntas al candidato, con caché) y se juzga cada respuesta generada. Después, las 58 de cada versión, como si se juzgara todo el tráfico.
+3. **¿Cuántas evaluaciones hacen falta** para ver las diferencias medidas, según el muestreo?
+
+Necesita lo mismo que el resto del módulo: Ollama con los modelos del módulo 4 y el reranker en llama-server. Tarda unos 40 minutos; con `--grabadas`, un segundo.
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python modulos/06-produccion/calidad_en_produccion.py
+uv run python modulos/06-produccion/calidad_en_produccion.py --grabadas
+```
+
+```text
+1. ¿Se puede uno fiar de los jueces? Las 58 respuestas grabadas del vigente
+   precisión del contexto (42 preguntas con respuesta, 126 fragmentos)
+     con los segmentos anclados 36% · según el juez 52%
+     el juez marca útiles 66; de ellos, anclados 43. De los 45 anclados, se le escapan 2 · kappa 0.61
+   relevancia de la respuesta (43 que no se abstienen)
+     correctas    38: el juez dice que responden 33
+     incorrectas   5: el juez dice que responden 3
+   fidelidad (juez v2): 41 de 43 fieles
+   tiempo de juez por respuesta: mediana 34.6 s, máximo 85.7 s (tres juicios)
+
+2. Canario de la 6.08 con evaluación en línea: el 25 % de las preguntas a qwen2.5:1.5b
+               juzgadas  contestan  fidelidad  relevancia  precisión  aciertos*
+   vigente           15         13       100%         85%        44%        93%
+   candidata         12         10        90%        100%        53%        83%
+   * los aciertos no se ven en producción: aquí se conocen porque el tráfico es el dataset
+   regla de vuelta atrás: no salta
+
+   Las 58 preguntas en cada versión (todo el tráfico juzgado, como en sombra)
+   vigente           58         43        95%         84%        40%        90%
+   candidata         58         47        79%         96%        40%        69%
+   regla de vuelta atrás: fidelidad: 79% frente a 95%
+
+3. Cuántas evaluaciones hacen falta para ver estas diferencias
+   (por versión; 95 % de confianza y 80 % de potencia)
+   fidelidad   95% frente a 79%: 63 evaluaciones
+               respuestas generadas del canario, según el muestreo: al 100%: 63 · al 10%: 630 · al 1%: 6300
+               tiempo de juez para esas 63: 0.6 h en esta máquina
+   relevancia  84% frente a 96%: 99 evaluaciones
+               respuestas generadas del canario, según el muestreo: al 100%: 99 · al 10%: 990 · al 1%: 9900
+               tiempo de juez para esas 99: 1.0 h en esta máquina
+```
+
+La regla de vuelta atrás es la de la 6.08, con otras señales: con al menos 10 respuestas del canario que contestan, si la fidelidad o la relevancia caen más de 10 puntos frente al vigente.
+
+<ConUnaApi practicas={['modulos/06-produccion/calidad_en_produccion.py']} />
+
+## Mide y depura
+
+### Los jueces, contra la eval
+
+Antes de poner una métrica juzgada en un panel, compruébala donde sabes la verdad. La parte 1 lo hace con las respuestas grabadas del vigente:
+
+- **La fidelidad** da 41 de 43. Es el juez v2 de la lección 4.04, que detecta la mayoría de las respuestas no fieles y casi no da falsas alarmas.
+- **La relevancia no es la corrección, y no debe serlo.** De las 5 respuestas incorrectas, el juez dice que 3 contestan: contestan a lo que se preguntó, con un dato equivocado. Es lo que mide. De las 38 correctas, da 5 por no relevantes: son los fallos con respuestas de una palabra que vio la lección 4.05.
+- **La precisión juzgada es más generosa que la anclada**: 52 % frente a 36 %. El juez casi no se deja fragmentos con el dato (2 de 45), pero marca como útiles 23 que no tienen el segmento anclado. Algunos sirven de verdad, porque dan contexto o un paso del procedimiento; el anclaje solo marca el segmento con el dato exacto. El acuerdo es moderado (kappa 0,61). Úsala para ver cambios, como la caída de k3 a k5 de la lección 4.05, no como un valor absoluto.
+
+### Lo que cuesta juzgar
+
+La mediana es de 34,6 segundos de juez por respuesta, con tres juicios. El vigente tarda unos 11,5 segundos en generarla (lección 6.08). Juzgar todo el tráfico costaría unas tres veces el cómputo del propio servicio. Por eso se muestrea, y por eso el juez debería ir en otra máquina o en otro proveedor, para no quitarle CPU al servicio. En tus trazas, el juez es un rol más (`judge`), con sus tokens y su coste (lección 6.03): súmalo al coste por petición.
+
+### El canario era demasiado pequeño
+
+Con el tráfico de la 6.08, el canario genera 12 respuestas y 10 contestan. Su fidelidad es del 90 % frente al 100 % del vigente: va en la dirección correcta, pero la caída es de 10 puntos, justo en el límite de la regla, y con 10 casos no significa nada. La regla no salta.
+
+Con las 58 preguntas juzgadas en cada versión, sí salta: 79 % frente a 95 %. Y la parte 3 dice cuántas hacen falta para ver esa diferencia: 63 evaluaciones por versión. Con un muestreo del 10 %, son 630 respuestas generadas del canario; con un 1 %, 6.300. La evaluación en línea habría visto la pérdida, pero no con 60 peticiones: necesita un canario que lleve tráfico durante el tiempo suficiente. Calcula ese número antes de lanzar el canario, no después.
+
+### La relevancia apuntaba al revés
+
+En las 58 preguntas, la relevancia dice que el candidato es mejor: 96 % frente a 84 %. No lo es. Es la anatomía.
+
+## Errores frecuentes
+
+- **Juzgar dentro de la petición.** El usuario espera al juez, y aquí el juez tarda tres veces más que la respuesta. Juzga después, en una cola aparte.
+- **Juzgar las respuestas de la caché, la degradada o las de un guardrail.** Mezclan en la métrica cosas que no son la calidad del modelo, y la caché cuenta dos veces la misma respuesta.
+- **Calcular la fidelidad sobre todas las respuestas.** Las abstenciones la bajan o la suben según cómo las trate el juez. Cuenta el denominador aparte.
+- **Una etiqueta de versión con muchos valores**, como el hash de cada despliegue o el id de cada usuario. Prometheus guarda una serie por combinación de etiquetas (lección 6.03).
+- **Decidir con pocas evaluaciones.** Con 10 casos, una diferencia de 10 puntos es ruido. Calcula cuántas necesitas.
+- **Leer una métrica juzgada sin saber cómo falla el juez.** Es la anatomía.
+
+### Anatomía de un error: el candidato "más relevante"
+
+**El síntoma.** La parte 2, con las 58 preguntas:
+
+```text
+   vigente           58         43        95%         84%        40%        90%
+   candidata         58         47        79%         96%        40%        69%
+```
+
+El candidato acierta 69 % frente a 90 %, pero su relevancia es 12 puntos mayor. Si el panel solo mostrara la relevancia, el cambio parecería una mejora.
+
+**Cómo leerlo.** Una métrica juzgada mezcla dos cosas: lo que hace el sistema y cómo falla el juez con lo que hace el sistema. La parte 1 dice cómo falla con el vigente: de sus 38 respuestas correctas, da 5 por no relevantes. Son las de una palabra o casi ("No", "Descubrimiento"), que la lección 4.05 vio en la comprobación del juez. El vigente responde así a menudo. El modelo de 1,5B suele responder con frases completas, y con ellas el juez acierta: 33 de 33 en la comprobación de la lección 4.05.
+
+**La causa.** De las 7 respuestas del vigente que el juez da por no relevantes, 5 son correctas: fallos del juez. Sin ellas, la relevancia del vigente sería de 41 de 43, un 95 %. La diferencia entre versiones es, sobre todo, un sesgo del juez que depende del estilo de respuesta. Y dos versiones con modelos distintos responden con estilos distintos. Encima, el candidato contesta 47 preguntas frente a 43: responde a algunas que debía rechazar (lección 6.08), y una respuesta inventada que contesta a lo que se pregunta es relevante.
+
+**La solución.** Comprueba el juez con respuestas de cada versión que comparas, no solo de la vigente, como hace la lección 4.05 con los dos modelos. Y no leas una métrica sola: aquí, la fidelidad sí bajaba (79 % frente a 95 %), y la regla salta por ella. Antes de dar por buena una mejora de una métrica juzgada, lee los casos que la forman.
+
+## Comprueba lo que has entendido
+
+<Autoevaluacion
+	preguntas={[
+		{
+			pregunta: 'Quieres vigilar la calidad de tu RAG en producción, donde no sabes la respuesta correcta. ¿Qué métrica no puedes calcular?',
+			opciones: [
+				{ texto: 'La fidelidad.', porque: 'Compara la respuesta con su contexto, que el servicio tiene en cada petición ("Lo que la 6.08 dejó abierto").' },
+				{ texto: 'El recall del contexto.', correcta: true, porque: 'Necesita saber qué fragmento tenía el dato, y eso solo lo sabe el dataset. Se mide con la eval.' },
+				{ texto: 'La relevancia de la respuesta.', porque: 'Compara la respuesta con la pregunta: no necesita la respuesta correcta.' },
+			],
+		},
+		{
+			pregunta: 'Tu juez tarda 30 segundos por respuesta y el servicio responde en 10. ¿Cómo lo integras?',
+			opciones: [
+				{ texto: 'En la petición, para devolver la respuesta ya juzgada.', porque: 'El usuario esperaría 40 segundos. Se juzga después, en segundo plano ("Muestrear, y en segundo plano").' },
+				{ texto: 'Sobre una muestra, en una cola aparte, y en otra máquina o proveedor.', correcta: true, porque: 'Juzgar todo costaría unas tres veces el cómputo del servicio ("Lo que cuesta juzgar").' },
+			],
+		},
+		{
+			pregunta: 'El canario lleva 10 respuestas juzgadas con un 90 % de fidelidad, frente al 100 % del vigente. ¿Vuelves atrás?',
+			opciones: [
+				{ texto: 'Sí: ha bajado 10 puntos.', porque: 'Con 10 casos, una diferencia así es ruido. Aquí harían falta unas 63 evaluaciones por versión ("El canario era demasiado pequeño").' },
+				{ texto: 'Todavía no se sabe: calculas cuántas evaluaciones hacen falta y dejas el canario hasta tenerlas, o lo decides con la eval en sombra.', correcta: true, porque: 'La regla necesita un mínimo de casos para que la diferencia no sea ruido.' },
+			],
+		},
+		{
+			pregunta: 'La relevancia juzgada del canario es 12 puntos mayor que la del vigente. ¿Qué compruebas antes de celebrarlo?',
+			opciones: [
+				{ texto: 'Nada: la relevancia mide si contesta a lo que se pregunta.', porque: 'La mide con un juez, que puede fallar más con el estilo de una versión que con el de otra ("Anatomía de un error").' },
+				{ texto: 'Cómo falla el juez con las respuestas de cada versión, y qué dicen las otras métricas.', correcta: true, porque: 'Aquí, el juez rechazaba las respuestas de una palabra del vigente, y la fidelidad del canario bajaba 16 puntos.' },
+			],
+		},
+	]}
+/>
+
+## Para profundizar
+
+- Es et al., [RAGAS: Automated Evaluation of Retrieval Augmented Generation](https://arxiv.org/abs/2309.15217) (2023): las métricas de RAG sin respuesta de referencia (fidelidad, relevancia de la respuesta y del contexto).
+- Shankar et al., [Who Validates the Validators? Aligning LLM-Assisted Evaluation of LLM Outputs with Human Preferences](https://arxiv.org/abs/2404.12272) (2024): por qué un juez se comprueba contra casos con la verdad conocida, y cómo cambian los criterios al ver los datos.
+- Google, [Canarying Releases](https://sre.google/workbook/canarying-releases/), en el workbook de SRE: cuánto tráfico y cuánto tiempo necesita un canario para que sus métricas digan algo.
+- Prometheus, [Instrumentation: labels](https://prometheus.io/docs/practices/instrumentation/#use-labels): cuántos valores puede tener una etiqueta.

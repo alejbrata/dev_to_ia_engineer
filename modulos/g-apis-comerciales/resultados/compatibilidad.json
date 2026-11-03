@@ -899,6 +899,7 @@
   "modulos/06-produccion/metricas_operativas.py": "levanta el servicio y lo somete a carga",
   "modulos/06-produccion/incidentes.py": "levanta el servicio con fallos provocados",
   "modulos/06-produccion/cambios_seguros.py": "compara dos modelos locales (7B y 1,5B)",
+  "modulos/06-produccion/calidad_en_produccion.py": "el canario de la 6.08 (7B y 1,5B)",
   "modulos/07-modelos-propios/preparar.py": "descarga y carga el modelo con transformers",
   "modulos/07-modelos-propios/servir.py": "sirve el modelo con Ollama, llama.cpp y vLLM",
   "modulos/07-modelos-propios/cuantizar.py": "cuantiza el modelo con llama.cpp",

@@ -91,9 +91,10 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 6. Despliegue: contenedores y cloud
 7. Lectura de incidentes: de la alerta a la causa raíz
 8. Cambios seguros: en sombra, canario y vuelta atrás
+9. Calidad en producción: evaluación en línea sin respuesta correcta
 - **Errores clave**: secretos en el repo y cómo limpiar el historial, degradación silenciosa, costes descontrolados
 - **Decisiones** (2026-11-01, tomadas por Claude para que Alex las valide): el caso del módulo es el sistema vigente del módulo 4 servido como API (FastAPI), "lo que se despliega es lo que se midió"; trazas con OpenTelemetry (curso_core emite los spans con los atributos `gen_ai.*`; Jaeger opcional con Docker) y métricas en formato Prometheus, los dos estándares abiertos
-- **Estado** (2026-11-03): las 8 lecciones escritas, con salidas reales; pendiente de la revisión de Alex. La 8 (decisión de Alex, 2026-11-02: profundizar en operación y recuperación de fallos) mide en sombra, canario y vuelta atrás el cambio de modelo de la 7
+- **Estado** (2026-11-03): las 9 lecciones escritas, con salidas reales; pendiente de la revisión de Alex. La 9 (petición de Alex, 2026-11-03: las cuatro métricas de RAG también en producción) juzga una muestra del tráfico con fidelidad, relevancia y precisión del contexto y las publica por versión. La 8 (decisión de Alex, 2026-11-02: profundizar en operación y recuperación de fallos) mide en sombra, canario y vuelta atrás el cambio de modelo de la 7
 
 ## Módulo 7 — Modelos propios 🟨
 

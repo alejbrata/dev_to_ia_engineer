@@ -227,9 +227,9 @@ Lo que las guías señalan como respuestas flojas:
 
 **Qué buscan:** las señales propias de un LLM, además de las de cualquier servicio.
 
-**Respuesta.** Trazas de cada petición con sus pasos (recuperación, llamadas al modelo, herramientas), con modelo, versión del prompt, tokens y latencia. Métricas de servicio (p50 y p95, errores) y las propias: tokens y coste por petición, tasa de caché, tasa de respaldo y tasa de abstención. Y objetivos que incluyan la calidad, no solo la disponibilidad.
+**Respuesta.** Trazas de cada petición con sus pasos (recuperación, llamadas al modelo, herramientas), con modelo, versión del prompt, tokens y latencia. Métricas de servicio (p50 y p95, errores) y las propias: tokens y coste por petición, tasa de caché, tasa de respaldo y tasa de abstención. Y la calidad, que no se ve en ninguna de esas: jueces sobre una muestra del tráfico que miden la fidelidad, la relevancia de la respuesta y la precisión del contexto, las tres métricas de RAG que no necesitan la respuesta correcta, publicadas por versión.
 
-**En el curso:** [Observabilidad](../../06-produccion/02-observabilidad/) y [Métricas operativas](../../06-produccion/03-metricas-operativas/).
+**En el curso:** [Observabilidad](../../06-produccion/02-observabilidad/), [Métricas operativas](../../06-produccion/03-metricas-operativas/) y [Calidad en producción](../../06-produccion/09-calidad-en-produccion/).
 
 ### Tras cambiar el modelo o el prompt, hay un incidente. ¿Cómo respondes?
 
