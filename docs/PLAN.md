@@ -111,6 +111,7 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 4. Cuantización
 5. Fine-tuning con LoRA/QLoRA
 6. Evaluar el modelo ajustado frente al base
+7. Reto del módulo: ¿compensa el ajuste?
 - **Errores clave**: falta de memoria en GPU, plantilla de chat incorrecta, sobreajuste, mejoras que no lo son
 - **Decisiones** (2026-11-02, tomadas por Claude y validadas por Alex el 2026-11-03, también el cierre con resultado negativo): el caso sigue siendo el asistente. La 7.01 mide que los fallos del modelo de 1,5B con RAG frente al de 7B son de comportamiento, así que la hipótesis de las lecciones 5 y 6 es ajustar el de 1,5B con LoRA usando las respuestas del de 7B (destilación) y medirlo con la eval del módulo 4. La idea de desplegar modelos propios como en empresa queda repartida entre el módulo 6 (servir) y este (descargar, cuantizar, ajustar)
 - **Estado** (2026-11-02): las 6 lecciones escritas, con salidas reales; pendiente de la revisión de Alex. Resultado de la 7.06, con dos iteraciones (la segunda con los datos corregidos) y servido en vLLM y en GGUF con llama.cpp: el ajuste con LoRA no compensa con estos datos (41-42 de 58, sin diferencia significativa con el base; el maestro, 52), aunque es 14 veces más rápido que el 7B

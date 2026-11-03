@@ -1,0 +1,162 @@
+{"pregunta": "en el incidente de usuarios de julio de 2026, ¿cuánto tardó la restauración y qué regla se añadió después para las migraciones?", "origen": "generada"}
+{"pregunta": "¿Cuántos productos nuevos no se indexaron durante ese período?", "origen": "generada"}
+{"pregunta": "¿Qué tipo de mensajes se almacenan en la cola de Redis?", "origen": "generada"}
+{"pregunta": "¿En qué base de datos se guardan las transacciones realizadas a través del servicio de pagos?", "origen": "generada"}
+{"pregunta": "¿Cuántos días libres se acumulan si una persona realiza dos semanas consecutivas de guardias?", "origen": "generada"}
+{"pregunta": "¿Cuántas migraciones de esquema se ejecutan mensualmente en el servicio de usuarios?", "origen": "generada"}
+{"pregunta": "¿Cuáles son los sistemas de bases de datos involucrados en las copias de seguridad?", "origen": "generada"}
+{"pregunta": "¿Cuáles son las características de los entornos de desarrollo y pruebas?", "origen": "generada"}
+{"pregunta": "¿Cuál es la diferencia entre un Canario y un despliegue completo en la plataforma?", "origen": "generada"}
+{"pregunta": "¿Cuáles son los primeros pasos que debo seguir si los pods nuevos no arrancan tras un despliegue de búsqueda?", "origen": "generada"}
+{"pregunta": "¿Cuál es el tiempo máximo que tiene la persona de guardia para confirmar una alerta de producción?", "origen": "generada"}
+{"pregunta": "¿Qué problema se produjo con los teléfonos de los usuarios?", "origen": "generada"}
+{"pregunta": "¿Cuántas horas por semana dedican los técnicos a atender los canales de incidencias de atención al cliente?", "origen": "generada"}
+{"pregunta": "¿Cuánto tiempo dura el despliegue inicial en el canario antes de evaluar las métricas?", "origen": "generada"}
+{"pregunta": "¿Qué tipo de información debe recogerse y transmitirse al equipo técnico cuando se registra una incidencia?", "origen": "generada"}
+{"pregunta": "¿Cuántas veces al año se realiza la restauración de copias de seguridad en el entorno aislado?", "origen": "generada"}
+{"pregunta": "¿Qué ocurre si no hay persona de guardia asignada en la producción?", "origen": "generada"}
+{"pregunta": "¿Cuál es la frecuencia de actualización del perfil de los usuarios según el servicio de usuarios?", "origen": "generada"}
+{"pregunta": "¿Cuál es el nombre del proveedor externo de Google utilizado para el inicio de sesión con Google en el servicio de usuarios?", "origen": "generada"}
+{"pregunta": "¿Qué pasarela de pago externa utiliza el servicio de pagos para cobrar los pedidos?", "origen": "generada"}
+{"pregunta": "¿Cuál es la frecuencia de actualización de las rutas de las imágenes en la CDN según la documentación?", "origen": "generada"}
+{"pregunta": "¿Cuántos días se retienen las copias de seguridad del primer día de cada mes?", "origen": "generada"}
+{"pregunta": "¿Qué ocurre si un umbral ruido no se corrige en la reunión semanal?", "origen": "generada"}
+{"pregunta": "¿Cuántas horas al día trabaja el equipo de atención al cliente para recibir incidencias de los clientes?", "origen": "generada"}
+{"pregunta": "¿Qué rol es necesario para acceder al panel de administración del catálogo?", "origen": "generada"}
+{"pregunta": "¿Cuántos días de registros históricos se eliminaron como resultado de la automatización?", "origen": "generada"}
+{"pregunta": "¿Cuántos usuarios tuvieron sus datos de teléfono afectados por la pérdida?", "origen": "generada"}
+{"pregunta": "¿Cuál es la dependencia principal para el inicio de sesión con Google en el servicio de usuarios?", "origen": "generada"}
+{"pregunta": "¿Cuántos euros mensuales cuesta la renovación del token de la API del banco?", "origen": "generada"}
+{"pregunta": "¿Cuánto espacio en memoria de Redis es suficiente para evitar la generación de alertas?", "origen": "generada"}
+{"pregunta": "¿Cuánto tiempo pasa entre que la alerta pasa a la persona de guardia secundaria y que se avisa al responsable del equipo?", "origen": "generada"}
+{"pregunta": "¿Cómo se manejan los eventos asíncronos en la plataforma?", "origen": "generada"}
+{"pregunta": "¿Cuáles son los umbrales de alerta para la tasa de errores en los servicios?", "origen": "generada"}
+{"pregunta": "¿A qué porcentaje de ocupación del disco se configuró la alerta en el entorno de producción?", "origen": "generada"}
+{"pregunta": "¿Cuáles son los eventos que generan notificaciones en el sistema?", "origen": "generada"}
+{"pregunta": "Cuánto duró la caída de pagos de marzo de 2026?", "origen": "generada"}
+{"pregunta": "¿hay que avisar a atención al cliente de una incidencia de severidad media?", "origen": "generada"}
+{"pregunta": "¿Qué incidente de julio de 2026 motivó la implementación de esta regla?", "origen": "generada"}
+{"pregunta": "¿Cuántos minutos de latencia permiten en los pagos para la alerta PagosLatenciaP95Alta?", "origen": "generada"}
+{"pregunta": "¿Cuáles son las fases del proceso de comunicación con el atención al cliente en caso de incidencia?", "origen": "generada"}
+{"pregunta": "¿Cuántos minutos exactamente demora el indexador en actualizar el índice tras un cambio en el catálogo?", "origen": "generada"}
+{"pregunta": "¿Cuántas veces al día se realizan los despliegues en la canalización de integración continua?", "origen": "generada"}
+{"pregunta": "¿Qué sucede si el índice no puede escribir y hay nuevos productos en el catálogo?", "origen": "generada"}
+{"pregunta": "¿Cuándo comenzó a funcionar o fallar el servicio en cuestión?", "origen": "generada"}
+{"pregunta": "¿Qué sucede si una imagen no se encuentra en la ruta especificada por el catálogo?", "origen": "generada"}
+{"pregunta": "¿Cuál fue el impacto en los clientes durante la caída del servicio de pagos el 12 de marzo de 2026?", "origen": "generada"}
+{"pregunta": "¿Cuántos días antes avisa el gestor de secretos de que caduca el token del banco, y a quién?", "origen": "generada"}
+{"pregunta": "¿Cuál es la estimación de cuándo se resolverá el problema mencionado?", "origen": "generada"}
+{"pregunta": "¿Cuál fue el impacto en el rendimiento del sistema cuando se activó la alerta de disco al 85 %?", "origen": "generada"}
+{"pregunta": "¿Cuál es el porcentaje de transacciones procesadas por el servicio de pagos en un mes promedio?", "origen": "generada"}
+{"pregunta": "¿Qué acción debe realizar la persona de guardia en caso de recibir una alerta de producción?", "origen": "generada"}
+{"pregunta": "¿Cuántas horas tardó en restaurar los datos después de la pérdida de los teléfonos de los usuarios?", "origen": "generada"}
+{"pregunta": "¿Qué métricas se monitorean en el panel de cada servicio?", "origen": "generada"}
+{"pregunta": "¿Cuánto tiempo tardó el pool de bases de datos en agotarse con el tráfico de la mañana?", "origen": "generada"}
+{"pregunta": "¿Cuál fue la consecuencia directa del llenado del disco en el nodo de OpenSearch?", "origen": "generada"}
+{"pregunta": "¿Cuál es el tiempo promedio de resolución de fallas en el servicio de notificaciones?", "origen": "generada"}
+{"pregunta": "¿Qué base de datos se utiliza para almacenar los perfiles de los usuarios?", "origen": "generada"}
+{"pregunta": "¿En qué sección del runbook se encuentra la información para renovar el token de la API del banco?", "origen": "generada"}
+{"pregunta": "¿Cuántas personas del equipo deben aprobar una migración que borre columnas o tablas según la nueva política?", "origen": "generada"}
+{"pregunta": "¿Cuál es el responsable del equipo que debe aprobar las correcciones de incidentes críticos para desplegarlos en vísperas de festivo?", "origen": "generada"}
+{"pregunta": "¿Qué porcentaje del tráfico recibe el canario y durante cuánto tiempo?", "origen": "generada"}
+{"pregunta": "¿Cuál es el objetivo de las pruebas de restauración de copias de seguridad?", "origen": "generada"}
+{"pregunta": "¿Qué acciones realiza el servicio de usuarios en cuanto a la autenticación de los usuarios?", "origen": "generada"}
+{"pregunta": "¿Qué proveedor externo se utiliza para enviar notificaciones por SMS y qué credenciales se utilizan para Apple y Google Push?", "origen": "generada"}
+{"pregunta": "¿Cuántos canarios se utilizan en el proceso de despliegue gradual?", "origen": "generada"}
+{"pregunta": "¿Cuántas personas de guardia están asignadas para la plataforma de comercio electrónico según la política de guardias?", "origen": "generada"}
+{"pregunta": "¿Qué ocurre si la persona de guardia secundaria tampoco confirma la alerta crítica en 30 minutos?", "origen": "generada"}
+{"pregunta": "  ¿Qué  disponibilidad  tenemos  comprometida  para  el  servicio  de  búsqueda? ", "origen": "generada"}
+{"pregunta": "¿Cuántas personas participan en la rotación de guardias semanalmente?", "origen": "generada"}
+{"pregunta": "¿Qué ocurre si la réplica de lectura está con un retraso significativo?", "origen": "generada"}
+{"pregunta": "¿Cuál fue el impacto en el servicio después de la pérdida de los datos de los teléfonos?", "origen": "generada"}
+{"pregunta": "¿Cuántos días por semana tiene una persona de guardia en el equipo?", "origen": "generada"}
+{"pregunta": "¿Cuántos usuarios perdieron sus datos en el incidente de julio de 2026?", "origen": "generada"}
+{"pregunta": "¿Cómo se comunica el equipo técnico con el servicio de atención al cliente en caso de incidencias?", "origen": "generada"}
+{"pregunta": "¿Qué medida se implementó después de este incidente para prevenir futuros problemas similares?", "origen": "generada"}
+{"pregunta": "¿Cuáles son los principales componentes del servicio de usuarios?", "origen": "generada"}
+{"pregunta": "Se ha filtrado una clave de API en un repositorio. ¿Qué hago?", "origen": "generada"}
+{"pregunta": "¿Cuál era el problema principal que causó que la base de datos rechazara conexiones con too many connections?", "origen": "generada"}
+{"pregunta": "¿Cuál es el nombre del servicio de usuarios que proporciona el rol editor?", "origen": "generada"}
+{"pregunta": "¿Durante qué fase se ejecutan las migraciones de esquema en el servicio de usuarios?", "origen": "generada"}
+{"pregunta": "¿Qué acciones se tomaron después de la caída de pagos para prevenir futuras fallas?", "origen": "generada"}
+{"pregunta": "¿Cuál fue el nombre del ingeniero responsable de la copia de seguridad?", "origen": "generada"}
+{"pregunta": "¿Qué canalización utilizan para los despliegues a producción?", "origen": "generada"}
+{"pregunta": "¿Qué tipo de datos guarda el servicio de catálogo además de los productos?", "origen": "generada"}
+{"pregunta": "¿Cuál es el nombre de la pasarela interna utilizada para la comunicación entre servicios?", "origen": "generada"}
+{"pregunta": "¿Cómo se maneja el cambio de ruta de una imagen en el despliegue si la CDN no es informada?", "origen": "generada"}
+{"pregunta": "¿Qué tipo de migraciones requieren aprobación adicional después del incidente mencionado?", "origen": "generada"}
+{"pregunta": "¿Por qué el servicio de pagos tiene el SLA más exigente en la plataforma?", "origen": "generada"}
+{"pregunta": "¿Cuánto tiempo llevó volver a la versión anterior durante la caída de pagos?", "origen": "generada"}
+{"pregunta": "¿Qué ocurre si la cola de Redis se llena?", "origen": "generada"}
+{"pregunta": "¿Cuál es el nombre del servidor SMTP que se utiliza para enviar notificaciones por email?", "origen": "generada"}
+{"pregunta": "¿Qué información guarda el servicio de catálogo?", "origen": "generada"}
+{"pregunta": "¿Qué porcentaje de la memoria de Redis genera una alerta?", "origen": "generada"}
+{"pregunta": "¿Cuántas personas están asignadas a la persona de guardia en el entorno de producción?", "origen": "generada"}
+{"pregunta": "¿Cuál es el intervalo de tiempo entre las copias de seguridad de Redis y OpenSearch?", "origen": "generada"}
+{"pregunta": "¿Cuál es el nombre del servicio responsable de los pagos?", "origen": "generada"}
+{"pregunta": "¿Cuántas veces al mes se realizan las copias de seguridad adicionales de las bases de datos?", "origen": "generada"}
+{"pregunta": "¿Cuánto tiempo duró la falta de indexación de los productos nuevos?", "origen": "generada"}
+{"pregunta": "¿Cuál fue la causa raíz del incidente de pérdida de teléfonos de usuarios en julio de 2026?", "origen": "generada"}
+{"pregunta": "¿Cuál es el tiempo máximo de indisponibilidad permitido según el SLA del servicio de pagos?", "origen": "generada"}
+{"pregunta": "¿Cuándo ocurrió la pérdida de los datos de los teléfonos de los usuarios?", "origen": "generada"}
+{"pregunta": "¿Qué tipo de correcciones se permiten desplegar a producción en vísperas de festivo según la política de despliegues?", "origen": "generada"}
+{"pregunta": "¿Por qué no se revisó el script durante la migración?", "origen": "generada"}
+{"pregunta": "¿Cuánto tiempo duran las sesiones de usuario?", "origen": "generada"}
+{"pregunta": "¿Qué sucede si los productos con tilde no aparecen en la búsqueda?", "origen": "generada"}
+{"pregunta": "¿Qué base de datos se utiliza principalmente para el servicio de pagos?", "origen": "generada"}
+{"pregunta": "¿Cuál es el equipo responsable del servicio de usuarios?", "origen": "generada"}
+{"pregunta": "¿Cuál es el método de indexación utilizado para el catálogo en OpenSearch?", "origen": "generada"}
+{"pregunta": "¿Cuál es el proceso de despliegue a producción según la política de despliegues?", "origen": "generada"}
+{"pregunta": "¿Cuando salta la alerta PagosLatenciaP95Alta?", "origen": "generada"}
+{"pregunta": "¿Cuál es el número de elementos que se indexan en OpenSearch por día?", "origen": "generada"}
+{"pregunta": "¿Cuáles fueron los motivos más probables para que los productos nuevos no aparecieran en la búsqueda?", "origen": "generada"}
+{"pregunta": "¿Cuántas veces realiza el conector de pasarela los reintentos en caso de error?", "origen": "generada"}
+{"pregunta": "¿Cómo se envían las notificaciones por email en el servicio de notificaciones?", "origen": "generada"}
+{"pregunta": "¿En qué período se debe disfrutar el día libre después de una semana de guardia?", "origen": "generada"}
+{"pregunta": "¿Cuántas conexiones permitidas tenía el pool de la base de datos antes de que se agotara?", "origen": "generada"}
+{"pregunta": "¿Cuáles son las consecuencias de que PostgreSQL o la pasarela externa fallen?", "origen": "generada"}
+{"pregunta": "¿Cuántos productos se almacenan actualmente en el servicio de catálogo?", "origen": "generada"}
+{"pregunta": "¿Cuál es el tiempo de actualización de la réplica de lectura en comparación con la base de datos principal?", "origen": "generada"}
+{"pregunta": "¿Qué sucede cuando una incidencia media no genera consultas del cliente?", "origen": "generada"}
+{"pregunta": "¿Cuál es el porcentaje de productos que normalmente presentan problemas de búsqueda sin tilde?", "origen": "generada"}
+{"pregunta": "¿Qué podria indicar que los nuevos pods no se estan arrancando correctamente después de un despliegue?", "origen": "generada"}
+{"pregunta": "Se reenvían las notificaciones push que fallaron mientras las credenciales estaban caducadas", "origen": "generada"}
+{"pregunta": "¿Cuál fue el monto total de los pagos que se vieron afectados durante el incidente?", "origen": "generada"}
+{"pregunta": "¿Cuál es el método de comunicación utilizado entre los servicios de la plataforma?", "origen": "generada"}
+{"pregunta": "¿Qué función tiene un interruptor de funcionalidad en la implementación de nuevas características?", "origen": "generada"}
+{"pregunta": "¿En qué ruta del gestor de secretos se guarda el token nuevo del banco?", "origen": "generada"}
+{"pregunta": "¿Qué tipo de autenticación se utiliza para el inicio de sesión con contraseña en el servicio de usuarios?", "origen": "generada"}
+{"pregunta": "¿A PARTIR DE QUÉ PORCENTAJE DE USO DE DISCO SALTA LA ALERTA DE LA BÚSQUEDA?", "origen": "generada"}
+{"pregunta": "¿Cuál es el número de alertas de producción promedio que recibe la persona de guardia en un día?", "origen": "generada"}
+{"pregunta": "¿En qué tipo de incidencias se debe avisar siempre el equipo técnico?", "origen": "generada"}
+{"pregunta": "¿Cómo se comunica la eliminación de la alerta de ruido en la reunión?", "origen": "generada"}
+{"pregunta": "¿Cuáles son las funciones principales del panel de administración del catálogo para los editores?", "origen": "generada"}
+{"pregunta": "¿Cómo se integra el servicio de búsqueda con el catálogo de la tienda?", "origen": "generada"}
+{"pregunta": "¿Cuál fue la fecha exacta en que se produjo este incidente de productos nuevos sin indexar?", "origen": "generada"}
+{"pregunta": "¿Cuál es el nombre del proveedor que proporciona el servicio afectado?", "origen": "generada"}
+{"pregunta": "¿Cuáles son los métodos de inicio de sesión disponibles en la plataforma?", "origen": "generada"}
+{"pregunta": "¿Qué alerta saltó a los 3 minutos durante el problema de pagos?", "origen": "generada"}
+{"pregunta": "¿Cuál es el límite de conexiones actual en PgBouncer?", "origen": "generada"}
+{"pregunta": "¿Cuál es el tiempo de latencia máximo permitido para los servicios de la plataforma?", "origen": "generada"}
+{"pregunta": "¿Con qué frecuencia se realizan las pruebas de restauración de copias de seguridad?", "origen": "generada"}
+{"pregunta": "¿Quién es el responsable de revisar las alertas de ruido en la reunión semanal?", "origen": "generada"}
+{"pregunta": "¿Cuál es la configuración del analizador para español que se utiliza en el índice?", "origen": "generada"}
+{"pregunta": "¿Cuál es el nombre del desarrollador que implementó la autenticación con Google?", "origen": "generada"}
+{"pregunta": "¿Qué tipo de peticiones recibe la API de pagos?", "origen": "generada"}
+{"pregunta": "¿Qué ocurre si no se proporciona la variable de entorno OPENSEARCH_URL durante el despliegue?", "origen": "generada"}
+{"pregunta": "¿A qué base de datos se dirigen las escrituras en el servicio de catálogo?", "origen": "generada"}
+{"pregunta": "¿Cuánto retraso tolera la plataforma para que la tienda muestre datos antiguos?", "origen": "generada"}
+{"pregunta": "¿Cuál fue el motivo de la caída de pagos que se analiza en el postmortem?", "origen": "generada"}
+{"pregunta": "¿Cuánto tiempo demora el indexador en aplicar los cambios en el índice?", "origen": "generada"}
+{"pregunta": "¿Cuál es la frecuencia de mantenimiento preventivo para asegurar el 99,9 % de disponibilidad?", "origen": "generada"}
+{"pregunta": "¿Cuál es el umbral de la réplica del catálogo en la alerta ReplicaCatalogoRetraso en minutos?", "origen": "generada"}
+{"pregunta": "¿Cuál es el nombre de la persona que está de guardia este lunes?", "origen": "generada"}
+{"pregunta": "Los emails no salen y en los logs veo Connection timed out. ¿Qué miro primero?", "origen": "generada"}
+{"pregunta": "¿Cuál es el número mínimo de pods que se necesitan para el despliegue del servicio de búsqueda?", "origen": "generada"}
+{"pregunta": "¿Qué porcentaje del pool de conexiones se utilizó durante la caída de pagos que se menciona en el postmortem?", "origen": "generada"}
+{"pregunta": "¿Cuáles son las responsabilidades de cada equipo en relación con los servicios pagos, usuarios, catalogo, notificaciones y busqueda?", "origen": "generada"}
+{"pregunta": "¿Cuál es la frecuencia de revisión del documento de arquitectura del servicio de notificaciones?", "origen": "generada"}
+{"pregunta": "¿En qué canal se realizan los avisos de incidencias según la documentación?", "origen": "generada"}
+{"pregunta": "¿Cuál es el umbral de memoria de Redis en la alerta RedisMemoriaNotificaciones?", "origen": "generada"}
+{"pregunta": "¿Cómo se asegura la comunicación entre estos servicios independientes en el sistema?", "origen": "generada"}
+{"pregunta": "¿Cuál es el tiempo máximo de procesamiento de una transacción en el servicio de pagos?", "origen": "generada"}
