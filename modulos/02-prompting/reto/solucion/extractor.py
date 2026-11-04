@@ -38,9 +38,11 @@ class Aviso(BaseModel):
     hora_inicio: str | None = Field(pattern=r"^([01][0-9]|2[0-3]):[0-5][0-9]$")
 
 
-def correos() -> list[dict]:
+def correos(particion: str = "desarrollo") -> list[dict]:
+    """Los correos de desarrollo (15, para trabajar) o de prueba (10, para el final)."""
     texto = (DATOS / "correos.jsonl").read_text(encoding="utf-8")
-    return [json.loads(linea) for linea in texto.splitlines()]
+    filas = [json.loads(linea) for linea in texto.splitlines()]
+    return [c for c in filas if c["particion"] == particion]
 
 
 def extraer(cliente: ClienteLLM, correo: str) -> Aviso | None:
@@ -68,7 +70,7 @@ def main() -> int:
         mal = campos_mal(extraer(cliente, c["texto"]), c["esperado"])
         bien += not mal
         print(f"{c['id']:2} {'OK   ' if not mal else 'MAL  '} {', '.join(mal)}")
-    print(f"{bien} de {len(correos())} avisos correctos")
+    print(f"{bien} de {len(correos())} avisos correctos (desarrollo)")
     return 0
 
 

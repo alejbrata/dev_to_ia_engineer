@@ -35,3 +35,12 @@ def test_el_esquema_de_partida_acepta_horas_que_no_lo_son() -> None:
 
 def test_la_solucion_usa_otro_rol_que_la_partida() -> None:
     assert (partida.ROL, solucion.ROL) == ("chat", "chat_grande")
+
+
+def test_desarrollo_y_prueba_no_se_mezclan() -> None:
+    desarrollo, prueba = partida.correos("desarrollo"), partida.correos("prueba")
+    assert (len(desarrollo), len(prueba)) == (15, 10)
+    assert not {c["texto"] for c in desarrollo} & {c["texto"] for c in prueba}
+    # Con avisos perfectos también se supera la prueba.
+    avisos = [solucion.Aviso(motivo="-", **c["esperado"]) for c in prueba]
+    assert all(c.ok for c in comprobar.criterios(solucion, avisos, prueba, "prueba"))

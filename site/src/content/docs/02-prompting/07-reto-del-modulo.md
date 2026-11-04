@@ -35,39 +35,39 @@ El proceso interno que genera el informe semanal del catálogo para el equipo de
 
 Los tres son válidos y los tres dicen algo falso o inservible. Un cobro duplicado es pérdida de dinero, y según los criterios del equipo eso es crítica. "6:00" no tiene el formato que espera quien lo lee. Y "lunes" no es una hora.
 
-Los 15 correos y lo que debería salir de cada uno están en `reto/correos.jsonl`. Puedes cambiar el prompt, el esquema y el rol del modelo (`ROL`), pero no los correos ni las respuestas esperadas.
+Los correos y lo que debería salir de cada uno están en `reto/correos.jsonl`: 15 de desarrollo, para trabajar con ellos, y 10 de prueba, para comprobar al final que lo que has cambiado sirve también con correos que no has mirado. Puedes cambiar el prompt, el esquema y el rol del modelo (`ROL`), pero no los correos ni las respuestas esperadas.
 
 ## Criterios de aceptación
 
-De los 15 correos:
+| Criterio | Desarrollo (15) | Prueba (10) |
+| --- | --- | --- |
+| El servicio, bien | al menos 14 | al menos 9 |
+| La hora de inicio, bien: `HH:MM` de 24 horas, o `null` si el correo no la dice | al menos 14 | al menos 9 |
+| Si afecta a clientes, bien | al menos 14 | al menos 9 |
+| La severidad, bien | al menos 10 | al menos 6 |
+| Avisos enteros, bien | al menos 10 | al menos 6 |
 
-1. El servicio está bien en al menos 14.
-2. La hora de inicio está bien en al menos 14: en formato `HH:MM` de 24 horas, o `null` si el correo no la dice.
-3. Si afecta a clientes está bien en al menos 14.
-4. La severidad está bien en al menos 10.
-5. Al menos 10 avisos están bien enteros.
-
-La severidad pide menos que los demás campos a propósito. Es la decisión difícil, y con 15 correos, perseguir el 15 de 15 retocando el prompt es ajustarlo a estos correos, no mejorarlo (módulo 4).
+La severidad pide menos que los demás campos a propósito. Es la decisión difícil, y perseguir el 15 de 15 retocando el prompt es ajustarlo a estos correos, no mejorarlo (módulo 4). Para eso está la prueba: los umbrales guardan la proporción de los de desarrollo, y se fijaron antes de pasar ningún sistema por ella.
 
 ## Cómo se comprueba
 
-[`reto/comprobar.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/02-prompting/reto/comprobar.py) extrae los 15 avisos con tu prompt, tu esquema y tu rol, y mide cada campo, como la eval de la lección 06. Llama al modelo: unos 30 segundos con el de 1,5B y unos 3 minutos con el de 7B. Con el código de partida:
+[`reto/comprobar.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/02-prompting/reto/comprobar.py) extrae los avisos con tu prompt, tu esquema y tu rol, y mide cada campo, como la eval de la lección 06. Por defecto usa los 15 de desarrollo; con `--prueba`, los 10 de prueba. Llama al modelo: con los 15, unos 30 segundos con el de 1,5B y unos 3 minutos con el de 7B. Con el código de partida, en desarrollo:
 
 ```sh title="Terminal de VS Code · raíz del repo"
 uv run python modulos/02-prompting/reto/comprobar.py
 ```
 
 ```text
-Reto del módulo 2 · reto/extractor.py · rol chat · 31 s
-   FALLA servicio: al menos 14 de 15: 11 de 15 (mal: 4, 10, 11, 12)
-   FALLA hora_inicio: al menos 14 de 15: 10 de 15 (mal: 5, 8, 11, 12, 14)
-   OK    afecta_clientes: al menos 14 de 15: 14 de 15 (mal: 8)
-   FALLA severidad: al menos 10 de 15: 6 de 15 (mal: 1, 5, 6, 7, 8, 9, 11, 13, 14)
-   FALLA avisos enteros correctos: al menos 10 de 15: 3 de 15
+Reto del módulo 2 · reto/extractor.py · desarrollo · rol chat · 28 s
+   FALLA desarrollo: servicio, al menos 14 de 15: 11 de 15 (mal: 4, 10, 11, 12)
+   FALLA desarrollo: hora_inicio, al menos 14 de 15: 10 de 15 (mal: 5, 8, 11, 12, 14)
+   OK    desarrollo: afecta_clientes, al menos 14 de 15: 14 de 15 (mal: 8)
+   FALLA desarrollo: severidad, al menos 10 de 15: 6 de 15 (mal: 1, 5, 6, 7, 8, 9, 11, 13, 14)
+   FALLA desarrollo: avisos enteros correctos, al menos 10 de 15: 3 de 15
 1 de 5 criterios. Sigue: lee el primero que falla.
 ```
 
-Aunque la temperatura sea 0, Ollama no siempre da exactamente lo mismo de una ejecución a otra: un caso puede cambiar. Los mínimos dejan margen para eso. El reto está superado cuando dice `Reto superado: 5 de 5 criterios.`.
+Aunque la temperatura sea 0, Ollama no siempre da exactamente lo mismo de una ejecución a otra: un caso puede cambiar. Los mínimos dejan margen para eso. El reto está superado cuando dice `Reto superado: 5 de 5 criterios.` en desarrollo y, al final, una sola vez, con `--prueba`.
 
 ## Pistas
 
@@ -99,14 +99,28 @@ El modelo escribe el JSON de izquierda a derecha, y la severidad va casi al prin
 Está en [`reto/solucion/`](https://github.com/alejbrata/dev_to_ia_engineer/tree/main/modulos/02-prompting/reto/solucion): el prompt corregido en `extraer-aviso.md` y el extractor con los cambios marcados. Se comprueba con `comprobar.py --solucion`:
 
 ```text
-Reto del módulo 2 · reto/solucion/extractor.py · rol chat_grande · 156 s
-   OK    servicio: al menos 14 de 15: 15 de 15
-   OK    hora_inicio: al menos 14 de 15: 15 de 15
-   OK    afecta_clientes: al menos 14 de 15: 14 de 15 (mal: 3)
-   OK    severidad: al menos 10 de 15: 11 de 15 (mal: 3, 4, 7, 9)
-   OK    avisos enteros correctos: al menos 10 de 15: 11 de 15
+Reto del módulo 2 · reto/solucion/extractor.py · desarrollo · rol chat_grande · 152 s
+   OK    desarrollo: servicio, al menos 14 de 15: 15 de 15
+   OK    desarrollo: hora_inicio, al menos 14 de 15: 15 de 15
+   OK    desarrollo: afecta_clientes, al menos 14 de 15: 14 de 15 (mal: 3)
+   OK    desarrollo: severidad, al menos 10 de 15: 11 de 15 (mal: 3, 4, 7, 9)
+   OK    desarrollo: avisos enteros correctos, al menos 10 de 15: 11 de 15
 Reto superado: 5 de 5 criterios.
 ```
+
+Y en prueba, una sola vez, sin tocar el prompt después:
+
+```text
+Reto del módulo 2 · reto/solucion/extractor.py · prueba · rol chat_grande · 137 s
+   OK    prueba: servicio, al menos 9 de 10: 10 de 10
+   OK    prueba: hora_inicio, al menos 9 de 10: 9 de 10 (mal: 19)
+   OK    prueba: afecta_clientes, al menos 9 de 10: 10 de 10
+   OK    prueba: severidad, al menos 6 de 10: 8 de 10 (mal: 17, 21)
+   OK    prueba: avisos enteros correctos, al menos 6 de 10: 7 de 10
+Reto superado: 5 de 5 criterios.
+```
+
+El prompt de la solución se ajustó mirando solo los 15 correos de desarrollo. En los 10 de prueba, que no se miraron, el sistema se queda en 7 avisos enteros correctos de 10, frente a 11 de 15: la mejora se sostiene. Los fallos son del mismo tipo: una hora dicha con palabras ("las 9 y cuarto") y dos severidades, entre ellas una pérdida de datos (la 17) que el modelo no da por crítica.
 
 Los cambios, en el orden en que se encontraron:
 
@@ -125,4 +139,4 @@ Los cambios, en el orden en que se encontraron:
 
 El prompt corregido triplica los avisos correctos del de 1,5B, pero la severidad se queda en 9 de 15: aplicar criterios es lo que más le cuesta a un modelo pequeño. El de 7B llega con el mismo prompt. Es lo mismo que midió la lección 4.06: una misma mejora del prompt rinde distinto con cada modelo, y por eso se mide con el modelo con el que se va a usar.
 
-Las cuatro severidades que siguen mal con el 7B son reales: en la 7, una búsqueda caída para todos sale "alta" en lugar de "crítica". Con 15 correos no compensa seguir retocando el prompt para arreglarlas. Lo siguiente sería tener más correos, para saber si la mejora se sostiene.
+Las cuatro severidades que siguen mal con el 7B son reales: en la 7, una búsqueda caída para todos sale "alta" en lugar de "crítica". Con 15 correos no compensa seguir retocando el prompt para arreglarlas: cada retoque arregla uno y estropea otro. La prueba dice que la mejora general se sostiene; para afinar la severidad harían falta más correos, no más retoques.

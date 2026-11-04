@@ -4,8 +4,9 @@ Convierte correos de incidencias en avisos estructurados para el equipo de guard
 siempre cumple el esquema: Pydantic no se queja nunca. Pero muchos avisos dicen algo falso.
 
 Tiene fallos, en el prompt (`extraer-aviso.md`) y en el esquema. `comprobar.py` dice qué
-criterios no cumple; arréglalo hasta que los cumpla todos. Puedes cambiar el prompt, el
-esquema y el rol del modelo (`ROL`), pero no los correos ni las respuestas esperadas.
+criterios no cumple; arréglalo hasta que los cumpla todos con los 15 correos de desarrollo, y
+mira los 10 de prueba (`--prueba`) solo al final. Puedes cambiar el prompt, el esquema y el
+rol del modelo (`ROL`), pero no los correos ni las respuestas esperadas.
 
 Uso: `uv run python modulos/02-prompting/reto/extractor.py`
 Comprobar: `uv run python modulos/02-prompting/reto/comprobar.py`
@@ -35,9 +36,11 @@ class Aviso(BaseModel):
     hora_inicio: str | None  # la hora en que empezó, si el correo la dice
 
 
-def correos() -> list[dict]:
+def correos(particion: str = "desarrollo") -> list[dict]:
+    """Los correos de desarrollo (15, para trabajar) o de prueba (10, para el final)."""
     texto = (DATOS / "correos.jsonl").read_text(encoding="utf-8")
-    return [json.loads(linea) for linea in texto.splitlines()]
+    filas = [json.loads(linea) for linea in texto.splitlines()]
+    return [c for c in filas if c["particion"] == particion]
 
 
 def extraer(cliente: ClienteLLM, correo: str) -> Aviso | None:
@@ -65,7 +68,7 @@ def main() -> int:
         mal = campos_mal(extraer(cliente, c["texto"]), c["esperado"])
         bien += not mal
         print(f"{c['id']:2} {'OK   ' if not mal else 'MAL  '} {', '.join(mal)}")
-    print(f"{bien} de {len(correos())} avisos correctos")
+    print(f"{bien} de {len(correos())} avisos correctos (desarrollo)")
     return 0
 
 
