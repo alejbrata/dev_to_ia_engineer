@@ -126,20 +126,20 @@ def relevancia_v2(cliente, pregunta, respuesta, rol="judge") -> bool:
     return cita_valida(r.frase, respuesta)
 ```
 
-Para comprobarlo no hace falta etiquetar nada a mano. [`juez_relevancia.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/04-evals/juez_relevancia.py) toma las respuestas correctas, que con su propia pregunta contestan, y las empareja también con la pregunta de otro caso, donde no contestan. Lo hace con las respuestas de dos modelos: las del de 1,5B de esta lección y las del de 7B del sistema vigente (lección 07), que responden de otra forma. Unos 30 minutos:
+Para comprobarlo no hace falta etiquetar nada a mano. [`juez_relevancia.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/04-evals/juez_relevancia.py) toma las respuestas correctas, que con su propia pregunta contestan, y las empareja con otras dos preguntas donde no contestan. Una es de otro caso cualquiera, casi siempre de otro tema: el negativo fácil. La otra es de un caso del mismo servicio, cuyos datos clave no están en la respuesta: el negativo difícil, que habla de lo mismo y no contesta. Lo hace con las respuestas de dos modelos: las del de 1,5B de esta lección y las del de 7B del sistema vigente (lección 07), que responden de otra forma. Unos 45 minutos:
 
 ```sh title="Terminal de VS Code · raíz del repo"
 uv run python modulos/04-evals/juez_relevancia.py
 ```
 
 ```text
-Respuestas correctas, con su pregunta y con la de otro caso
-                   con su pregunta  con otra  kappa  s/juicio
-   1,5B juez v1            23 de 33         0   0.70      6.3s
-   1,5B juez v2            33 de 33         0   1.00      7.0s
-   7B   juez v1            16 de 38         0   0.42      5.8s
-   7B   juez v2            33 de 38         2   0.82      6.0s
-   (con su pregunta deberían contestar todas; con la de otro caso, ninguna)
+Respuestas correctas, cada una con tres preguntas: dice que contesta en...
+                   su pregunta  otro tema  mismo tema  kappa  s/juicio
+   1,5B juez v1        23 de 33    0 de 33     0 de 33   0.75      6.7s
+   1,5B juez v2        33 de 33    0 de 33     1 de 33   0.98      6.7s
+   7B   juez v1        16 de 38    0 de 38     0 de 38   0.49      5.8s
+   7B   juez v2        33 de 38    2 de 38     5 de 38   0.77      5.7s
+   (con su pregunta deberían contestar todas; con las otras dos, ninguna)
    juez v2: dice que no contestan m3-09 (7B), m3-26 (7B), n-02 (7B), n-15 (7B), n-16 (7B)
 ```
 
@@ -201,11 +201,16 @@ El juez de la lección 06 del módulo 3 rechaza respuestas que contestan exactam
 
 La primera versión del v2 corregía eso con las respuestas del 1,5B, pero dejaba la frase vacía cuando la respuesta entera era el dato: "No", "47 minutos", "Descubrimiento". El sistema vigente, con el modelo de 7B, responde así a menudo, y por eso la comprobación usa los dos modelos: con uno solo, este fallo no se habría visto. La versión 2 del prompt dice que, en ese caso, copie la respuesta entera. El ejemplo del prompt ("3 horas") no sale del dataset, para no enseñarle al juez la respuesta del examen.
 
-Lo que queda está en la salida. Con el 7B, el v2 da 5 de 38 correctas por no relevantes, la mayoría respuestas de una palabra o preguntas que son solo un nombre (la n-15 es "ReplicaCatalogoRetraso"). Y en 2 de 38 dice que contesta una respuesta que no es de esa pregunta: "47 minutos" a "¿A qué hora se hace la copia de seguridad?". Tiene forma de respuesta, y el juez no juzga si es verdad. La relevancia es útil para comparar versiones del mismo sistema; como valor exacto, con este juez, tiene un margen de unos puntos.
+Lo que queda está en la salida, y es más con los negativos difíciles. Con el 7B, el v2 da 5 de 38 correctas por no relevantes, la mayoría respuestas de una palabra o preguntas que son solo un nombre (la n-15 es "ReplicaCatalogoRetraso"). Con la pregunta de otro tema, dice que contestan 2 de 38. Con la del mismo tema, 5 de 38, y 1 de 33 con el 1,5B. Esos 8 son de dos tipos:
+
+- **Una respuesta con forma de respuesta, pero de otra pregunta.** "47 minutos" a "¿Cada cuánto caduca el token de la API del banco?", "15 minutos" a "¿Cuándo salta la alerta PagosLatenciaP95Alta?", "99,5 %" a "¿Qué porcentaje del tráfico recibe el canario?". Es un dato del tipo que se pide, y el juez no juzga si es verdad: por eso lo da por bueno. Distinguirlo es trabajo de la fidelidad y de la corrección.
+- **Una respuesta del mismo tema que contesta a medias.** A "La tienda está enseñando precios viejos. ¿Qué hago?", los umbrales de retraso de la réplica, sin decir qué hacer. A "Dudo entre severidad alta y crítica", que la persona de guardia puede cambiar la severidad.
+
+La relevancia es útil para comparar versiones del mismo sistema. Como valor exacto, con este juez, tiene un margen de unos puntos, y es optimista con las respuestas cortas que parecen un dato. Antes de fiarte de un juez, pruébalo también con negativos difíciles: con los fáciles, el v2 parecía casi perfecto.
 
 ## Errores frecuentes
 
-**Fiarse de un juez sin comprobarlo.** El juez de relevancia de la lección 06 del módulo 3 daba un 65-68 % donde el v2 da un 92-100 %. Antes de leer una métrica que da un modelo, compruébala con casos cuya respuesta conoces, y con respuestas de más de un modelo: cada uno responde de una forma, y el juez puede fallar con una y no con otra.
+**Fiarse de un juez sin comprobarlo.** El juez de relevancia de la lección 06 del módulo 3 daba un 65-68 % donde el v2 da un 92-100 %. Antes de leer una métrica que da un modelo, compruébala con casos cuya respuesta conoces, con respuestas de más de un modelo (cada uno responde de una forma, y el juez puede fallar con una y no con otra) y con negativos difíciles, que hablan de lo mismo y no contestan.
 
 **Mirar solo la cifra final.** "28 de 42" no dice si el problema está en la búsqueda o en el modelo. Sin el desglose, puedes pasarte una semana afinando el chunking cuando el dato ya llega y es el modelo el que falla.
 
