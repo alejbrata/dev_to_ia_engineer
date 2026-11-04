@@ -134,7 +134,7 @@ El tercero, la m3-18, es un fallo real: se abstiene con el dato delante.
 
 Se corrigió el comprobador, no el sistema, con dos criterios generales y anclados al corpus. La n-02 acepta también "desactiva", que sale de su propio segmento. Y el dataset tiene un campo nuevo, `cortas`: respuestas cortas que bastan solas, como "no" a una pregunta de sí o no, y que solo cuentan si son la respuesta entera ("No aparece en la documentación" no cuenta). Las respuestas estaban grabadas, así que todas las configuraciones se volvieron a puntuar con el mismo criterio, sin llamar al modelo. La salida de arriba ya es la corregida.
 
-Corregir el comprobador después de ver los resultados tiene un riesgo: ajustar la eval a la respuesta que querías. Las defensas son las de aquí: un criterio general, que se aplica a todas las configuraciones y que queda escrito. Aun así, la m3-09 es de la partición de prueba, y ese caso ya no está limpio: lo hemos mirado.
+Corregir el comprobador después de ver los resultados tiene un riesgo: ajustar la eval a la respuesta que querías. Las defensas son las de aquí: un criterio general, que se aplica a todas las configuraciones y que queda escrito. Aun así, la m3-09 es de la partición de prueba, y ese caso ya no está limpio: ya se ha mirado.
 
 ### En prueba, la mejora se mantiene
 

@@ -51,7 +51,8 @@ Cada lección sigue la estructura definida en `CLAUDE.md`. El bloque **Mide y de
 8. Permisos y actualizaciones del índice
 9. Reto del módulo: el RAG que no encuentra
 - **Métricas**: recall@k, MRR, fidelidad de la respuesta al contexto
-- **Errores clave**: chunks que parten la idea, recuperación vacía, alucinación pese a buen contexto, modelo de embeddings distinto en indexación y consulta
+- **Errores clave**: chunks que parten la idea, recuperación vacía, alucinación pese a buen contexto, modelo de embeddings distinto en indexación y consulta, tablas que no se extraen, versiones obsoletas en el contexto, fugas entre usuarios, documentos borrados que siguen respondiendo
+- **Estado** (2026-11-04): las 8 lecciones escritas, con salidas reales; pendiente de la revisión de Alex. La 7 y la 8 (plan tras el informe externo, 2026-11-03) usan un corpus aparte, `datos/empresa/`, con la documentación del módulo en PDF y DOCX, copias, versiones y permisos, para no tocar el corpus del que dependen los módulos 4 a 8
 
 ## Módulo 4 — Evals 🟨
 

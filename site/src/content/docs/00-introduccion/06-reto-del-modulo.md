@@ -3,6 +3,10 @@ title: "Reto del módulo: el diagnóstico del entorno"
 description: "Reto del módulo 0, sin solución guiada: arreglar un script que diagnostica el entorno (Ollama, modelos descargados y .env fuera de git) hasta que pase sus criterios de aceptación"
 ---
 
+:::note[Revisado: 2026-11]
+Las salidas son de la máquina del curso, con los modelos de `config/models.toml` de ese momento. La tuya listará los roles y los modelos que tengas configurados.
+:::
+
 Las lecciones de este módulo te guían paso a paso. El reto no: tienes un script con fallos, unos criterios de aceptación y un comprobador que te dice cuáles cumples. Cómo llegar es cosa tuya. La solución está en el repositorio, pero ábrela al final, para comparar.
 
 ## Objetivos

@@ -35,7 +35,7 @@ Un 👎 no es una etiqueta. Tiene tres sesgos que se ven en cualquier producto:
 - **Se vota más cuando algo va mal.** Quien recibe lo que esperaba sigue con lo suyo; quien no, a veces protesta. Por eso la proporción de 👎 entre los votos no es la proporción de respuestas malas: los votos son una muestra que se elige sola (*sesgo de selección*).
 - **El 👎 mide la satisfacción, no la corrección.** "No aparece en la documentación" molesta aunque sea lo correcto. Y una respuesta inventada con buena redacción puede llevarse un 👍.
 
-Con esos sesgos, el 👎 sirve sobre todo para dos cosas. La primera es comparar versiones sobre el mismo tráfico, como en un canario, porque los sesgos afectan a las dos por igual. La segunda es encontrar qué revisar.
+Con esos sesgos, el 👎 sirve sobre todo para dos cosas. La primera es comparar versiones sobre el mismo tráfico, como en un canario: quién vota y cuándo se parece en los dos lados. No del todo, y conviene saberlo: si una versión se abstiene más que la otra, recibe más 👎 por abstenerse aunque acierte. La segunda es encontrar qué revisar.
 
 ### De la cola al dataset
 
@@ -128,7 +128,7 @@ De los 52 👎, 34 son de una sola pregunta, "¿Qué hago si pagos devuelve 'too
 
 ### La revisión filtra la mitad
 
-De los 15 grupos, solo 6 son fallos reales. Los otros 9 son falsas alarmas: 5 abstenciones correctas (una inyección, un poema, la capital de Australia, el coste de la pasarela, que no está en la documentación) y 4 respuestas correctas. Sin revisión, esos 9 habrían entrado en el dataset como "fallos", y la eval habría acabado penalizando justo el comportamiento que el módulo 4 enseñó a valorar: abstenerse cuando el dato no está.
+De los 15 grupos, solo 6 son fallos reales. Los otros 9 son falsas alarmas: 5 abstenciones correctas (una petición peligrosa, un poema, la capital de Australia, y dos datos que no están en la documentación: el coste de la pasarela y la base de datos del servicio de recomendaciones) y 4 respuestas correctas. Sin revisión, esos 9 habrían entrado en el dataset como "fallos", y la eval habría acabado penalizando justo el comportamiento que el módulo 4 enseñó a valorar: abstenerse cuando el dato no está.
 
 Los 3 fallos nuevos son claros. En la n-04, el vigente responde solo "Diagnóstico". En la n-13, el candidato se abstiene teniendo el dato. En la s-02, el candidato se inventa que "El clúster de OpenSearch tiene 3 nodos".
 
@@ -159,7 +159,7 @@ Pero mira de dónde salen esos casos. Entran porque fallaron, y 2 de los 3 son f
 
 **La causa.** Es un sesgo de selección: la muestra que vota no representa al tráfico. Además, de los 11 👎 del vigente, 4 son de abstenciones correctas, que el usuario valora mal y el sistema hace bien. En la práctica se sabe cuál es la tasa de error real, el 5 %, porque el tráfico sale del dataset. En producción no se sabe, y por eso es tan fácil confundir las dos cifras.
 
-**La solución.** No conviertas el 👎 en una tasa de error. Úsalo para comparar versiones sobre el mismo tráfico, con el mismo sesgo en los dos lados, y para encontrar qué revisar. Para la tasa de error, la eval del módulo 4. Para la calidad en producción, una muestra juzgada como en la lección 6.09, que no depende de quién decide votar.
+**La solución.** No conviertas el 👎 en una tasa de error. Úsalo para comparar versiones sobre el mismo tráfico, sabiendo qué sesgos no son iguales en los dos lados (las abstenciones), y para encontrar qué revisar. Para la tasa de error, la eval del módulo 4. Para la calidad en producción, una muestra juzgada como en la lección 6.09, que no depende de quién decide votar.
 
 ## Comprueba lo que has entendido
 
@@ -169,7 +169,7 @@ Pero mira de dónde salen esos casos. Entran porque fallaron, y 2 de los 3 son f
 			pregunta: 'El 18 % de los votos de tu asistente son 👎. ¿Qué puedes concluir?',
 			opciones: [
 				{ texto: 'Que el 18 % de las respuestas están mal.', porque: 'Los votos se eligen solos: se vota más cuando algo falla, y un "no lo sé" correcto también se lleva 👎. Aquí, un 21 % de 👎 con un 5 % de errores ("El 👎 separa versiones, pero no mide errores").' },
-				{ texto: 'Poco por sí solo; sirve para comparar con otra versión sobre el mismo tráfico y para saber qué revisar.', correcta: true, porque: 'Los sesgos afectan igual a las dos versiones de un canario, y la cola de 👎 dice por dónde empezar a revisar.' },
+				{ texto: 'Poco por sí solo; sirve para comparar con otra versión sobre el mismo tráfico y para saber qué revisar.', correcta: true, porque: 'Sobre el mismo tráfico, quién vota se parece en las dos versiones de un canario (salvo en las abstenciones), y la cola de 👎 dice por dónde empezar a revisar.' },
 			],
 		},
 		{
