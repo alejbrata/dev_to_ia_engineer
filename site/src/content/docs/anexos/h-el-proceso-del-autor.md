@@ -19,7 +19,7 @@ Lo recomiendo, y agradezco a los profesores y tutores las clases, los ejercicios
 
 Al terminarlo me di cuenta de la diferencia entre una formación pensada para el mundo laboral y los cursos pensados para trastear con herramientas. Pero no todo el mundo quiere o puede hacer un máster.
 
-Así nace este curso, hecho con Claude a partir de especificaciones, módulo a módulo, y revisado por mí. Es un curso gratuito, para aprender por tu cuenta, que busca tocar los puntos que para mí son los principales para convertirse en AI Engineer.
+Así nace este curso, hecho con Claude a partir de especificaciones, módulo a módulo, y revisado por mí hasta donde he podido y el tiempo me ha dejado. Es un curso gratuito, para aprender por tu cuenta, que busca tocar los puntos que para mí son los principales para convertirse en AI Engineer.
 
 Por supuesto, aquí no hay nada del contenido del máster que hice: respeto demasiado el trabajo de la gente como para hacer algo así.
 

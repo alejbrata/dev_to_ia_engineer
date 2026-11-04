@@ -23,7 +23,7 @@ Así encontré un máster en EBIS de Desarrollo e inginería de IA generativa, v
 
 Tras terminarlo, me di cuenta de la diferencia de una formación pensada para el mundo laboral o cursos pensados para trastear con herramientas, pero no todo el mundo quiere o tiene acceso a un máster.
 
-Así nace este curso, hecho con claude a través de especificaciones módulo por módulo y revisado por mi. Un curso con la idea de autoaprendizaje gratuito y que busca tocar todos los puntos que para mi me parecen los principales de cara a convertirse en ai engineer. 
+Así nace este curso, hecho con claude a través de especificaciones módulo por módulo y revisado por mi hasta donde he podido y el tiempo me ha dejado. Un curso con la idea de autoaprendizaje gratuito y que busca tocar todos los puntos que para mi me parecen los principales de cara a convertirse en ai engineer. 
 
 Por supuesto, nada del contenido del máster que realicé está aquí, respeto demasiado el trabajo de la gente como para hacer algo así.
 
