@@ -118,7 +118,8 @@ def comprobar_tests(raiz: Path, m: dict, ejecutar: bool) -> Comprobacion:
     if not ficheros:
         return Comprobacion("tests", "FALTA", "no hay ficheros test_*.py")
     if not ejecutar:
-        return Comprobacion("tests", "OK", f"{len(ficheros)} ficheros (sin ejecutar: usa --tests)")
+        # Sin el número de ficheros: cambia con cada test nuevo y no dice si funcionan.
+        return Comprobacion("tests", "OK", "hay tests (sin ejecutar: usa --tests)")
     r = subprocess.run(
         ["uv", "run", "pytest", "-q", *carpetas], cwd=raiz, capture_output=True, text=True
     )
@@ -185,7 +186,7 @@ def comprobar_secretos(raiz: Path, m: dict) -> Comprobacion:
             f"{len(hallados)}, p. ej. {f.relative_to(raiz).as_posix()}: {linea[:60]}",
         )
     extra = f" ({de_prueba} con valores de prueba declarados)" if de_prueba else ""
-    return Comprobacion("secretos", "OK", f"{len(ficheros)} ficheros, ninguno{extra}")
+    return Comprobacion("secretos", "OK", f"ninguno en los ficheros versionados{extra}")
 
 
 def comprobar_modelos(raiz: Path, m: dict) -> Comprobacion:
