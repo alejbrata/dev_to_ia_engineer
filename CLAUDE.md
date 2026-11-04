@@ -1,4 +1,4 @@
-# CLAUDE.md — Curso de AI Engineer (sin humo)
+# CLAUDE.md — Curso de AI Engineer
 
 Este fichero te da el contexto que no tienes. Léelo entero antes de cualquier tarea.
 
@@ -23,7 +23,7 @@ Alex, Senior Systems Engineer con más de 10 años en backend Java enterprise (a
 1. **Desarrollo primero.** Cada concepto termina en código que funciona.
 2. **Medir y depurar.** Trazas, métricas (tokens, latencia, coste, tasa de error), iteración guiada por datos y lectura de errores reales. Esto es transversal a todos los módulos, no un tema aislado.
 3. **Agnóstico al proveedor.** El núcleo usa abstracciones neutras. Lo específico de una herramienta (Claude, Hugging Face, etc.) va en los anexos.
-4. **Sin humo.** Nada de "revolucionario", "potente", "el futuro es ahora". Si algo tiene limitaciones o no compensa, se dice.
+4. **Sin exageraciones.** Nada de "revolucionario", "potente", "el futuro es ahora". Si algo tiene limitaciones o no compensa, se dice.
 
 ## Estructura de cada lección
 

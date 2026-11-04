@@ -1,4 +1,4 @@
-# Curso de AI Engineer (sin humo)
+# Curso de AI Engineer
 
 Curso abierto, en español, para formarse como AI Engineer: construir, medir, depurar y poner en producción sistemas basados en LLMs. Pensado para desarrolladores con experiencia, sobre todo backend, sin experiencia previa en ML.
 

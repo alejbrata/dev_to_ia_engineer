@@ -105,15 +105,6 @@
 	color: var(--sl-color-white);
 }
 
-.portada h1 .sin-humo {
-	display: block;
-	font-family: var(--sl-font-mono);
-	font-weight: 400;
-	font-size: 0.55em;
-	letter-spacing: 0;
-	color: var(--sl-color-accent);
-}
-
 .portada .entradilla {
 	font-size: var(--sl-text-lg);
 	color: var(--sl-color-gray-2);
