@@ -279,7 +279,7 @@ def main() -> int:
 
     comparacion = {"gana": len(gana), "pierde": len(pierde), "p": p}
     texto = postmortem(r, motivos, comparacion)
-    (RESULTADOS / "postmortem.md").write_text(texto, encoding="utf-8")
+    (RESULTADOS / "postmortem.md").write_text(texto, encoding="utf-8", newline="\n")
     print("\n4. Postmortem: resultados/postmortem.md")
     for linea in texto.splitlines()[2:6]:
         print(f"   {linea}")
