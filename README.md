@@ -17,8 +17,6 @@ Para leerlo, entra en la web: **https://alejbrata.github.io/dev_to_ia_engineer/*
 | uv | Python 3.12+ y las dependencias (instala Python si no lo tienes) | [docs.astral.sh/uv](https://docs.astral.sh/uv/getting-started/installation/) |
 | Ollama | Ejecutar los modelos en local, gratis | [ollama.com/download](https://ollama.com/download) |
 
-¿Sin instalar nada? El repo trae una configuración para GitHub Codespaces (VS Code en el navegador, con uv, Ollama y los modelos ya preparados): mira la lección 0.04.
-
 Un portátil con 8 GB de RAM y sin GPU basta para el modelo del curso hasta el módulo 3. Desde la lección 1.07 y en los módulos 4 y 5 se usan modelos de 7 y 8B, que ocupan unos 6 GB de memoria: ahí conviene tener 16 GB. No hace falta ninguna clave de API de pago.
 
 ### 2. Tu copia del repositorio
