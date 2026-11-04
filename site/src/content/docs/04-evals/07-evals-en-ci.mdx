@@ -67,16 +67,16 @@ uv run python modulos/04-evals/evaluar.py
 [`evaluar.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/04-evals/evaluar.py) define el sistema vigente en una constante (`SISTEMA`), responde las 58 preguntas y guarda los resultados con la huella:
 
 ```text
-52 de 58 · huella 7097dd989233952d · vigente.jsonl
+52 de 58 · huella 47d2b6972a4c73e1 · vigente.jsonl
 ```
 
-Son las mismas 58 respuestas, una a una, que dio reglas-7b en la lección 06 (36 en desarrollo y 16 en prueba).
+Son las mismas 58 respuestas, una a una, que dio reglas-7b en la lección 06 (36 en desarrollo y 16 en prueba). La huella que veas será otra: resume el contenido de los ficheros del sistema, y cualquier cambio en ellos la cambia. Es justo lo que tiene que hacer.
 
 [`regresion.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/04-evals/regresion.py) no llama a ningún modelo. Con los resultados al día:
 
 ```text
 1. ¿Están al día los resultados grabados?
-   huella guardada 7097dd989233952d · huella actual 7097dd989233952d
+   huella guardada 47d2b6972a4c73e1 · huella actual 47d2b6972a4c73e1
 
 2. Respuestas grabadas, repuntuadas con los comprobadores actuales
    52 de 58
@@ -105,7 +105,7 @@ La eval completa tiene su propio flujo, [`evals-completas.yml`](https://github.c
 
 ### Cambiar el prompt sin repetir la eval
 
-Un PR cambia una frase del prompt vigente ("en dos o tres frases" pasa a "en una o dos frases") y no vuelve a ejecutar `evaluar.py`:
+Un PR cambia una frase del prompt vigente ("en dos o tres frases" pasa a "en una o dos frases") y no vuelve a ejecutar `evaluar.py`. Las dos demostraciones de este apartado se grabaron cuando se escribió la lección, con la huella que tenía entonces el sistema (`7097dd989233952d`):
 
 ```text
 1. ¿Están al día los resultados grabados?
