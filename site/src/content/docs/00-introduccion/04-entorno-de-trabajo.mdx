@@ -96,6 +96,10 @@ Antes de elegir un modelo, lee su ficha. Fíjate en tres cosas: la licencia, los
 
 ## Práctica
 
+:::tip[¿Sin instalar nada en tu equipo?]
+Puedes hacer el curso en el navegador, con GitHub Codespaces: lo explica el último apartado de esta práctica. Merece la pena leer igualmente los pasos, porque el entorno que se prepara allí es el mismo.
+:::
+
 ### 1. Instala uv
 
 En macOS o Linux:
@@ -262,6 +266,23 @@ uv run python modulos/00-introduccion/hola_mundo.py "¿Qué es un token?"
 ```
 
 Lee el código. Son menos de 100 líneas sin magia: un `POST` a `/api/chat` con `httpx`, la respuesta validada con un modelo de Pydantic y un cronómetro alrededor de la llamada. No usa ningún SDK de proveedor: es HTTP, como cualquier otra API que hayas integrado.
+
+### Sin instalar nada: GitHub Codespaces
+
+Si no puedes o no quieres instalar nada, el repositorio trae una configuración para [GitHub Codespaces](https://docs.github.com/es/codespaces/overview): VS Code en el navegador, con una máquina Linux detrás. En la página de tu fork, pulsa **Code**, la pestaña **Codespaces** y **Create codespace on main**.
+
+La primera vez, el codespace hace solo los pasos 1 a 5 de esta práctica. Instala uv y las dependencias, copia `.env.example` a `.env`, instala Ollama y descarga los modelos de los roles `chat` y `embeddings` de `config/models.toml`. Lo hace con [`.devcontainer/preparar.sh`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/.devcontainer/preparar.sh), que puedes leer. Después, cada vez que lo abras, deja Ollama en marcha. Cuando termine, sigue en el paso 6, en su terminal.
+
+Lo que conviene saber antes:
+
+- **Lo paga tu cuenta, no el curso.** GitHub da a cada cuenta personal una cuota gratuita de horas de codespace al mes, y la configuración pide la máquina de 4 núcleos y 16 GB, que la gasta más deprisa que las pequeñas. Consulta la cuota actual en la [documentación de facturación de Codespaces](https://docs.github.com/es/billing/managing-billing-for-your-products/managing-billing-for-github-codespaces/about-billing-for-github-codespaces). Detén el codespace cuando no lo uses: por defecto se para solo tras 30 minutos sin actividad.
+- **Hasta el módulo 3 va bien.** El modelo de 1,5B responde en segundos sin GPU: en el contenedor de prueba, el "hola mundo" tardó unos 4. Los retos que no llaman a modelos, las prácticas con `--grabadas` y los tests van sin esperas.
+- **Desde la lección 1.07, y en los módulos 4 a 7, se usan modelos de 7 y 8B.** Caben en esa máquina (descárgalos con `ollama pull` cuando la lección los pida), pero son lentos y gastan la cuota. Ahí es más práctico usar una API comercial con tu clave, en `.env`, y `CURSO_PROVEEDOR` (anexo G).
+- **El reranker no se instala solo.** Las lecciones que lo usan (desde la 3.05, y el sistema vigente de los módulos 4 y 6) necesitan llama.cpp, como en tu equipo, o una API comercial.
+
+:::note[Revisado: 2026-11]
+La configuración se ha probado como contenedor local con la misma imagen (VS Code y Docker): se prepara en unos 4 minutos y los tests del curso pasan dentro. En un codespace real, el tiempo depende de la red de GitHub.
+:::
 
 ## Mide y depura
 
