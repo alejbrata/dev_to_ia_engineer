@@ -152,6 +152,18 @@ Abre estos apartados solo después de intentar el reto. Cada uno explica el fall
 
 **Qué fallaba:** El prompt original etiqueta como media una incidencia de pagos que impide operar. Además, no define los criterios de severidad.
 
+**Código original:**
+
+~~~json
+{"servicio": "pagos", "severidad": "media", "afecta_clientes": true, "hora_inicio": "10:15"}
+~~~
+
+**Código corregido:**
+
+~~~json
+{"motivo": "Ningún cliente puede pagar: se pierden ventas, es pérdida de dinero.", "servicio": "pagos", "severidad": "critica", "afecta_clientes": true, "hora_inicio": "10:15"}
+~~~
+
 **Cómo se corrige:** Revisa `reto/extraer-aviso.md` y compáralo con `reto/solucion/extraer-aviso.md`: corrige el ejemplo, incluye los criterios de severidad y aclara qué cubre cada servicio.
 
 **Qué aprendes:** Un JSON válido puede ser semánticamente incorrecto. Los ejemplos de few-shot y las instrucciones son parte de la especificación, y las evals deben medir ambos aspectos.
@@ -163,6 +175,31 @@ Abre estos apartados solo después de intentar el reto. Cada uno explica el fall
 
 **Qué fallaba:** El original declara `hora_inicio: str | None`, por lo que cadenas como `lunes` también son válidas. La severidad se genera antes de explicar el motivo.
 
+**Código original:**
+
+~~~python
+from pydantic import BaseModel
+
+class Aviso(BaseModel):
+    servicio: Literal["pagos", "usuarios", "catalogo", "notificaciones", "busqueda"]
+    severidad: Literal["critica", "alta", "media", "baja"]
+    afecta_clientes: bool
+    hora_inicio: str | None
+~~~
+
+**Código corregido:**
+
+~~~python
+from pydantic import BaseModel, Field
+
+class Aviso(BaseModel):
+    motivo: str
+    servicio: Literal["pagos", "usuarios", "catalogo", "notificaciones", "busqueda"]
+    severidad: Literal["critica", "alta", "media", "baja"]
+    afecta_clientes: bool
+    hora_inicio: str | None = Field(pattern=r"^([01][0-9]|2[0-3]):[0-5][0-9]$")
+~~~
+
 **Cómo se corrige:** La solución importa `Field`, declara `motivo: str` antes de los demás campos y restringe la hora con `Field(pattern=r"^([01][0-9]|2[0-3]):[0-5][0-9]$")`.
 
 **Qué aprendes:** El esquema debe imponer restricciones verificables. Generar primero una justificación también puede ayudar a un modelo con decisiones complejas, aunque no garantiza exactitud.
@@ -173,6 +210,18 @@ Abre estos apartados solo después de intentar el reto. Cada uno explica el fall
 <summary>El modelo pequeño no alcanza los criterios</summary>
 
 **Qué fallaba:** El extractor original usa `ROL = "chat"`, el modelo de 1,5B. Incluso tras corregir prompt y esquema, la severidad no llega al mínimo registrado.
+
+**Código original:**
+
+~~~python
+ROL = "chat"
+~~~
+
+**Código corregido:**
+
+~~~python
+ROL = "chat_grande"
+~~~
 
 **Cómo se corrige:** La solución cambia a `ROL = "chat_grande"`, que selecciona el 7B. Evalúa desarrollo y después la partición de prueba sin retocar el prompt al verla.
 

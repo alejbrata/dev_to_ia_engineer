@@ -127,6 +127,25 @@ Abre estos apartados solo después de intentar el reto. Cada uno explica el fall
 
 **Qué fallaba:** La versión inicial ejecuta todas las operaciones sin llamar a `aprobar`.
 
+**Código original:**
+
+~~~python
+# Antes: se entra directamente en el bucle de llamadas.
+ultimo: Exception | None = None
+for _ in range(REINTENTOS):
+    ...
+~~~
+
+**Código corregido:**
+
+~~~python
+from api_simulada import DESTRUCTIVAS
+
+if accion["operacion"] in DESTRUCTIVAS and not aprobar(accion):
+    return f"Acción denegada por la persona de guardia: {accion['operacion']} no se ha hecho."
+ultimo: Exception | None = None
+~~~
+
 **Cómo se corrige:** La solución importa `DESTRUCTIVAS` y, si la operación es destructiva y `aprobar(accion)` devuelve falso, retorna una denegación sin llamar a la API.
 
 **Qué aprendes:** Los límites de autorización deben implementarse en código; un prompt no constituye un control de permisos.
@@ -137,6 +156,19 @@ Abre estos apartados solo después de intentar el reto. Cada uno explica el fall
 <summary>Evitar duplicados tras un timeout</summary>
 
 **Qué fallaba:** Antes: `api.llamar(accion["operacion"], accion["args"])`. Si la operación se completó pero se perdió la respuesta, un reintento puede ejecutarla dos veces.
+
+**Código original:**
+
+~~~python
+return api.llamar(accion["operacion"], accion["args"])
+~~~
+
+**Código corregido:**
+
+~~~python
+return api.llamar(accion["operacion"], accion["args"],
+                  clave=accion["id"])
+~~~
 
 **Cómo se corrige:** Después: `api.llamar(accion["operacion"], accion["args"], clave=accion["id"])`. El identificador estable hace idempotentes los reintentos en la API simulada.
 
@@ -149,6 +181,20 @@ Abre estos apartados solo después de intentar el reto. Cada uno explica el fall
 
 **Qué fallaba:** Antes se reintentaban por igual `Timeout`, `LimiteDeUso` y `Rechazo`.
 
+**Código original:**
+
+~~~python
+except (Timeout, LimiteDeUso, Rechazo) as e:
+    ultimo = e
+~~~
+
+**Código corregido:**
+
+~~~python
+except Rechazo as e:
+    return f"Error: la API rechaza la petición ({e}). No se ha reintentado."
+~~~
+
 **Cómo se corrige:** La solución captura `Rechazo` por separado y devuelve el error sin reintentar.
 
 **Qué aprendes:** Un rechazo de validación no se arregla repitiendo exactamente la misma solicitud.
@@ -159,6 +205,23 @@ Abre estos apartados solo después de intentar el reto. Cada uno explica el fall
 <summary>Respetar la espera cuando hay límites de uso</summary>
 
 **Qué fallaba:** El original vuelve a intentar una llamada incluso si la API pide esperar.
+
+**Código original:**
+
+~~~python
+except (Timeout, LimiteDeUso, Rechazo) as e:
+    ultimo = e
+~~~
+
+**Código corregido:**
+
+~~~python
+except LimiteDeUso as e:
+    reloj.dormir(e.espera)
+    ultimo = e
+except Timeout as e:
+    ultimo = e
+~~~
 
 **Cómo se corrige:** La solución captura `LimiteDeUso` y ejecuta `reloj.dormir(e.espera)` antes de continuar.
 
