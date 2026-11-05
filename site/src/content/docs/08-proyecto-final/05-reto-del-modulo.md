@@ -142,6 +142,26 @@ Abre estos apartados solo después de intentar el reto. Cada uno explica el fall
 
 **Qué fallaba:** El asistente original solo envía un mensaje de sistema y la pregunta. No tiene acceso a las políticas internas de Arce y puede inventar respuestas plausibles.
 
+**Código original:**
+
+```python
+# Original: sin índice; se usa directamente el LLM.
+def responder(cliente: ClienteLLM, pregunta: str) -> str:
+    mensajes = [Mensaje(role="system", content="Eres el asistente ..."),
+                Mensaje(role="user", content=pregunta)]
+    return cliente.chat(mensajes, rol=ROL, opciones=OPCIONES).texto.strip()
+```
+
+**Código corregido:**
+
+```python
+from curso_core.rag import IndiceVectorial, trocear_por_secciones
+
+nuevo = IndiceVectorial(cliente, rol="embeddings")
+nuevo.añadir([f for d, t in documentos().items()
+              for f in trocear_por_secciones(d, t)])
+```
+
 **Cómo se corrige:** La solución construye un `IndiceVectorial` con `trocear_por_secciones()` sobre los ocho documentos de `docs/` usando el rol `embeddings`.
 
 **Qué aprendes:** Para preguntas sobre datos privados o específicos, el modelo necesita recuperar evidencia pertinente. Saber hablar del tema no equivale a conocer esas políticas.
@@ -153,6 +173,23 @@ Abre estos apartados solo después de intentar el reto. Cada uno explica el fall
 
 **Qué fallaba:** El código inicial pregunta directamente al rol `chat`; no busca ni pasa fragmentos.
 
+**Código original:**
+
+```python
+Mensaje(role="user", content=pregunta)
+```
+
+**Código corregido:**
+
+```python
+fragmentos = indice(cliente).buscar(pregunta, K)
+contexto = "\n\n".join(
+    f"[{i}] {r.fragmento.titulo}\n{r.fragmento.texto}"
+    for i, r in enumerate(fragmentos, 1)
+)
+Mensaje(role="user", content=f"Fragmentos:\n\n{contexto}\n\nPregunta: {pregunta}")
+```
+
 **Cómo se corrige:** La solución recupera tres resultados con `indice(cliente).buscar(pregunta, K)` y envía sus títulos y textos junto a la pregunta. También usa `ROL = "chat_grande"`.
 
 **Qué aprendes:** La recuperación y la generación son pasos distintos. El contexto debe aportar información legible y suficiente para responder.
@@ -163,6 +200,22 @@ Abre estos apartados solo después de intentar el reto. Cada uno explica el fall
 <summary>Exigir completitud y abstención</summary>
 
 **Qué fallaba:** La instrucción original dice que, si el modelo no sabe, se abstenga, pero sin evidencia es difícil decidir qué sabe.
+
+**Código original:**
+
+```python
+# La línea base solo indica que, si no sabe, se abstenga.
+content='... Si no lo sabes, responde "No aparece en la documentación".'
+```
+
+**Código corregido:**
+
+```python
+# Extracto del prompt de sistema de la solución:
+# - Usa solo los fragmentos de las políticas que se te dan.
+# - Si hay varios pasos o condiciones, da todos.
+# - Si los fragmentos no lo dicen, abstente exactamente.
+```
 
 **Cómo se corrige:** El prompt de referencia obliga a usar solo los fragmentos, incluir todas las condiciones y responder exactamente `No aparece en la documentación` cuando los textos no contienen la respuesta.
 
