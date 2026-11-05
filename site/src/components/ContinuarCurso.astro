@@ -178,18 +178,27 @@ const primera = modulos[0]?.lecciones[0]?.id;
       // Retomar: si la última lección sigue pendiente, volver a ella; si se completó,
       // continuar por la próxima pendiente de ese mismo módulo (y recuperar huecos).
       const bloqueRetomar = panel.querySelector<HTMLElement>('[data-bloque-retomar]')!;
-      const pendientesModulo = moduloReciente?.lecciones.filter((l) => !completadas.has(l.id));
-      bloqueRetomar.hidden = !moduloReciente || !pendientesModulo?.length;
-      if (!moduloReciente || !pendientesModulo?.length) return;
+      const pendientesRecientes = moduloReciente?.lecciones.filter((l) => !completadas.has(l.id));
+      const indiceModulo = modulos.findIndex((m) => m.id === moduloReciente?.id);
+      // Si se terminó el último módulo visitado, pasar al siguiente módulo pendiente;
+      // si no lo hay, volver al primero pendiente del itinerario.
+      const otros = indiceModulo >= 0
+        ? [...modulos.slice(indiceModulo + 1), ...modulos.slice(0, indiceModulo)]
+        : [];
+      const proximoModulo = otros.find((m) => m.lecciones.some((l) => !completadas.has(l.id)));
+      const moduloRetomar = pendientesRecientes?.length ? moduloReciente : proximoModulo;
+      bloqueRetomar.hidden = !moduloRetomar;
+      if (!moduloRetomar) return;
 
-      const posicion = moduloReciente.lecciones.findIndex((l) => l.id === idUltima);
+      const pendientes = moduloRetomar.lecciones.filter((l) => !completadas.has(l.id));
+      const posicion = moduloRetomar.lecciones.findIndex((l) => l.id === idUltima);
       const destino = (
-        idUltima && !completadas.has(idUltima)
-          ? moduloReciente.lecciones[posicion]
-          : moduloReciente.lecciones.slice(posicion + 1).find((l) => !completadas.has(l.id))
-      ) ?? pendientesModulo[0];
+        idUltima && posicion >= 0 && !completadas.has(idUltima)
+          ? moduloRetomar.lecciones[posicion]
+          : moduloRetomar.lecciones.slice(posicion + 1).find((l) => !completadas.has(l.id))
+      ) ?? pendientes[0];
 
-      panel.querySelector<HTMLElement>('[data-retomar-modulo]')!.textContent = moduloReciente.label;
+      panel.querySelector<HTMLElement>('[data-retomar-modulo]')!.textContent = moduloRetomar.label;
       panel.querySelector<HTMLElement>('[data-retomar-leccion]')!.textContent = destino.titulo;
       enlazar('[data-accion-retomar]', destino);
     });
