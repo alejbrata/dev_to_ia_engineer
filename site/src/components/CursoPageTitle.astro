@@ -43,6 +43,10 @@ const issueUrl = 'https://github.com/alejbrata/dev_to_ia_engineer/issues/new?' +
       </a>
     </div>
     <p class="curso-nota">El progreso se guarda solo en este navegador, sin cuenta ni sincronización.</p>
+    <nav class="curso-saltos" aria-label="Saltar a partes de esta lección" hidden>
+      <span>Ir a:</span>
+      <div data-curso-saltos></div>
+    </nav>
     <details class="curso-indice">
       <summary>Ver las {lecciones.length} lecciones de {grupo.label}</summary>
       <ol>
@@ -73,6 +77,15 @@ const issueUrl = 'https://github.com/alejbrata/dev_to_ia_engineer/issues/new?' +
   .curso-progreso { color: var(--sl-color-gray-3); font-family: var(--sl-font-mono); font-size: var(--sl-text-xs); }
   .curso-reportar { margin-inline-start: auto; color: var(--sl-color-text-accent); }
   .curso-nota { margin: 0.4rem 0 0; color: var(--sl-color-gray-3); font-size: var(--sl-text-xs); }
+  .curso-saltos { display: none; }
+  .curso-saltos[hidden] { display: none; }
+  .curso-saltos a { color: var(--sl-color-text-accent); text-decoration: none; }
+  .curso-saltos a:hover, .curso-saltos a:focus-visible { text-decoration: underline; }
+  @media (max-width: 49.99rem) {
+    .curso-saltos:not([hidden]) { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.4rem 0.65rem; margin-top: 0.7rem; font-size: var(--sl-text-xs); }
+    .curso-saltos > span { color: var(--sl-color-gray-3); }
+    .curso-saltos [data-curso-saltos] { display: flex; flex-wrap: wrap; gap: 0.4rem 0.8rem; }
+  }
   .curso-indice { margin-top: 0.75rem; }
   .curso-indice summary { cursor: pointer; color: var(--sl-color-text-accent); font-weight: 500; }
   .curso-indice ol { margin: 0.75rem 0 0; padding-left: 1.4rem; }
@@ -94,10 +107,35 @@ const issueUrl = 'https://github.com/alejbrata/dev_to_ia_engineer/issues/new?' +
     } catch { return []; }
   }
 
+  function prepararSaltos(panel: HTMLElement): void {
+    const nav = panel.querySelector<HTMLElement>('.curso-saltos')!;
+    const enlaces = panel.querySelector<HTMLElement>('[data-curso-saltos]')!;
+    const secciones = [
+      { texto: 'Práctica', coincide: /^Práctica$/i },
+      { texto: 'Medir', coincide: /^Mide y depura$/i },
+      { texto: 'Errores', coincide: /^Errores frecuentes$/i },
+      { texto: 'Autoevaluación', coincide: /^Comprueba lo que has entendido$/i },
+    ];
+    const titulos = [...document.querySelectorAll<HTMLHeadingElement>(
+      'main .sl-markdown-content h2[id]',
+    )];
+    enlaces.replaceChildren();
+    for (const { texto, coincide } of secciones) {
+      const titulo = titulos.find((t) => coincide.test(t.textContent?.trim() ?? ''));
+      if (!titulo) continue;
+      const enlace = document.createElement('a');
+      enlace.href = '#' + titulo.id;
+      enlace.textContent = texto;
+      enlaces.append(enlace);
+    }
+    nav.hidden = !enlaces.childElementCount;
+  }
+
   function iniciarProgreso(): void {
     document.querySelectorAll<HTMLElement>('[data-curso-id]').forEach((panel) => {
       if (panel.dataset.inicializado) return;
       panel.dataset.inicializado = 'si';
+      prepararSaltos(panel);
       const id = panel.dataset.cursoId!;
       const titulo = panel.dataset.cursoTitulo!;
       const total = Number(panel.dataset.cursoTotal);
