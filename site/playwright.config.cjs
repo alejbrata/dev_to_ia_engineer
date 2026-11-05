@@ -6,6 +6,7 @@ module.exports = defineConfig({
   use: {
     baseURL: 'http://127.0.0.1:4321/dev_to_ia_engineer/',
     browserName: 'chromium',
+    launchOptions: process.env.CI ? { executablePath: '/usr/bin/google-chrome' } : {},
   },
   webServer: {
     command: 'npm run dev -- --host 127.0.0.1',
