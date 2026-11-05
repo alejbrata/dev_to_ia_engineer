@@ -142,24 +142,24 @@ Abre estos apartados solo después de intentar el reto. Cada uno explica el fall
 
 **Código original:**
 
-```python
+~~~python
 resultado.append({
     "inicio": f"{i * VENTANA // 60:02d}:{i * VENTANA % 60:02d}",
     "peticiones": n,
     "errores": sum(p["error"] for p in ps) / n,
     # No hay señal de recorte.
 })
-```
+~~~
 
 **Código corregido:**
 
-```python
+~~~python
 # Campo añadido dentro del diccionario de cada ventana:
 "recortadas": sum(
     not p["error"] and p["tokens_procesados"] < p["tokens_enviados"]
     for p in ps
 ) / n,
-```
+~~~
 
 **Cómo se corrige:** La solución añade `recortadas`: proporción de peticiones sin error con `tokens_procesados < tokens_enviados`.
 
@@ -174,15 +174,15 @@ resultado.append({
 
 **Código original:**
 
-```python
+~~~python
 return v["errores"] > 0.02
-```
+~~~
 
 **Código corregido:**
 
-```python
+~~~python
 return v["recortadas"] > 0.10
-```
+~~~
 
 **Cómo se corrige:** Después: `return v["recortadas"] > 0.10`. La señal coincide con la degradación sintética del reto.
 
@@ -197,15 +197,15 @@ return v["recortadas"] > 0.10
 
 **Código original:**
 
-```python
+~~~python
 CAUSA = "más tráfico del habitual"
-```
+~~~
 
 **Código corregido:**
 
-```python
+~~~python
 CAUSA = "el servidor del modelo recorta el contexto"
-```
+~~~
 
 **Cómo se corrige:** La solución usa `CAUSA = "el servidor del modelo recorta el contexto"`.
 
