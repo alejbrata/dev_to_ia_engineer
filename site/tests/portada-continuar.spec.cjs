@@ -76,3 +76,20 @@ test('curso completo: el botón principal permite revisar el progreso', async ({
   await principal.click();
   await expect(page).toHaveURL(/#progreso$/);
 });
+
+test('la invitación a dar una estrella es discreta y solo aparece en portada', async ({ page }) => {
+  await page.goto('./');
+  const apoyo = page.locator('.portada .apoyo-github');
+  await expect(apoyo).toBeVisible();
+  await expect(apoyo).toContainText('¿Te está resultando útil?');
+  const enlace = apoyo.getByRole('link', { name: 'Dale una estrella en GitHub' });
+  await expect(enlace).toHaveAttribute('href', 'https://github.com/alejbrata/dev_to_ia_engineer');
+  await expect(enlace).toHaveAttribute('target', '_blank');
+  // El botón principal para continuar el aprendizaje no cambia.
+  await expect(page.locator('.portada .acciones a:first-child')).toHaveAttribute(
+    'href', /00-introduccion\/01-la-rotacion\/$/,
+  );
+
+  await page.goto('01-fundamentos-de-llms/03-sampling/');
+  await expect(page.locator('.apoyo-github')).toHaveCount(0);
+});
