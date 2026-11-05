@@ -131,6 +131,24 @@ Abre estos apartados solo después de intentar el reto. Cada uno explica el fall
 
 **Qué fallaba:** En `trocear()` cada línea se indexa aislada, dejando condiciones, pasos y tablas sin su contexto.
 
+**Código original:**
+
+```python
+return [
+    Fragmento(id=f"{doc}:{i}", doc=doc, titulo="", texto=linea.strip())
+    for i, linea in enumerate(texto.splitlines())
+    if linea.strip()
+]
+```
+
+**Código corregido:**
+
+```python
+from curso_core.rag import trocear_por_secciones
+
+return trocear_por_secciones(doc, texto)
+```
+
 **Cómo se corrige:** Antes: `Fragmento(..., titulo="", texto=linea.strip())` por cada línea. Después: `return trocear_por_secciones(doc, texto)` (importándolo desde `curso_core.rag`).
 
 **Qué aprendes:** Un chunk debe conservar suficiente contexto para contestar; el tamaño mínimo no siempre mejora la recuperación.
@@ -142,6 +160,20 @@ Abre estos apartados solo después de intentar el reto. Cada uno explica el fall
 
 **Qué fallaba:** El original pone `titulo=""`: un apartado llamado «Mitigación» puede no indicar a qué sistema se refiere.
 
+**Código original:**
+
+```python
+Fragmento(id=f"{doc}:{i}", doc=doc, titulo="", texto=linea.strip())
+```
+
+**Código corregido:**
+
+```python
+# trocear_por_secciones() prepara fragmentos con el
+# título del documento y de la sección.
+return trocear_por_secciones(doc, texto)
+```
+
 **Cómo se corrige:** `trocear_por_secciones()` conserva títulos de documento y sección, que `Fragmento.para_indexar` incorpora al texto embebido.
 
 **Qué aprendes:** En RAG importa *qué* se indexa, no solo cuántos fragmentos se generan.
@@ -152,6 +184,20 @@ Abre estos apartados solo después de intentar el reto. Cada uno explica el fall
 <summary>Un umbral de similitud sin calibración descarta resultados útiles</summary>
 
 **Qué fallaba:** El original filtra `r.puntuacion >= 0.75`. Un fragmento relevante puede quedar por debajo de ese umbral con este modelo.
+
+**Código original:**
+
+```python
+SIMILITUD_MINIMA = 0.75
+return [r for r in indice.buscar(pregunta, k)
+        if r.puntuacion >= SIMILITUD_MINIMA]
+```
+
+**Código corregido:**
+
+```python
+return indice.buscar(pregunta, k)
+```
 
 **Cómo se corrige:** Antes: `return [r for r in indice.buscar(pregunta, k) if r.puntuacion >= SIMILITUD_MINIMA]`. Después: `return indice.buscar(pregunta, k)`.
 
