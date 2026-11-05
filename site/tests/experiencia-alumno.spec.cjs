@@ -66,7 +66,29 @@ test('el botón de la portada avanza a la primera lección pendiente', async ({ 
   const inicio = page.locator('.portada .acciones a:first-child');
   await expect(page.locator('[data-global]')).toContainText('3 / 77');
   await expect(inicio).toHaveText('Continuar curso');
-  await expect(inicio).toHaveAttribute('href', new RegExp(datos.orden + '/
+  await expect(inicio).toHaveAttribute('href', new RegExp(datos.orden));
+  await inicio.click();
+  await expect(page).toHaveURL(new RegExp(datos.orden));
+  await expect(page.getByRole('checkbox', { name: 'Marcar como completada' })).not.toBeChecked();
+});
+
+test('el botón principal mantiene el orden aunque la última visita sea en el módulo 3', async ({ page }) => {
+  const datos = await montarEscenario(page, 'saltos');
+  await expect(page.locator('.portada .acciones a:first-child')).toHaveAttribute(
+    'href', new RegExp(datos.orden),
+  );
+});
+
+test('con todo completado el botón de portada lleva al resumen', async ({ page }) => {
+  await montarEscenario(page, 'todo');
+  const inicio = page.locator('.portada .acciones a:first-child');
+  await expect(inicio).toHaveText('Ver tu progreso');
+  await expect(inicio).toHaveAttribute('href', '#progreso');
+  await inicio.click();
+  await expect(page).toHaveURL(/#progreso$/);
+});
+
+test('retomar mantiene la última lección si todavía no se completó', async ({ page }) => {
   await page.goto(modulo);
   await page.goto('./');
   const retomar = page.locator('[data-accion-retomar]');
@@ -75,7 +97,6 @@ test('el botón de la portada avanza a la primera lección pendiente', async ({ 
   await retomar.click();
   await expect(page).toHaveURL(/01-fundamentos-de-llms\/06-coste-y-latencia/);
 });
-
 test('si termina módulo 1 y hace una lección del 3, puede retomar 3 o continuar 2', async ({ page }) => {
   const datos = await montarEscenario(page, 'saltos');
   const retomar = page.locator('[data-accion-retomar]');
