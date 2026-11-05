@@ -140,3 +140,44 @@ Los cambios, en el orden en que se encontraron:
 El prompt corregido triplica los avisos correctos del de 1,5B, pero la severidad se queda en 9 de 15: aplicar criterios es lo que más le cuesta a un modelo pequeño. El de 7B llega con el mismo prompt. Es lo mismo que midió la lección 4.06: una misma mejora del prompt rinde distinto con cada modelo, y por eso se mide con el modelo con el que se va a usar.
 
 Las cuatro severidades que siguen mal con el 7B son reales: en la 7, una búsqueda caída para todos sale "alta" en lugar de "crítica". Con 15 correos no compensa seguir retocando el prompt para arreglarlas: cada retoque arregla uno y estropea otro. La prueba dice que la mejora general se sostiene; para afinar la severidad harían falta más correos, no más retoques.
+
+## Solución explicada paso a paso
+
+:::caution[Contiene spoilers]
+Abre estos apartados solo después de intentar el reto. Cada uno explica el fallo, el cambio que aparece en la solución de referencia y la lección que deja.
+:::
+
+<details>
+<summary>Un ejemplo del prompt enseña una severidad equivocada</summary>
+
+**Qué fallaba:** El prompt original etiqueta como media una incidencia de pagos que impide operar. Además, no define los criterios de severidad.
+
+**Cómo se corrige:** Revisa `reto/extraer-aviso.md` y compáralo con `reto/solucion/extraer-aviso.md`: corrige el ejemplo, incluye los criterios de severidad y aclara qué cubre cada servicio.
+
+**Qué aprendes:** Un JSON válido puede ser semánticamente incorrecto. Los ejemplos de few-shot y las instrucciones son parte de la especificación, y las evals deben medir ambos aspectos.
+
+</details>
+
+<details>
+<summary>El esquema acepta cualquier hora y decide demasiado pronto</summary>
+
+**Qué fallaba:** El original declara `hora_inicio: str | None`, por lo que cadenas como `lunes` también son válidas. La severidad se genera antes de explicar el motivo.
+
+**Cómo se corrige:** La solución importa `Field`, declara `motivo: str` antes de los demás campos y restringe la hora con `Field(pattern=r"^([01][0-9]|2[0-3]):[0-5][0-9]$")`.
+
+**Qué aprendes:** El esquema debe imponer restricciones verificables. Generar primero una justificación también puede ayudar a un modelo con decisiones complejas, aunque no garantiza exactitud.
+
+</details>
+
+<details>
+<summary>El modelo pequeño no alcanza los criterios</summary>
+
+**Qué fallaba:** El extractor original usa `ROL = "chat"`, el modelo de 1,5B. Incluso tras corregir prompt y esquema, la severidad no llega al mínimo registrado.
+
+**Cómo se corrige:** La solución cambia a `ROL = "chat_grande"`, que selecciona el 7B. Evalúa desarrollo y después la partición de prueba sin retocar el prompt al verla.
+
+**Qué aprendes:** La elección del modelo es una decisión medible: compara calidad, latencia y costes. No optimices hasta memorizar los casos de desarrollo.
+
+</details>
+
+**Comprobación:** ejecuta `uv run python modulos/02-prompting/reto/comprobar.py` sobre tu código. Con `--solucion` se evalúa la implementación de referencia, no tus cambios.
