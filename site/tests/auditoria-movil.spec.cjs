@@ -29,11 +29,24 @@ for (const ancho of [320, 390, 768]) {
     test.setTimeout(240_000);
     await page.setViewportSize({ width: ancho, height: 844 });
     for (const ruta of paginas) {
-      await page.goto(ruta || './');
-      const medidas = await page.evaluate(() => ({
-        ancho: document.documentElement.clientWidth,
-        contenido: document.documentElement.scrollWidth,
-      }));
+      // Astro puede emitir una navegación/redirección al montar las páginas.
+      // Reintentamos una medición interrumpida, pero no ocultamos desbordamientos.
+      let medidas;
+      for (let intento = 0; intento < 3; intento++) {
+        await page.goto(ruta || './', { waitUntil: 'load' });
+        try {
+          await page.waitForLoadState('networkidle', { timeout: 10_000 });
+          medidas = await page.evaluate(() => ({
+            ancho: document.documentElement.clientWidth,
+            contenido: document.documentElement.scrollWidth,
+          }));
+          break;
+        } catch (error) {
+          if (intento === 2 || !/navigation|Execution context was destroyed/i.test(String(error))) {
+            throw error;
+          }
+        }
+      }
       expect.soft(
         medidas.contenido - medidas.ancho,
         'Desbordamiento en ' + ruta + ' a ' + ancho + ' px',
@@ -116,7 +129,7 @@ function rutasDeDocumentos() {
     .split(sep).join('/')
     .replace(/\.mdx?$/, '')
     .replace(/(^|\/)index$/, '$1'))
-    .filter(Boolean);
+    .filter((ruta) => ruta && ruta !== '404');
 }
 
 test('navegación: todas las páginas del curso y anexos responden sin 404', async ({ request }) => {
