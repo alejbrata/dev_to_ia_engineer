@@ -154,18 +154,18 @@ Abre estos apartados solo después de intentar el reto. Cada uno explica el fall
 
 **Código original:**
 
-```text
+~~~text
 # Antes (ejemplo del prompt original)
 ... clientes que no pueden pagar ... → severidad: media
-```
+~~~
 
 **Código corregido:**
 
-```text
+~~~text
 # Después (criterio y ejemplo del prompt corregido)
 Si los clientes no pueden pagar, la incidencia requiere
 una severidad acorde con el impacto en el servicio.
-```
+~~~
 
 **Cómo se corrige:** Revisa `reto/extraer-aviso.md` y compáralo con `reto/solucion/extraer-aviso.md`: corrige el ejemplo, incluye los criterios de severidad y aclara qué cubre cada servicio.
 
@@ -180,7 +180,7 @@ una severidad acorde con el impacto en el servicio.
 
 **Código original:**
 
-```python
+~~~python
 from pydantic import BaseModel
 
 class Aviso(BaseModel):
@@ -188,11 +188,11 @@ class Aviso(BaseModel):
     severidad: Literal["critica", "alta", "media", "baja"]
     afecta_clientes: bool
     hora_inicio: str | None
-```
+~~~
 
 **Código corregido:**
 
-```python
+~~~python
 from pydantic import BaseModel, Field
 
 class Aviso(BaseModel):
@@ -201,7 +201,7 @@ class Aviso(BaseModel):
     severidad: Literal["critica", "alta", "media", "baja"]
     afecta_clientes: bool
     hora_inicio: str | None = Field(pattern=r"^([01][0-9]|2[0-3]):[0-5][0-9]$")
-```
+~~~
 
 **Cómo se corrige:** La solución importa `Field`, declara `motivo: str` antes de los demás campos y restringe la hora con `Field(pattern=r"^([01][0-9]|2[0-3]):[0-5][0-9]$")`.
 
@@ -216,15 +216,15 @@ class Aviso(BaseModel):
 
 **Código original:**
 
-```python
+~~~python
 ROL = "chat"
-```
+~~~
 
 **Código corregido:**
 
-```python
+~~~python
 ROL = "chat_grande"
-```
+~~~
 
 **Cómo se corrige:** La solución cambia a `ROL = "chat_grande"`, que selecciona el 7B. Evalúa desarrollo y después la partición de prueba sin retocar el prompt al verla.
 
