@@ -1,0 +1,128 @@
+---
+import DefaultPageTitle from '@astrojs/starlight/components/PageTitle.astro';
+import { getCollection } from 'astro:content';
+import sidebar from '../sidebar.json';
+
+const { id, entry } = Astro.locals.starlightRoute;
+const grupo = sidebar.find((g) => id.startsWith(g.items[0].autogenerate.directory + '/'));
+const docs = grupo ? await getCollection('docs') : [];
+const lecciones = grupo
+  ? docs
+      .filter((doc) => doc.id.startsWith(grupo.items[0].autogenerate.directory + '/'))
+      .sort((a, b) => a.id.localeCompare(b.id))
+  : [];
+const totalLecciones = docs.filter((doc) => /^0[0-8]-/.test(doc.id)).length;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const issueUrl = 'https://github.com/alejbrata/dev_to_ia_engineer/issues/new?' +
+  new URLSearchParams({
+    title: 'Error en la lección: ' + entry.data.title,
+    body: 'Lección: ' + Astro.url.href +
+      '\n\nQué ocurre:\n\nQué esperaba:\n\nCómo reproducirlo:\n',
+  }).toString();
+---
+
+<DefaultPageTitle />
+
+{grupo && (
+  <section class="curso-herramientas not-content" aria-label="Herramientas del alumno"
+    data-curso-id={id} data-curso-titulo={entry.data.title}
+    data-curso-total={totalLecciones}>
+    <div class="curso-barra">
+      <label class="curso-completada">
+        <input type="checkbox" data-curso-completada />
+        <span>Marcar como completada</span>
+      </label>
+      <span data-curso-progreso class="curso-progreso" aria-live="polite"></span>
+      <a class="curso-reportar" href={issueUrl} target="_blank" rel="noopener noreferrer">
+        Avisar de un error
+      </a>
+    </div>
+    <p class="curso-nota">El progreso se guarda solo en este navegador, sin cuenta ni sincronización.</p>
+    <details class="curso-indice">
+      <summary>Ver las {lecciones.length} lecciones de {grupo.label}</summary>
+      <ol>
+        {lecciones.map((leccion) => (
+          <li>
+            <a href={base + '/' + leccion.id + '/'}
+              aria-current={leccion.id === id ? 'page' : undefined}>
+              {leccion.data.title}
+            </a>
+          </li>
+        ))}
+      </ol>
+    </details>
+  </section>
+)}
+
+<style>
+  .curso-herramientas {
+    margin: 0.75rem 0 1.5rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.6rem;
+    padding: 0.7rem 0.9rem;
+    font-size: var(--sl-text-sm);
+  }
+  .curso-barra { display: flex; flex-wrap: wrap; align-items: center; gap: 0.65rem 1rem; }
+  .curso-completada { display: inline-flex; align-items: center; gap: 0.45rem; cursor: pointer; color: var(--sl-color-white); }
+  .curso-completada input { width: 1rem; height: 1rem; accent-color: var(--sl-color-accent); }
+  .curso-progreso { color: var(--sl-color-gray-3); font-family: var(--sl-font-mono); font-size: var(--sl-text-xs); }
+  .curso-reportar { margin-inline-start: auto; color: var(--sl-color-text-accent); }
+  .curso-nota { margin: 0.4rem 0 0; color: var(--sl-color-gray-3); font-size: var(--sl-text-xs); }
+  .curso-indice { margin-top: 0.75rem; }
+  .curso-indice summary { cursor: pointer; color: var(--sl-color-text-accent); font-weight: 500; }
+  .curso-indice ol { margin: 0.75rem 0 0; padding-left: 1.4rem; }
+  .curso-indice li { margin-block: 0.3rem; }
+  .curso-indice a { color: var(--sl-color-gray-2); }
+  .curso-indice a[aria-current='page'] { color: var(--sl-color-text-accent); font-weight: 600; }
+  @media (min-width: 50rem) { .curso-indice { display: none; } }
+  @media (max-width: 27rem) { .curso-reportar { margin-inline-start: 0; } }
+</style>
+
+<script>
+  const CLAVE_COMPLETADAS = 'curso-ai-engineer:completadas:v1';
+  const CLAVE_ULTIMA = 'curso-ai-engineer:ultima:v1';
+
+  function leerCompletadas(): string[] {
+    try {
+      const dato: unknown = JSON.parse(localStorage.getItem(CLAVE_COMPLETADAS) ?? '[]');
+      return Array.isArray(dato) ? dato.filter((id): id is string => typeof id === 'string') : [];
+    } catch { return []; }
+  }
+
+  function iniciarProgreso(): void {
+    document.querySelectorAll<HTMLElement>('[data-curso-id]').forEach((panel) => {
+      if (panel.dataset.inicializado) return;
+      panel.dataset.inicializado = 'si';
+      const id = panel.dataset.cursoId!;
+      const titulo = panel.dataset.cursoTitulo!;
+      const total = Number(panel.dataset.cursoTotal);
+      const casilla = panel.querySelector<HTMLInputElement>('[data-curso-completada]')!;
+      const contador = panel.querySelector<HTMLElement>('[data-curso-progreso]')!;
+      const completadas = new Set(leerCompletadas());
+
+      const pintar = () => {
+        casilla.checked = completadas.has(id);
+        contador.textContent = completadas.size + ' / ' + total + ' completadas';
+      };
+
+      casilla.addEventListener('change', () => {
+        if (casilla.checked) completadas.add(id);
+        else completadas.delete(id);
+        try { localStorage.setItem(CLAVE_COMPLETADAS, JSON.stringify([...completadas])); }
+        catch { /* Navegación y marcado siguen funcionando sin almacenamiento. */ }
+        pintar();
+      });
+      pintar();
+      try {
+        localStorage.setItem(CLAVE_ULTIMA, JSON.stringify({
+          id, titulo, url: window.location.pathname,
+        }));
+      } catch { /* Navegación normal sin almacenamiento. */ }
+    });
+  }
+
+  document.addEventListener('astro:page-load', iniciarProgreso);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', iniciarProgreso, { once: true });
+  } else iniciarProgreso();
+</script>
