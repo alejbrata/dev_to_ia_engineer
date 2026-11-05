@@ -22,3 +22,14 @@ jobs:
           cache-dependency-path: site/package-lock.json
       - run: npm ci
       - run: npm run build
+      - name: Verificar que Umami solo se incluye al configurar su ID
+        run: |
+          if grep -q 'cloud.umami.is/script.js' dist/index.html; then
+            echo 'Umami no debe cargar sin identificador.'
+            exit 1
+          fi
+          UMAMI_WEBSITE_ID=11111111-1111-4111-8111-111111111111 npm run build
+          grep -q 'cloud.umami.is/script.js' dist/index.html
+          grep -q 'data-website-id="11111111-1111-4111-8111-111111111111"' dist/index.html
+          grep -q 'data-do-not-track="true"' dist/index.html
+          grep -q 'data-domains="alejbrata.github.io"' dist/index.html

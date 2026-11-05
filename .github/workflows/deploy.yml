@@ -18,6 +18,10 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # ID público de Umami (Settings > Secrets and variables > Actions > Variables).
+    # Si no existe, la compilación no incluye el script de analítica.
+    env:
+      UMAMI_WEBSITE_ID: ${{ vars.UMAMI_WEBSITE_ID }}
     steps:
       - uses: actions/checkout@v7
       - uses: withastro/action@v6
