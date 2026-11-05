@@ -74,7 +74,7 @@
 .portada::before {
 	content: '';
 	position: absolute;
-	inset: -2rem -50vw;
+	inset: -2rem 0;
 	z-index: -1;
 	background-image:
 		linear-gradient(var(--curso-rejilla) 1px, transparent 1px),
@@ -443,4 +443,24 @@
 	.barras .relleno {
 		transition: none;
 	}
+}
+
+
+/* Los controles y cabeceras de los laboratorios deben poder reducirse en móviles. */
+@media (max-width: 40rem) {
+  .consola-barra {
+    white-space: normal;
+    flex-wrap: wrap;
+    overflow-wrap: anywhere;
+  }
+  .laboratorio .deslizador {
+    flex-wrap: wrap;
+  }
+  .laboratorio .deslizador input[type='range'] {
+    min-width: min(100%, 10rem);
+  }
+  .laboratorio .barras {
+    grid-template-columns: minmax(0, 4rem) minmax(0, 1fr) minmax(0, 3.25rem);
+    gap: 0.35rem;
+  }
 }
