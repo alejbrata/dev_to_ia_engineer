@@ -133,21 +133,21 @@ Abre estos apartados solo después de intentar el reto. Cada uno explica el fall
 
 **Código original:**
 
-```python
+~~~python
 return [
     Fragmento(id=f"{doc}:{i}", doc=doc, titulo="", texto=linea.strip())
     for i, linea in enumerate(texto.splitlines())
     if linea.strip()
 ]
-```
+~~~
 
 **Código corregido:**
 
-```python
+~~~python
 from curso_core.rag import trocear_por_secciones
 
 return trocear_por_secciones(doc, texto)
-```
+~~~
 
 **Cómo se corrige:** Antes: `Fragmento(..., titulo="", texto=linea.strip())` por cada línea. Después: `return trocear_por_secciones(doc, texto)` (importándolo desde `curso_core.rag`).
 
@@ -162,17 +162,17 @@ return trocear_por_secciones(doc, texto)
 
 **Código original:**
 
-```python
+~~~python
 Fragmento(id=f"{doc}:{i}", doc=doc, titulo="", texto=linea.strip())
-```
+~~~
 
 **Código corregido:**
 
-```python
+~~~python
 # trocear_por_secciones() prepara fragmentos con el
 # título del documento y de la sección.
 return trocear_por_secciones(doc, texto)
-```
+~~~
 
 **Cómo se corrige:** `trocear_por_secciones()` conserva títulos de documento y sección, que `Fragmento.para_indexar` incorpora al texto embebido.
 
@@ -187,17 +187,17 @@ return trocear_por_secciones(doc, texto)
 
 **Código original:**
 
-```python
+~~~python
 SIMILITUD_MINIMA = 0.75
 return [r for r in indice.buscar(pregunta, k)
         if r.puntuacion >= SIMILITUD_MINIMA]
-```
+~~~
 
 **Código corregido:**
 
-```python
+~~~python
 return indice.buscar(pregunta, k)
-```
+~~~
 
 **Cómo se corrige:** Antes: `return [r for r in indice.buscar(pregunta, k) if r.puntuacion >= SIMILITUD_MINIMA]`. Después: `return indice.buscar(pregunta, k)`.
 
