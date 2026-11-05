@@ -144,23 +144,23 @@ Abre estos apartados solo después de intentar el reto. Cada uno explica el fall
 
 **Código original:**
 
-```python
+~~~python
 # Original: sin índice; se usa directamente el LLM.
 def responder(cliente: ClienteLLM, pregunta: str) -> str:
     mensajes = [Mensaje(role="system", content="Eres el asistente ..."),
                 Mensaje(role="user", content=pregunta)]
     return cliente.chat(mensajes, rol=ROL, opciones=OPCIONES).texto.strip()
-```
+~~~
 
 **Código corregido:**
 
-```python
+~~~python
 from curso_core.rag import IndiceVectorial, trocear_por_secciones
 
 nuevo = IndiceVectorial(cliente, rol="embeddings")
 nuevo.añadir([f for d, t in documentos().items()
               for f in trocear_por_secciones(d, t)])
-```
+~~~
 
 **Cómo se corrige:** La solución construye un `IndiceVectorial` con `trocear_por_secciones()` sobre los ocho documentos de `docs/` usando el rol `embeddings`.
 
@@ -175,20 +175,20 @@ nuevo.añadir([f for d, t in documentos().items()
 
 **Código original:**
 
-```python
+~~~python
 Mensaje(role="user", content=pregunta)
-```
+~~~
 
 **Código corregido:**
 
-```python
+~~~python
 fragmentos = indice(cliente).buscar(pregunta, K)
 contexto = "\n\n".join(
     f"[{i}] {r.fragmento.titulo}\n{r.fragmento.texto}"
     for i, r in enumerate(fragmentos, 1)
 )
 Mensaje(role="user", content=f"Fragmentos:\n\n{contexto}\n\nPregunta: {pregunta}")
-```
+~~~
 
 **Cómo se corrige:** La solución recupera tres resultados con `indice(cliente).buscar(pregunta, K)` y envía sus títulos y textos junto a la pregunta. También usa `ROL = "chat_grande"`.
 
@@ -203,19 +203,19 @@ Mensaje(role="user", content=f"Fragmentos:\n\n{contexto}\n\nPregunta: {pregunta}
 
 **Código original:**
 
-```python
+~~~python
 # La línea base solo indica que, si no sabe, se abstenga.
 content='... Si no lo sabes, responde "No aparece en la documentación".'
-```
+~~~
 
 **Código corregido:**
 
-```python
+~~~python
 # Extracto del prompt de sistema de la solución:
 # - Usa solo los fragmentos de las políticas que se te dan.
 # - Si hay varios pasos o condiciones, da todos.
 # - Si los fragmentos no lo dicen, abstente exactamente.
-```
+~~~
 
 **Cómo se corrige:** El prompt de referencia obliga a usar solo los fragmentos, incluir todas las condiciones y responder exactamente `No aparece en la documentación` cuando los textos no contienen la respuesta.
 
