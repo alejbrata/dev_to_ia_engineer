@@ -122,3 +122,44 @@ El ajustado acierta las 12 solapadas, y el base, 7. Ahí estaba casi toda su ven
 - **Una eval contaminada no da error: da una cifra mejor.** Por eso hay que buscar la fuga a propósito, antes de mirar los resultados.
 - **Normalizar es lo mínimo.** Las 12 de este reto se encuentran con minúsculas, sin tildes, sin signos y sin espacios de más. Una paráfrasis ("¿Cuánto tiempo estuvo caído pagos en marzo?") no se encuentra así: para eso la lección 05 compara embeddings y descarta las preguntas de entrenamiento demasiado parecidas a alguna de la eval.
 - **Un parámetro que no se usa es un fallo que no avisa.** `comparar` recibía `excluir` y lo ignoraba: la línea "sin las solapadas" imprimía lo mismo que "todas", y parecía que la fuga no cambiaba nada.
+
+## Solución explicada paso a paso
+
+:::caution[Contiene spoilers]
+Abre estos apartados solo después de intentar el reto. Cada uno explica el fallo, el cambio que aparece en la solución de referencia y la lección que deja.
+:::
+
+<details>
+<summary>Normalizar las preguntas antes de buscar contaminación</summary>
+
+**Qué fallaba:** El original solo aplica `strip()`. Una misma pregunta con distinta capitalización, tildes o signos podría pasar desapercibida.
+
+**Cómo se corrige:** La solución combina `unicodedata.normalize("NFKD", ...)`, eliminación de caracteres no alfanuméricos con `re.sub`, minúsculas y normalización de espacios.
+
+**Qué aprendes:** Antes de celebrar una mejora de fine-tuning, comprueba que la evaluación no contiene ejemplos ya vistos. Esta normalización detecta variaciones superficiales, no paráfrasis.
+
+</details>
+
+<details>
+<summary>Excluir realmente las preguntas filtradas</summary>
+
+**Qué fallaba:** La función original recibe `excluir`, pero lo ignora al contar resultados.
+
+**Cómo se corrige:** La solución añade `resultados = [r for r in resultados if r["id"] not in excluir]` antes de calcular aciertos, ganados, perdidos y p de McNemar.
+
+**Qué aprendes:** Un análisis de sensibilidad que no cambia su población no es una comprobación válida.
+
+</details>
+
+<details>
+<summary>Cambiar la decisión al analizar la eval sin fugas</summary>
+
+**Qué fallaba:** La versión inicial fija `DECISION = "ajustar"` en función de las cifras contaminadas.
+
+**Cómo se corrige:** La solución marca `DECISION = "no ajustar"`: al excluir preguntas solapadas quedan 3 casos ganados y 1 perdido, p = 0,625.
+
+**Qué aprendes:** Una ventaja aparente puede desaparecer tras eliminar contaminación. No demostrar mejora no significa demostrar igualdad: aquí no hay evidencia suficiente para justificar el ajuste y su coste.
+
+</details>
+
+**Comprobación:** ejecuta `uv run python modulos/07-modelos-propios/reto/comprobar.py` sobre tu código. Con `--solucion` se evalúa la implementación de referencia, no tus cambios.
