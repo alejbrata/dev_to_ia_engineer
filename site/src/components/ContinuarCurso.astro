@@ -167,13 +167,14 @@ const primera = modulos[0]?.lecciones[0]?.id;
       const inicioPortada = document.querySelector<HTMLAnchorElement>(
         '.portada .acciones a:first-child',
       );
-      if (inicioPortada) {
+      const inicioTexto = inicioPortada?.querySelector<HTMLElement>('[data-curso-boton-texto]');
+      if (inicioPortada && inicioTexto) {
         if (primeraPendiente) {
           inicioPortada.href = base + '/' + primeraPendiente.id + '/';
-          inicioPortada.textContent = completadas.size ? 'Continuar curso' : 'Empezar el curso';
+          inicioTexto.textContent = completadas.size ? 'Continuar curso' : 'Empezar el curso';
         } else {
           inicioPortada.href = '#progreso';
-          inicioPortada.textContent = 'Ver tu progreso';
+          inicioTexto.textContent = 'Ver tu progreso';
         }
       }
       if (!primeraPendiente) return;
