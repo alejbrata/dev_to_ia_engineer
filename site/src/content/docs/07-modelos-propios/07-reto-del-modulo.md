@@ -136,21 +136,21 @@ Abre estos apartados solo después de intentar el reto. Cada uno explica el fall
 
 **Código original:**
 
-```python
+~~~python
 def normalizar(pregunta: str) -> str:
     return pregunta.strip()
-```
+~~~
 
 **Código corregido:**
 
-```python
+~~~python
 import re
 import unicodedata
 
 def normalizar(pregunta: str) -> str:
     sin_tildes = unicodedata.normalize("NFKD", pregunta).encode("ascii", "ignore").decode()
     return " ".join(re.sub(r"[^\w\s]", " ", sin_tildes.lower()).split())
-```
+~~~
 
 **Cómo se corrige:** La solución combina `unicodedata.normalize("NFKD", ...)`, eliminación de caracteres no alfanuméricos con `re.sub`, minúsculas y normalización de espacios.
 
@@ -165,20 +165,20 @@ def normalizar(pregunta: str) -> str:
 
 **Código original:**
 
-```python
+~~~python
 def comparar(resultados: list[dict], excluir: set[str]) -> dict:
     ganados = sum(r["ajustado"] and not r["base"] for r in resultados)
     ...
-```
+~~~
 
 **Código corregido:**
 
-```python
+~~~python
 def comparar(resultados: list[dict], excluir: set[str]) -> dict:
     resultados = [r for r in resultados if r["id"] not in excluir]
     ganados = sum(r["ajustado"] and not r["base"] for r in resultados)
     ...
-```
+~~~
 
 **Cómo se corrige:** La solución añade `resultados = [r for r in resultados if r["id"] not in excluir]` antes de calcular aciertos, ganados, perdidos y p de McNemar.
 
@@ -193,15 +193,15 @@ def comparar(resultados: list[dict], excluir: set[str]) -> dict:
 
 **Código original:**
 
-```python
+~~~python
 DECISION = "ajustar"
-```
+~~~
 
 **Código corregido:**
 
-```python
+~~~python
 DECISION = "no ajustar"
-```
+~~~
 
 **Cómo se corrige:** La solución marca `DECISION = "no ajustar"`: al excluir preguntas solapadas quedan 3 casos ganados y 1 perdido, p = 0,625.
 
