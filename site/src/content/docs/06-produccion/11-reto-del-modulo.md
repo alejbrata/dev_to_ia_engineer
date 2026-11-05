@@ -140,6 +140,27 @@ Abre estos apartados solo después de intentar el reto. Cada uno explica el fall
 
 **Qué fallaba:** Las ventanas originales solo agregan errores, abstenciones, respaldo y p95. Ninguna de esas señales mide si el servidor descartó tokens de entrada.
 
+**Código original:**
+
+```python
+resultado.append({
+    "inicio": f"{i * VENTANA // 60:02d}:{i * VENTANA % 60:02d}",
+    "peticiones": n,
+    "errores": sum(p["error"] for p in ps) / n,
+    # No hay señal de recorte.
+})
+```
+
+**Código corregido:**
+
+```python
+# Campo añadido dentro del diccionario de cada ventana:
+"recortadas": sum(
+    not p["error"] and p["tokens_procesados"] < p["tokens_enviados"]
+    for p in ps
+) / n,
+```
+
 **Cómo se corrige:** La solución añade `recortadas`: proporción de peticiones sin error con `tokens_procesados < tokens_enviados`.
 
 **Qué aprendes:** La observabilidad tiene que instrumentar el fallo que quieres detectar; latencia y tasa de errores no describen toda degradación de calidad.
@@ -151,6 +172,18 @@ Abre estos apartados solo después de intentar el reto. Cada uno explica el fall
 
 **Qué fallaba:** Antes: `return v["errores"] > 0.02`; con unas 30 peticiones, un solo error puede disparar alertas inútiles.
 
+**Código original:**
+
+```python
+return v["errores"] > 0.02
+```
+
+**Código corregido:**
+
+```python
+return v["recortadas"] > 0.10
+```
+
 **Cómo se corrige:** Después: `return v["recortadas"] > 0.10`. La señal coincide con la degradación sintética del reto.
 
 **Qué aprendes:** Las alertas deben ser accionables y calibradas. En producción, la tasa de errores también necesitaría vigilancia, con umbrales adecuados.
@@ -161,6 +194,18 @@ Abre estos apartados solo después de intentar el reto. Cada uno explica el fall
 <summary>Identificar la causa y no culpar al tráfico</summary>
 
 **Qué fallaba:** La constante original apunta a `más tráfico del habitual`, pero las trazas muestran que desde las 3:00 se procesan como máximo 1.024 tokens de prompts que rondan 1.500.
+
+**Código original:**
+
+```python
+CAUSA = "más tráfico del habitual"
+```
+
+**Código corregido:**
+
+```python
+CAUSA = "el servidor del modelo recorta el contexto"
+```
 
 **Cómo se corrige:** La solución usa `CAUSA = "el servidor del modelo recorta el contexto"`.
 
