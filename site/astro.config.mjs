@@ -8,6 +8,7 @@ import sidebar from './src/sidebar.json' with { type: 'json' };
 // El identificador lo configura quien administra el despliegue en GitHub Actions.
 // Sin él no se carga ningún script ni se envían datos de visitas.
 const umamiWebsiteId = process.env.UMAMI_WEBSITE_ID?.trim();
+const umamiDomain = new URL(process.env.SITIO_URL ?? 'https://alejbrata.github.io').hostname;
 
 // https://astro.build/config
 export default defineConfig({
@@ -26,9 +27,10 @@ export default defineConfig({
 					defer: true,
 					src: 'https://cloud.umami.is/script.js',
 					'data-website-id': umamiWebsiteId,
-					'data-domains': 'alejbrata.github.io',
+					'data-domains': umamiDomain,
 					'data-exclude-search': 'true',
 					'data-exclude-hash': 'true',
+					'data-do-not-track': 'true',
 				},
 			}] : [],
 			// El español es el idioma raíz (sin prefijo en la URL).
