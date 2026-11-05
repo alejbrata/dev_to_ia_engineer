@@ -134,6 +134,24 @@ Abre estos apartados solo después de intentar el reto. Cada uno explica el fall
 
 **Qué fallaba:** El original solo aplica `strip()`. Una misma pregunta con distinta capitalización, tildes o signos podría pasar desapercibida.
 
+**Código original:**
+
+```python
+def normalizar(pregunta: str) -> str:
+    return pregunta.strip()
+```
+
+**Código corregido:**
+
+```python
+import re
+import unicodedata
+
+def normalizar(pregunta: str) -> str:
+    sin_tildes = unicodedata.normalize("NFKD", pregunta).encode("ascii", "ignore").decode()
+    return " ".join(re.sub(r"[^\w\s]", " ", sin_tildes.lower()).split())
+```
+
 **Cómo se corrige:** La solución combina `unicodedata.normalize("NFKD", ...)`, eliminación de caracteres no alfanuméricos con `re.sub`, minúsculas y normalización de espacios.
 
 **Qué aprendes:** Antes de celebrar una mejora de fine-tuning, comprueba que la evaluación no contiene ejemplos ya vistos. Esta normalización detecta variaciones superficiales, no paráfrasis.
@@ -145,6 +163,23 @@ Abre estos apartados solo después de intentar el reto. Cada uno explica el fall
 
 **Qué fallaba:** La función original recibe `excluir`, pero lo ignora al contar resultados.
 
+**Código original:**
+
+```python
+def comparar(resultados: list[dict], excluir: set[str]) -> dict:
+    ganados = sum(r["ajustado"] and not r["base"] for r in resultados)
+    ...
+```
+
+**Código corregido:**
+
+```python
+def comparar(resultados: list[dict], excluir: set[str]) -> dict:
+    resultados = [r for r in resultados if r["id"] not in excluir]
+    ganados = sum(r["ajustado"] and not r["base"] for r in resultados)
+    ...
+```
+
 **Cómo se corrige:** La solución añade `resultados = [r for r in resultados if r["id"] not in excluir]` antes de calcular aciertos, ganados, perdidos y p de McNemar.
 
 **Qué aprendes:** Un análisis de sensibilidad que no cambia su población no es una comprobación válida.
@@ -155,6 +190,18 @@ Abre estos apartados solo después de intentar el reto. Cada uno explica el fall
 <summary>Cambiar la decisión al analizar la eval sin fugas</summary>
 
 **Qué fallaba:** La versión inicial fija `DECISION = "ajustar"` en función de las cifras contaminadas.
+
+**Código original:**
+
+```python
+DECISION = "ajustar"
+```
+
+**Código corregido:**
+
+```python
+DECISION = "no ajustar"
+```
 
 **Cómo se corrige:** La solución marca `DECISION = "no ajustar"`: al excluir preguntas solapadas quedan 3 casos ganados y 1 perdido, p = 0,625.
 
