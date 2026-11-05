@@ -24,3 +24,13 @@ jobs:
       # Instalación efímera para evitar cambios manuales en package-lock.
       - run: npm install --no-save --package-lock=false @playwright/test@1.56.1
       - run: npx playwright test
+      - name: Capturas de vista previa (solo PR)
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: vista-previa-estrella-github
+          path: |
+            site/test-results/vista-estrella-escritorio.png
+            site/test-results/vista-estrella-movil.png
+          if-no-files-found: warn
+          retention-days: 7
