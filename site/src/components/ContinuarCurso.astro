@@ -1,68 +1,203 @@
 ---
+import { getCollection } from 'astro:content';
+import sidebar from '../sidebar.json';
+
+const docs = await getCollection('docs');
+// Misma fuente de navegación del curso: no mantenemos otra lista manual.
+const modulos = sidebar
+  .filter(({ items }) => /^0[0-8]-/.test(items[0].autogenerate.directory))
+  .map(({ label, items }) => {
+    const directorio = items[0].autogenerate.directory;
+    return {
+      id: directorio,
+      label,
+      lecciones: docs
+        .filter((doc) => doc.id.startsWith(directorio + '/'))
+        .sort((a, b) => a.id.localeCompare(b.id))
+        .map((doc) => ({ id: doc.id, titulo: doc.data.title })),
+    };
+  });
+const total = modulos.reduce((n, modulo) => n + modulo.lecciones.length, 0);
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const primera = modulos[0]?.lecciones[0]?.id;
 ---
-<section class="curso-reanudar not-content" aria-label="Retomar el curso">
-  <div>
-    <strong>Tu avance</strong>
-    <p data-resumen>El progreso se guarda en este dispositivo.</p>
+
+<section
+  class="curso-reanudar not-content"
+  aria-label="Tu progreso y próximos pasos"
+  data-curso-modulos={JSON.stringify(modulos)}
+  data-curso-base={base}
+>
+  <div class="curso-cabecera">
+    <div>
+      <strong>Continúa tu aprendizaje</strong>
+      <p data-resumen aria-live="polite">El progreso se guarda en este navegador.</p>
+    </div>
+    <span class="curso-global" data-global>0 / {total} completadas</span>
   </div>
-  <a class="curso-reanudar-enlace" href={base + '/00-introduccion/01-la-rotacion/'} data-enlace>
-    Empezar el curso
-  </a>
+
+  <div class="curso-acciones" data-acciones>
+    <article class="curso-accion" data-bloque-retomar hidden>
+      <span class="curso-etiqueta">Último módulo en el que trabajaste</span>
+      <strong data-retomar-modulo>Retomar donde lo dejaste</strong>
+      <p data-retomar-leccion></p>
+      <a class="curso-boton" data-accion-retomar href={primera ? base + '/' + primera + '/' : base + '/'}>
+        Retomar módulo
+      </a>
+    </article>
+    <article class="curso-accion">
+      <span class="curso-etiqueta">Primera lección pendiente del itinerario</span>
+      <strong data-orden-modulo>Continuar el temario en orden</strong>
+      <p data-orden-leccion></p>
+      <a class="curso-boton curso-boton-secundario" data-accion-orden href={primera ? base + '/' + primera + '/' : base + '/'}>
+        Empezar el temario
+      </a>
+    </article>
+  </div>
+  <p class="curso-finalizado" data-curso-finalizado hidden role="status">
+    ¡Curso completado! Has marcado todas las lecciones y retos. Puedes volver a cualquiera desde el temario.
+  </p>
+
+  <details class="curso-desglose">
+    <summary>Ver progreso por módulo</summary>
+    <div class="curso-modulos">
+      {modulos.map((modulo) => (
+        <div class="curso-modulo" data-modulo={modulo.id}>
+          <div class="curso-modulo-cabecera">
+            <span>{modulo.label}</span>
+            <span data-modulo-cuenta>0 / {modulo.lecciones.length}</span>
+          </div>
+          <progress max={modulo.lecciones.length} value="0" aria-label={'Progreso de ' + modulo.label}>
+            0 de {modulo.lecciones.length}
+          </progress>
+        </div>
+      ))}
+    </div>
+  </details>
+  <p class="curso-aviso">Progreso local: no se sincroniza entre dispositivos y puede perderse al borrar los datos del navegador.</p>
 </section>
 
 <style>
   .curso-reanudar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem 1rem;
     padding: 1rem 1.1rem;
     border: 1px solid var(--sl-color-gray-5);
-    border-radius: 0.6rem;
+    border-radius: 0.65rem;
     background: var(--sl-color-gray-6);
     margin-block: 1.25rem 2rem;
   }
-  .curso-reanudar strong { color: var(--sl-color-white); }
-  .curso-reanudar p { margin: 0.25rem 0 0; color: var(--sl-color-gray-2); font-size: var(--sl-text-sm); }
-  .curso-reanudar-enlace {
-    display: inline-block;
-    padding: 0.5rem 0.85rem;
-    border-radius: 0.4rem;
-    background: var(--sl-color-accent-low);
-    color: var(--sl-color-accent-high);
-    font-weight: 600;
-    text-decoration: none;
+  .curso-cabecera, .curso-modulo-cabecera {
+    display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 0.4rem 1rem;
   }
-  .curso-reanudar-enlace:hover { text-decoration: underline; }
+  .curso-cabecera strong { color: var(--sl-color-white); font-size: var(--sl-text-lg); }
+  .curso-cabecera p { margin: 0.25rem 0 0; color: var(--sl-color-gray-2); font-size: var(--sl-text-sm); }
+  .curso-global { font-family: var(--sl-font-mono); font-size: var(--sl-text-xs); color: var(--sl-color-gray-2); }
+  .curso-acciones { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: 0.8rem; margin-block: 1rem; }
+  .curso-accion { display: flex; flex-direction: column; align-items: flex-start; gap: 0.35rem; padding: 0.9rem; border: 1px solid var(--sl-color-gray-5); border-radius: 0.5rem; background: var(--sl-color-black); }
+  .curso-accion[hidden], .curso-acciones[hidden], .curso-finalizado[hidden] { display: none; }
+  .curso-etiqueta { color: var(--sl-color-gray-3); font-size: var(--sl-text-xs); }
+  .curso-accion strong { font-size: var(--sl-text-base); color: var(--sl-color-white); }
+  .curso-accion p { flex: 1; margin: 0 0 0.5rem; font-size: var(--sl-text-sm); color: var(--sl-color-gray-2); }
+  .curso-boton { display: inline-block; padding: 0.5rem 0.85rem; border-radius: 0.4rem; background: var(--sl-color-accent-low); color: var(--sl-color-accent-high); font-size: var(--sl-text-sm); font-weight: 600; text-decoration: none; }
+  .curso-boton:hover { text-decoration: underline; }
+  .curso-boton-secundario { background: transparent; border: 1px solid var(--sl-color-gray-4); }
+  .curso-finalizado { color: var(--sl-color-accent-high); font-weight: 500; margin-block: 1rem; }
+  .curso-desglose { padding-top: 0.75rem; border-top: 1px solid var(--sl-color-gray-5); }
+  .curso-desglose summary { cursor: pointer; font-size: var(--sl-text-sm); color: var(--sl-color-text-accent); font-weight: 500; }
+  .curso-modulos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: 0.75rem 1.2rem; margin-top: 0.85rem; }
+  .curso-modulo-cabecera { font-size: var(--sl-text-xs); color: var(--sl-color-gray-2); }
+  .curso-modulo progress { width: 100%; height: 0.55rem; accent-color: var(--sl-color-accent); }
+  .curso-aviso { margin: 0.75rem 0 0; font-size: var(--sl-text-xs); color: var(--sl-color-gray-3); }
 </style>
 
 <script>
   const CLAVE_COMPLETADAS = 'curso-ai-engineer:completadas:v1';
   const CLAVE_ULTIMA = 'curso-ai-engineer:ultima:v1';
 
-  function iniciarReanudar(): void {
-    document.querySelectorAll<HTMLElement>('.curso-reanudar').forEach((panel) => {
+  type Leccion = { id: string; titulo: string };
+  type Modulo = { id: string; label: string; lecciones: Leccion[] };
+  type Ultima = { id?: unknown };
+
+  function cargarJSON(clave: string): unknown {
+    try { return JSON.parse(localStorage.getItem(clave) ?? 'null'); }
+    catch { return null; }
+  }
+
+  function actualizarContinuar(): void {
+    document.querySelectorAll<HTMLElement>('[data-curso-modulos]').forEach((panel) => {
+      const modulos = JSON.parse(panel.dataset.cursoModulos!) as Modulo[];
+      const base = panel.dataset.cursoBase!;
+      const todas = modulos.flatMap((m) => m.lecciones);
+      // Ignoramos IDs antiguos o desconocidos: no deben alterar el contador ni generar enlaces.
+      const validas = new Set(todas.map((l) => l.id));
+      const guardadas = cargarJSON(CLAVE_COMPLETADAS);
+      const completadas = new Set(
+        Array.isArray(guardadas)
+          ? guardadas.filter((id): id is string => typeof id === 'string' && validas.has(id))
+          : [],
+      );
+      const ultima = cargarJSON(CLAVE_ULTIMA) as Ultima | null;
+      const idUltima = typeof ultima?.id === 'string' && validas.has(ultima.id)
+        ? ultima.id : null;
+      const moduloReciente = modulos.find((m) => m.lecciones.some((l) => l.id === idUltima));
+      const primeraPendiente = todas.find((l) => !completadas.has(l.id));
+      const global = panel.querySelector<HTMLElement>('[data-global]')!;
       const resumen = panel.querySelector<HTMLElement>('[data-resumen]')!;
-      const enlace = panel.querySelector<HTMLAnchorElement>('[data-enlace]')!;
-      try {
-        const completadas = JSON.parse(localStorage.getItem(CLAVE_COMPLETADAS) ?? '[]');
-        if (Array.isArray(completadas) && completadas.length) {
-          resumen.textContent = completadas.length + ' lecciones marcadas como completadas en este navegador.';
-        }
-        const ultima = JSON.parse(localStorage.getItem(CLAVE_ULTIMA) ?? 'null');
-        if (ultima && typeof ultima.url === 'string'
-            && typeof ultima.titulo === 'string'
-            && ultima.url.startsWith(import.meta.env.BASE_URL)) {
-          enlace.href = ultima.url;
-          enlace.textContent = 'Continuar: ' + ultima.titulo;
-        }
-      } catch { /* Sin almacenamiento local se puede empezar normalmente. */ }
+      global.textContent = completadas.size + ' / ' + todas.length + ' completadas';
+      resumen.textContent = completadas.size === todas.length
+        ? 'Has terminado el itinerario.'
+        : 'Elige si quieres retomar tu módulo o avanzar por orden.';
+
+      modulos.forEach((m) => {
+        const fila = Array.from(panel.querySelectorAll<HTMLElement>('[data-modulo]'))
+          .find((e) => e.dataset.modulo === m.id)!;
+        const hechos = m.lecciones.filter((l) => completadas.has(l.id)).length;
+        fila.querySelector<HTMLElement>('[data-modulo-cuenta]')!.textContent =
+          hechos + ' / ' + m.lecciones.length;
+        fila.querySelector<HTMLProgressElement>('progress')!.value = hechos;
+      });
+
+      const acciones = panel.querySelector<HTMLElement>('[data-acciones]')!;
+      const finalizado = panel.querySelector<HTMLElement>('[data-curso-finalizado]')!;
+      acciones.hidden = !primeraPendiente;
+      finalizado.hidden = Boolean(primeraPendiente);
+      if (!primeraPendiente) return;
+
+      const enlazar = (selector: string, leccion: Leccion) => {
+        const enlace = panel.querySelector<HTMLAnchorElement>(selector)!;
+        enlace.href = base + '/' + leccion.id + '/';
+      };
+
+      // Orden: siempre la primera pendiente desde el módulo 0.
+      const moduloOrden = modulos.find((m) => m.lecciones.some((l) => l.id === primeraPendiente.id))!;
+      panel.querySelector<HTMLElement>('[data-orden-modulo]')!.textContent = moduloOrden.label;
+      panel.querySelector<HTMLElement>('[data-orden-leccion]')!.textContent = primeraPendiente.titulo;
+      const enlaceOrden = panel.querySelector<HTMLAnchorElement>('[data-accion-orden]')!;
+      enlaceOrden.textContent = completadas.size ? 'Continuar el temario en orden' : 'Empezar el curso';
+      enlazar('[data-accion-orden]', primeraPendiente);
+
+      // Retomar: si la última lección sigue pendiente, volver a ella; si se completó,
+      // continuar por la próxima pendiente de ese mismo módulo (y recuperar huecos).
+      const bloqueRetomar = panel.querySelector<HTMLElement>('[data-bloque-retomar]')!;
+      const pendientesModulo = moduloReciente?.lecciones.filter((l) => !completadas.has(l.id));
+      bloqueRetomar.hidden = !moduloReciente || !pendientesModulo?.length;
+      if (!moduloReciente || !pendientesModulo?.length) return;
+
+      const posicion = moduloReciente.lecciones.findIndex((l) => l.id === idUltima);
+      const destino = (
+        idUltima && !completadas.has(idUltima)
+          ? moduloReciente.lecciones[posicion]
+          : moduloReciente.lecciones.slice(posicion + 1).find((l) => !completadas.has(l.id))
+      ) ?? pendientesModulo[0];
+
+      panel.querySelector<HTMLElement>('[data-retomar-modulo]')!.textContent = moduloReciente.label;
+      panel.querySelector<HTMLElement>('[data-retomar-leccion]')!.textContent = destino.titulo;
+      enlazar('[data-accion-retomar]', destino);
     });
   }
-  document.addEventListener('astro:page-load', iniciarReanudar);
+
+  document.addEventListener('astro:page-load', actualizarContinuar);
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', iniciarReanudar, { once: true });
-  } else iniciarReanudar();
+    document.addEventListener('DOMContentLoaded', actualizarContinuar, { once: true });
+  } else actualizarContinuar();
+  window.addEventListener('storage', actualizarContinuar);
 </script>
