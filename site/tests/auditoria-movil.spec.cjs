@@ -1,4 +1,6 @@
 const { test, expect } = require('@playwright/test');
+const { readdirSync } = require('node:fs');
+const { join, relative, sep } = require('node:path');
 
 // Recorrido representativo: portada, temario, los nueve módulos, sus retos y laboratorios.
 const paginas = [
@@ -27,7 +29,7 @@ for (const ancho of [320, 390, 768]) {
     test.setTimeout(240_000);
     await page.setViewportSize({ width: ancho, height: 844 });
     for (const ruta of paginas) {
-      await page.goto(ruta);
+      await page.goto(ruta || './');
       const medidas = await page.evaluate(() => ({
         ancho: document.documentElement.clientWidth,
         contenido: document.documentElement.scrollWidth,
@@ -46,9 +48,9 @@ test('móvil: los atajos permiten saltar a práctica y autoevaluación', async (
   const saltos = page.locator('.curso-saltos');
   await expect(saltos).toBeVisible();
   const practica = saltos.getByRole('link', { name: 'Práctica' });
-  await expect(practica).toHaveAttribute('href', '#practica');
+  await expect(practica).toHaveAttribute('href', '#práctica');
   await practica.click();
-  await expect(page).toHaveURL(/#practica$/);
+  await expect(page).toHaveURL(/#pr/);
   await expect(saltos.getByRole('link', { name: 'Autoevaluación' })).toBeVisible();
 });
 
@@ -97,24 +99,39 @@ test('móvil: el filtro de la tabla de evals y el área desplazable son utilizab
   expect(ocultas).toBeGreaterThan(0);
 });
 
-test('navegación: los enlaces de lecciones y anexos del menú resuelven', async ({ page, request }) => {
+// Derivado directamente del árbol de documentos: también prueba los enlaces que
+// Starlight deja ocultos dentro de módulos plegados, sin abrirlos en el navegador.
+function rutasDeDocumentos() {
+  const raiz = join(__dirname, '..', 'src', 'content', 'docs');
+  const archivos = [];
+  const visitar = (dir) => {
+    for (const entrada of readdirSync(dir, { withFileTypes: true })) {
+      const archivo = join(dir, entrada.name);
+      if (entrada.isDirectory()) visitar(archivo);
+      else if (/\.mdx?$/.test(entrada.name)) archivos.push(archivo);
+    }
+  };
+  visitar(raiz);
+  return archivos.map((archivo) => relative(raiz, archivo)
+    .split(sep).join('/')
+    .replace(/\.mdx?$/, '')
+    .replace(/(^|\/)index$/, '$1'))
+    .filter(Boolean);
+}
+
+test('navegación: todas las páginas del curso y anexos responden sin 404', async ({ request }) => {
   test.setTimeout(240_000);
-  await page.goto('./');
-  const enlaces = await page.locator('a[href]').evaluateAll((elementos) => {
-    const raiz = '/dev_to_ia_engineer/';
-    return [...new Set(elementos.map((a) => a.getAttribute('href'))
-      .filter((href) => href && href.startsWith(raiz) && !href.includes('#'))
-    )];
-  });
-  expect(enlaces.length).toBeGreaterThan(75);
+  const rutas = rutasDeDocumentos();
+  expect(rutas.length).toBeGreaterThan(75);
   const incorrectos = [];
-  for (let i = 0; i < enlaces.length; i += 8) {
-    const bloque = enlaces.slice(i, i + 8);
-    const resultados = await Promise.all(bloque.map(async (url) => {
+  for (let i = 0; i < rutas.length; i += 8) {
+    const bloque = rutas.slice(i, i + 8);
+    const resultados = await Promise.all(bloque.map(async (ruta) => {
+      const url = '/dev_to_ia_engineer/' + ruta.replace(/\/?$/, '/') ;
       const resultado = await request.get(url, { failOnStatusCode: false });
       return { url, estado: resultado.status() };
     }));
     incorrectos.push(...resultados.filter((resultado) => resultado.estado >= 400));
   }
-  expect(incorrectos, 'Enlaces del menú que devuelven error').toEqual([]);
+  expect(incorrectos, 'Páginas inexistentes o caídas').toEqual([]);
 });
