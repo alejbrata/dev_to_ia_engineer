@@ -23,6 +23,7 @@ const primera = modulos[0]?.lecciones[0]?.id;
 ---
 
 <section
+  id="progreso"
   class="curso-reanudar not-content"
   aria-label="Tu progreso y próximos pasos"
   data-curso-modulos={JSON.stringify(modulos)}
@@ -160,6 +161,22 @@ const primera = modulos[0]?.lecciones[0]?.id;
       const finalizado = panel.querySelector<HTMLElement>('[data-curso-finalizado]')!;
       acciones.hidden = !primeraPendiente;
       finalizado.hidden = Boolean(primeraPendiente);
+
+      // El botón principal del hero también debe respetar el progreso guardado.
+      // Sin JS el enlace original sigue llevando al comienzo del curso.
+      const inicioPortada = document.querySelector<HTMLAnchorElement>(
+        '.portada .acciones a:first-child',
+      );
+      const inicioTexto = inicioPortada?.querySelector<HTMLElement>('[data-curso-boton-texto]');
+      if (inicioPortada && inicioTexto) {
+        if (primeraPendiente) {
+          inicioPortada.href = base + '/' + primeraPendiente.id + '/';
+          inicioTexto.textContent = completadas.size ? 'Continuar curso' : 'Empezar el curso';
+        } else {
+          inicioPortada.href = '#progreso';
+          inicioTexto.textContent = 'Ver tu progreso';
+        }
+      }
       if (!primeraPendiente) return;
 
       const enlazar = (selector: string, leccion: Leccion) => {
