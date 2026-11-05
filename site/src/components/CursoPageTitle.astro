@@ -4,14 +4,17 @@ import { getCollection } from 'astro:content';
 import sidebar from '../sidebar.json';
 
 const { id, entry } = Astro.locals.starlightRoute;
-const grupo = sidebar.find((g) => id.startsWith(g.items[0].autogenerate.directory + '/'));
-const docs = grupo ? await getCollection('docs') : [];
+const grupo = sidebar.find((g) =>
+  /^0[0-8]-/.test(g.items[0].autogenerate.directory) &&
+  id.startsWith(g.items[0].autogenerate.directory + '/'));
+const docs = await getCollection('docs');
 const lecciones = grupo
   ? docs
       .filter((doc) => doc.id.startsWith(grupo.items[0].autogenerate.directory + '/'))
       .sort((a, b) => a.id.localeCompare(b.id))
   : [];
-const totalLecciones = docs.filter((doc) => /^0[0-8]-/.test(doc.id)).length;
+const idsCurso = docs.filter((doc) => /^0[0-8]-/.test(doc.id)).map((doc) => doc.id);
+const totalLecciones = idsCurso.length;
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const issueUrl = 'https://github.com/alejbrata/dev_to_ia_engineer/issues/new?' +
   new URLSearchParams({
@@ -26,7 +29,9 @@ const issueUrl = 'https://github.com/alejbrata/dev_to_ia_engineer/issues/new?' +
 {grupo && (
   <section class="curso-herramientas not-content" aria-label="Herramientas del alumno"
     data-curso-id={id} data-curso-titulo={entry.data.title}
-    data-curso-total={totalLecciones}>
+    data-curso-total={totalLecciones}
+    data-curso-ids={JSON.stringify(idsCurso)}
+    data-curso-modulo-ids={JSON.stringify(lecciones.map((l) => l.id))}>
     <div class="curso-barra">
       <label class="curso-completada">
         <input type="checkbox" data-curso-completada />
@@ -98,11 +103,15 @@ const issueUrl = 'https://github.com/alejbrata/dev_to_ia_engineer/issues/new?' +
       const total = Number(panel.dataset.cursoTotal);
       const casilla = panel.querySelector<HTMLInputElement>('[data-curso-completada]')!;
       const contador = panel.querySelector<HTMLElement>('[data-curso-progreso]')!;
-      const completadas = new Set(leerCompletadas());
+      const idsCurso = new Set(JSON.parse(panel.dataset.cursoIds!) as string[]);
+      const idsModulo = JSON.parse(panel.dataset.cursoModuloIds!) as string[];
+      const completadas = new Set(leerCompletadas().filter((id) => idsCurso.has(id)));
 
       const pintar = () => {
         casilla.checked = completadas.has(id);
-        contador.textContent = completadas.size + ' / ' + total + ' completadas';
+        const hechasModulo = idsModulo.filter((leccion) => completadas.has(leccion)).length;
+        contador.textContent = completadas.size + ' / ' + total +
+          ' completadas · este módulo: ' + hechasModulo + ' / ' + idsModulo.length;
       };
 
       casilla.addEventListener('change', () => {
