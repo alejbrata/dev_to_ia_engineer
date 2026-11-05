@@ -28,7 +28,10 @@ for (const ancho of [320, 390, 768]) {
   test('móvil ' + ancho + 'px: sin desplazamiento horizontal de página', async ({ page }) => {
     test.setTimeout(240_000);
     await page.setViewportSize({ width: ancho, height: 844 });
-    for (const ruta of paginas) {
+    // A 320px cubrimos TODAS las lecciones y anexos; a otros anchos,
+    // recorremos una selección representativa de los nueve módulos.
+    const rutas = ancho === 320 ? [...new Set([...paginas, ...rutasDeDocumentos()])] : paginas;
+    for (const ruta of rutas) {
       // Astro puede emitir una navegación/redirección al montar las páginas.
       // Reintentamos una medición interrumpida, pero no ocultamos desbordamientos.
       let medidas;
