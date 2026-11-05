@@ -115,3 +115,55 @@ Son pocas líneas, y cada cambio corresponde a un fallo que pasa en producción:
 - **El agente lee el resultado.** Todo lo que devuelve `ejecutar` acaba en el contexto del modelo como resultado de la herramienta. Un "Error tras 3 intentos" genérico no le dice si debe corregir algo, esperar o parar.
 
 El modelo no aparece en el reto, y es a propósito. Que un agente sea seguro con acciones reales depende sobre todo de esta capa, que se prueba como cualquier código: con escenarios deterministas y sin modelo.
+
+## Solución explicada paso a paso
+
+:::caution[Contiene spoilers]
+Abre estos apartados solo después de intentar el reto. Cada uno explica el fallo, el cambio que aparece en la solución de referencia y la lección que deja.
+:::
+
+<details>
+<summary>Pedir autorización para acciones destructivas</summary>
+
+**Qué fallaba:** La versión inicial ejecuta todas las operaciones sin llamar a `aprobar`.
+
+**Cómo se corrige:** La solución importa `DESTRUCTIVAS` y, si la operación es destructiva y `aprobar(accion)` devuelve falso, retorna una denegación sin llamar a la API.
+
+**Qué aprendes:** Los límites de autorización deben implementarse en código; un prompt no constituye un control de permisos.
+
+</details>
+
+<details>
+<summary>Evitar duplicados tras un timeout</summary>
+
+**Qué fallaba:** Antes: `api.llamar(accion["operacion"], accion["args"])`. Si la operación se completó pero se perdió la respuesta, un reintento puede ejecutarla dos veces.
+
+**Cómo se corrige:** Después: `api.llamar(accion["operacion"], accion["args"], clave=accion["id"])`. El identificador estable hace idempotentes los reintentos en la API simulada.
+
+**Qué aprendes:** Un timeout no prueba que una acción no se haya realizado. Identificadores estables protegen acciones con efectos secundarios.
+
+</details>
+
+<details>
+<summary>No reintentar errores que requieren corregir la petición</summary>
+
+**Qué fallaba:** Antes se reintentaban por igual `Timeout`, `LimiteDeUso` y `Rechazo`.
+
+**Cómo se corrige:** La solución captura `Rechazo` por separado y devuelve el error sin reintentar.
+
+**Qué aprendes:** Un rechazo de validación no se arregla repitiendo exactamente la misma solicitud.
+
+</details>
+
+<details>
+<summary>Respetar la espera cuando hay límites de uso</summary>
+
+**Qué fallaba:** El original vuelve a intentar una llamada incluso si la API pide esperar.
+
+**Cómo se corrige:** La solución captura `LimiteDeUso` y ejecuta `reloj.dormir(e.espera)` antes de continuar.
+
+**Qué aprendes:** La política de reintentos depende del tipo de error; espera indicada, idempotencia y presupuesto de intentos importan tanto como la propia operación.
+
+</details>
+
+**Comprobación:** ejecuta `uv run python modulos/05-agentes/reto/comprobar.py` sobre tu código. Con `--solucion` se evalúa la implementación de referencia, no tus cambios.
