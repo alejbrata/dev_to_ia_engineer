@@ -129,21 +129,21 @@ Abre estos apartados solo después de intentar el reto. Cada uno explica el fall
 
 **Código original:**
 
-```python
+~~~python
 mensajes = prompts.renderizar(
     prompt, pregunta=caso["pregunta"], respuesta=caso["respuesta"]
 )
-```
+~~~
 
 **Código corregido:**
 
-```python
+~~~python
 pasos = pasos_del_procedimiento(cliente, caso)
 lista = "\n".join(f"{n}. {p}" for n, p in enumerate(pasos, 1))
 mensajes = prompts.renderizar(
     prompt, pasos=lista, respuesta=caso["respuesta"]
 )
-```
+~~~
 
 **Cómo se corrige:** La solución primero carga `extraer-pasos.md` y extrae los pasos obligatorios a partir de `pregunta` y `procedimiento`, sin enseñar todavía la respuesta.
 
@@ -158,17 +158,17 @@ mensajes = prompts.renderizar(
 
 **Código original:**
 
-```python
+~~~python
 except ErrorFormato:
     return True
-```
+~~~
 
 **Código corregido:**
 
-```python
+~~~python
 except ErrorFormato:
     return False
-```
+~~~
 
 **Cómo se corrige:** Después: `except ErrorFormato: return False`; si no se obtiene una lista válida de pasos tampoco se aprueba.
 
@@ -183,18 +183,18 @@ except ErrorFormato:
 
 **Código original:**
 
-```python
+~~~python
 class Veredicto(BaseModel):
     motivo: str
     aprobada: bool
 
 return cliente.extraer(mensajes, Veredicto, rol=ROL,
                        opciones=OPCIONES)[0].aprobada
-```
+~~~
 
 **Código corregido:**
 
-```python
+~~~python
 class Paso(BaseModel):
     numero: int
     en_la_respuesta: bool
@@ -206,7 +206,7 @@ revision = cliente.extraer(mensajes, Revision, rol=ROL,
                            opciones=OPCIONES)[0].pasos
 incluidos = {r.numero: r.en_la_respuesta for r in revision}
 return all(incluidos.get(n, False) for n in range(1, len(pasos) + 1))
-```
+~~~
 
 **Cómo se corrige:** La solución utiliza `Revision` con una lista de `Paso(numero, en_la_respuesta)` y calcula `all(incluidos.get(n, False) for n in range(1, len(pasos) + 1))`.
 
