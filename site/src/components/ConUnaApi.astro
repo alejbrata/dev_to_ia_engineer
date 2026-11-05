@@ -75,6 +75,7 @@ const powershell =
 	}
 	{
 		conModelos.length > 0 && (
+			<div class="tabla-compatibilidad" role="region" aria-label="Compatibilidad de las prácticas con API comerciales" tabindex="0">
 			<table>
 				<thead>
 					<tr>
@@ -94,6 +95,7 @@ const powershell =
 					))}
 				</tbody>
 			</table>
+			</div>
 		)
 	}
 	{
@@ -126,6 +128,11 @@ const powershell =
 	}
 	.con-una-api > * + * {
 		margin-top: 0.75rem;
+	}
+	.tabla-compatibilidad {
+		max-width: 100%;
+		overflow-x: auto;
+		overscroll-behavior-inline: contain;
 	}
 	.titulo {
 		margin: 0;

@@ -35,6 +35,7 @@ export default defineConfig({
 			components: {
 				// En la portada, una consola que reproduce una llamada real; en el resto, el Hero normal.
 				Hero: './src/components/Hero.astro',
+				PageTitle: './src/components/CursoPageTitle.astro',
 			},
 		}),
 	],

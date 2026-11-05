@@ -1,0 +1,68 @@
+---
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+<section class="curso-reanudar not-content" aria-label="Retomar el curso">
+  <div>
+    <strong>Tu avance</strong>
+    <p data-resumen>El progreso se guarda en este dispositivo.</p>
+  </div>
+  <a class="curso-reanudar-enlace" href={base + '/00-introduccion/01-la-rotacion/'} data-enlace>
+    Empezar el curso
+  </a>
+</section>
+
+<style>
+  .curso-reanudar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
+    padding: 1rem 1.1rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.6rem;
+    background: var(--sl-color-gray-6);
+    margin-block: 1.25rem 2rem;
+  }
+  .curso-reanudar strong { color: var(--sl-color-white); }
+  .curso-reanudar p { margin: 0.25rem 0 0; color: var(--sl-color-gray-2); font-size: var(--sl-text-sm); }
+  .curso-reanudar-enlace {
+    display: inline-block;
+    padding: 0.5rem 0.85rem;
+    border-radius: 0.4rem;
+    background: var(--sl-color-accent-low);
+    color: var(--sl-color-accent-high);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .curso-reanudar-enlace:hover { text-decoration: underline; }
+</style>
+
+<script>
+  const CLAVE_COMPLETADAS = 'curso-ai-engineer:completadas:v1';
+  const CLAVE_ULTIMA = 'curso-ai-engineer:ultima:v1';
+
+  function iniciarReanudar(): void {
+    document.querySelectorAll<HTMLElement>('.curso-reanudar').forEach((panel) => {
+      const resumen = panel.querySelector<HTMLElement>('[data-resumen]')!;
+      const enlace = panel.querySelector<HTMLAnchorElement>('[data-enlace]')!;
+      try {
+        const completadas = JSON.parse(localStorage.getItem(CLAVE_COMPLETADAS) ?? '[]');
+        if (Array.isArray(completadas) && completadas.length) {
+          resumen.textContent = completadas.length + ' lecciones marcadas como completadas en este navegador.';
+        }
+        const ultima = JSON.parse(localStorage.getItem(CLAVE_ULTIMA) ?? 'null');
+        if (ultima && typeof ultima.url === 'string'
+            && typeof ultima.titulo === 'string'
+            && ultima.url.startsWith(import.meta.env.BASE_URL)) {
+          enlace.href = ultima.url;
+          enlace.textContent = 'Continuar: ' + ultima.titulo;
+        }
+      } catch { /* Sin almacenamiento local se puede empezar normalmente. */ }
+    });
+  }
+  document.addEventListener('astro:page-load', iniciarReanudar);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', iniciarReanudar, { once: true });
+  } else iniciarReanudar();
+</script>
