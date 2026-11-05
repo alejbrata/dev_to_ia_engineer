@@ -1,6 +1,41 @@
 const { test, expect } = require('@playwright/test');
 
 const modulo = '01-fundamentos-de-llms/06-coste-y-latencia/';
+const CLAVE_COMPLETADAS = 'curso-ai-engineer:completadas:v1';
+const CLAVE_ULTIMA = 'curso-ai-engineer:ultima:v1';
+
+async function montarEscenario(page, crear) {
+  await page.goto('./');
+  const escenario = await page.locator('[data-curso-modulos]').evaluate((element, claves) => {
+    const modulos = JSON.parse(element.dataset.cursoModulos);
+    const m = (n) => modulos.find((grupo) => grupo.id.startsWith(String(n).padStart(2, '0') + '-'));
+    const todos = modulos.flatMap((grupo) => grupo.lecciones);
+    let datos;
+    if (claves.tipo === 'saltos') datos = {
+      completadas: [...m(0).lecciones, ...m(1).lecciones, m(3).lecciones[0]].map((l) => l.id),
+      ultima: m(3).lecciones[0].id, orden: m(2).lecciones[0].id,
+      retomar: m(3).lecciones[1].id, m1: m(1).id, m3: m(3).id,
+    };
+    else if (claves.tipo === 'modulo-terminado') datos = {
+      completadas: [...m(0).lecciones, ...m(1).lecciones].map((l) => l.id),
+      ultima: m(1).lecciones.at(-1).id,
+      orden: m(2).lecciones[0].id, retomar: m(2).lecciones[0].id,
+    };
+    else if (claves.tipo === 'todo') datos = {
+      completadas: todos.map((l) => l.id), ultima: todos.at(-1).id,
+    };
+    else datos = {
+      completadas: ['otra-carpeta/pagina', m(1).lecciones[0].id],
+      ultima: 'https://example.com/malicioso',
+      orden: m(0).lecciones[0].id,
+    };
+    localStorage.setItem(claves.completadas, JSON.stringify(datos.completadas));
+    if (datos.ultima) localStorage.setItem(claves.ultima, JSON.stringify({ id: datos.ultima }));
+    return datos;
+  }, { tipo: crear, completadas: CLAVE_COMPLETADAS, ultima: CLAVE_ULTIMA });
+  await page.reload();
+  return escenario;
+}
 
 test('el alumno puede marcar una lección y conservarla tras recargar', async ({ page }) => {
   await page.goto(modulo);
@@ -10,16 +45,58 @@ test('el alumno puede marcar una lección y conservarla tras recargar', async ({
   await expect(casilla).toBeChecked();
   await page.reload();
   await expect(page.getByRole('checkbox', { name: 'Marcar como completada' })).toBeChecked();
-  await expect(page.locator('[data-curso-progreso]')).toContainText('1 /');
+  await expect(page.locator('[data-curso-progreso]')).toContainText('1 / 77');
+  await expect(page.locator('[data-curso-progreso]')).toContainText('este módulo: 1 / 8');
 });
 
-test('la portada recupera la última lección visitada', async ({ page }) => {
+test('retomar mantiene la última lección si todavía no se completó', async ({ page }) => {
   await page.goto(modulo);
   await page.goto('./');
-  const continuar = page.getByRole('link', { name: /Continuar:/ });
-  await expect(continuar).toBeVisible();
-  await continuar.click();
+  const retomar = page.locator('[data-accion-retomar]');
+  await expect(retomar).toBeVisible();
+  await expect(retomar).toHaveAttribute('href', /01-fundamentos-de-llms\/06-coste-y-latencia\/$/);
+  await retomar.click();
   await expect(page).toHaveURL(/01-fundamentos-de-llms\/06-coste-y-latencia/);
+});
+
+test('si termina módulo 1 y hace una lección del 3, puede retomar 3 o continuar 2', async ({ page }) => {
+  const datos = await montarEscenario(page, 'saltos');
+  const retomar = page.locator('[data-accion-retomar]');
+  const orden = page.locator('[data-accion-orden]');
+  await expect(retomar).toHaveAttribute('href', new RegExp(datos.retomar + '/$'));
+  await expect(orden).toHaveAttribute('href', new RegExp(datos.orden + '/$'));
+  await expect(page.locator('[data-retomar-modulo]')).toContainText('Módulo 3');
+  await expect(page.locator('[data-orden-modulo]')).toContainText('Módulo 2');
+
+  await page.locator('.curso-desglose summary').click();
+  await expect(page.locator('[data-modulo="' + datos.m1 + '"] progress')).toHaveJSProperty('value', 8);
+  await expect(page.locator('[data-modulo="' + datos.m3 + '"] progress')).toHaveJSProperty('value', 1);
+});
+
+test('si se completa el último módulo visitado, retomar propone el siguiente pendiente', async ({ page }) => {
+  const datos = await montarEscenario(page, 'modulo-terminado');
+  await expect(page.locator('[data-accion-retomar]')).toHaveAttribute(
+    'href', new RegExp(datos.retomar + '/$'),
+  );
+  await expect(page.locator('[data-accion-orden]')).toHaveAttribute(
+    'href', new RegExp(datos.orden + '/$'),
+  );
+});
+
+test('con todas las páginas marcadas no manda al inicio', async ({ page }) => {
+  await montarEscenario(page, 'todo');
+  await expect(page.locator('[data-acciones]')).toBeHidden();
+  await expect(page.locator('[data-curso-finalizado]')).toBeVisible();
+  await expect(page.locator('[data-global]')).toContainText('77 / 77');
+});
+
+test('las páginas antiguas o desconocidas no inflan las cifras ni generan enlaces inseguros', async ({ page }) => {
+  const datos = await montarEscenario(page, 'desconocidos');
+  await expect(page.locator('[data-global]')).toContainText('1 / 77');
+  await expect(page.locator('[data-accion-orden]')).toHaveAttribute(
+    'href', new RegExp(datos.orden + '/$'),
+  );
+  await expect(page.locator('[data-bloque-retomar]')).toBeHidden();
 });
 
 test('en móvil se puede abrir la lista de lecciones del módulo', async ({ page }) => {
