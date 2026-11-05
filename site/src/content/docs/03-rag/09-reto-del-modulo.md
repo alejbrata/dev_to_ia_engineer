@@ -119,3 +119,44 @@ Cada arreglo, medido por separado en la máquina del curso:
 - **El título.** `trocear_por_secciones` pone en el título "documento > sección", y el índice lo convierte en embedding junto con el texto. Sin él, "Mitigación" no dice de qué servicio es. Son 8 centésimas de recall por una línea de contexto.
 
 La solución llega al nivel de la lección 02, no más allá. Si quieres seguir, la búsqueda híbrida y el reranker (lecciones 04 y 05) son las siguientes palancas, y los criterios siguen valiendo para medirlas.
+
+## Solución explicada paso a paso
+
+:::caution[Contiene spoilers]
+Abre estos apartados solo después de intentar el reto. Cada uno explica el fallo, el cambio que aparece en la solución de referencia y la lección que deja.
+:::
+
+<details>
+<summary>Trocear por líneas rompe las unidades de significado</summary>
+
+**Qué fallaba:** En `trocear()` cada línea se indexa aislada, dejando condiciones, pasos y tablas sin su contexto.
+
+**Cómo se corrige:** Antes: `Fragmento(..., titulo="", texto=linea.strip())` por cada línea. Después: `return trocear_por_secciones(doc, texto)` (importándolo desde `curso_core.rag`).
+
+**Qué aprendes:** Un chunk debe conservar suficiente contexto para contestar; el tamaño mínimo no siempre mejora la recuperación.
+
+</details>
+
+<details>
+<summary>El título del fragmento aporta información al embedding</summary>
+
+**Qué fallaba:** El original pone `titulo=""`: un apartado llamado «Mitigación» puede no indicar a qué sistema se refiere.
+
+**Cómo se corrige:** `trocear_por_secciones()` conserva títulos de documento y sección, que `Fragmento.para_indexar` incorpora al texto embebido.
+
+**Qué aprendes:** En RAG importa *qué* se indexa, no solo cuántos fragmentos se generan.
+
+</details>
+
+<details>
+<summary>Un umbral de similitud sin calibración descarta resultados útiles</summary>
+
+**Qué fallaba:** El original filtra `r.puntuacion >= 0.75`. Un fragmento relevante puede quedar por debajo de ese umbral con este modelo.
+
+**Cómo se corrige:** Antes: `return [r for r in indice.buscar(pregunta, k) if r.puntuacion >= SIMILITUD_MINIMA]`. Después: `return indice.buscar(pregunta, k)`.
+
+**Qué aprendes:** Calibra umbrales con preguntas representativas o utiliza reranking; una cifra arbitraria puede eliminar el contexto que la generación necesita.
+
+</details>
+
+**Comprobación:** ejecuta `uv run python modulos/03-rag/reto/comprobar.py` sobre tu código. Con `--solucion` se evalúa la implementación de referencia, no tus cambios.

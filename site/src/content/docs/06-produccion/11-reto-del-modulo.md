@@ -128,3 +128,44 @@ Desde las 3:00, el servidor del modelo principal procesa como mucho 1.024 tokens
 - **La señal está en la traza, no en el resultado.** Las abstenciones suben, pero una alerta sobre ellas es frágil: en las noches normales llegan al 30 % en alguna ventana, y en el incidente bajan hasta el 33 %. El recorte, en cambio, es 0 % en una noche normal y más del 90 % en el incidente. Si registras los tokens procesados (lección 02), cuesta una línea vigilarlo. Si no, no hay forma de verlo.
 - **Una alerta que salta por ruido se deja de mirar.** Con unas 30 peticiones por ventana, un solo error es un 3 %, y la regla de partida saltaba nueve veces en noches tranquilas. Una alerta de errores sigue haciendo falta, pero con un umbral y una ventana que no salten por un error suelto ni por un pico que se recupera solo (lección 03).
 - **La causa no es lo que dice el panel más llamativo.** El pico de la 1:00 tenía el triple de tráfico, la latencia más alta de las dos noches y errores, y no era el problema. Es la lección 07 en pequeño: la señal que grita no siempre es la que importa.
+
+## Solución explicada paso a paso
+
+:::caution[Contiene spoilers]
+Abre estos apartados solo después de intentar el reto. Cada uno explica el fallo, el cambio que aparece en la solución de referencia y la lección que deja.
+:::
+
+<details>
+<summary>Medir los recortes del contexto</summary>
+
+**Qué fallaba:** Las ventanas originales solo agregan errores, abstenciones, respaldo y p95. Ninguna de esas señales mide si el servidor descartó tokens de entrada.
+
+**Cómo se corrige:** La solución añade `recortadas`: proporción de peticiones sin error con `tokens_procesados < tokens_enviados`.
+
+**Qué aprendes:** La observabilidad tiene que instrumentar el fallo que quieres detectar; latencia y tasa de errores no describen toda degradación de calidad.
+
+</details>
+
+<details>
+<summary>Alertar sobre la señal relevante y evitar ruido</summary>
+
+**Qué fallaba:** Antes: `return v["errores"] > 0.02`; con unas 30 peticiones, un solo error puede disparar alertas inútiles.
+
+**Cómo se corrige:** Después: `return v["recortadas"] > 0.10`. La señal coincide con la degradación sintética del reto.
+
+**Qué aprendes:** Las alertas deben ser accionables y calibradas. En producción, la tasa de errores también necesitaría vigilancia, con umbrales adecuados.
+
+</details>
+
+<details>
+<summary>Identificar la causa y no culpar al tráfico</summary>
+
+**Qué fallaba:** La constante original apunta a `más tráfico del habitual`, pero las trazas muestran que desde las 3:00 se procesan como máximo 1.024 tokens de prompts que rondan 1.500.
+
+**Cómo se corrige:** La solución usa `CAUSA = "el servidor del modelo recorta el contexto"`.
+
+**Qué aprendes:** La hipótesis debe relacionarse con datos instrumentados: contar peticiones no revela un límite de contexto introducido en el servidor.
+
+</details>
+
+**Comprobación:** ejecuta `uv run python modulos/06-produccion/reto/comprobar.py` sobre tu código. Con `--solucion` se evalúa la implementación de referencia, no tus cambios.

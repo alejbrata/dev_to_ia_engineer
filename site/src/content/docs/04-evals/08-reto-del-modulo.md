@@ -115,3 +115,44 @@ Lo que se lleva a cualquier juez:
 - **Si el modelo no da un veredicto válido, no se aprueba.** Un error que aprueba infla la métrica sin que nadie lo vea.
 - **Lo que el juez ve al hacer una tarea sesga esa tarea.** Separa sacar la lista de juzgarla.
 - **Para eso está prueba.** Desarrollo dio 0,80 a un juez que fuera de él era casi azar. Sin los 10 casos de prueba, separados por procedimiento, el juez habría llegado a producción con una cifra falsa.
+
+## Solución explicada paso a paso
+
+:::caution[Contiene spoilers]
+Abre estos apartados solo después de intentar el reto. Cada uno explica el fallo, el cambio que aparece en la solución de referencia y la lección que deja.
+:::
+
+<details>
+<summary>Sin el procedimiento no se puede juzgar qué falta</summary>
+
+**Qué fallaba:** El juez original ve solo pregunta y respuesta; puede aprobar algo plausible aunque omita pasos del procedimiento.
+
+**Cómo se corrige:** La solución primero carga `extraer-pasos.md` y extrae los pasos obligatorios a partir de `pregunta` y `procedimiento`, sin enseñar todavía la respuesta.
+
+**Qué aprendes:** Para medir completitud se necesita una referencia independiente de la respuesta evaluada: si la referencia depende de la respuesta, reproduce sus omisiones.
+
+</details>
+
+<details>
+<summary>No aprobar automáticamente cuando falla el juez</summary>
+
+**Qué fallaba:** Antes, `except ErrorFormato: return True` convertía un fallo del evaluador en una aprobación.
+
+**Cómo se corrige:** Después: `except ErrorFormato: return False`; si no se obtiene una lista válida de pasos tampoco se aprueba.
+
+**Qué aprendes:** Un evaluador que falla de forma abierta infla artificialmente sus resultados. La política de fallo debe ser explícita y conservadora.
+
+</details>
+
+<details>
+<summary>Verificar cada paso en vez de aceptar un sí/no</summary>
+
+**Qué fallaba:** La versión inicial pide al modelo una conclusión global (`Veredicto.aprobada`).
+
+**Cómo se corrige:** La solución utiliza `Revision` con una lista de `Paso(numero, en_la_respuesta)` y calcula `all(incluidos.get(n, False) for n in range(1, len(pasos) + 1))`.
+
+**Qué aprendes:** Separar la identificación de criterios de la revisión de cada criterio hace más auditable el juez. El código, no una impresión general del LLM, toma la decisión final.
+
+</details>
+
+**Comprobación:** ejecuta `uv run python modulos/04-evals/reto/comprobar.py` sobre tu código. Con `--solucion` se evalúa la implementación de referencia, no tus cambios.

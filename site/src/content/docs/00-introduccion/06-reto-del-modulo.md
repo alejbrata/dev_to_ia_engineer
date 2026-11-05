@@ -107,3 +107,85 @@ Está en [`reto/solucion/diagnostico.py`](https://github.com/alejbrata/dev_to_ia
 - **Un diagnóstico que se rompe cuando lo que diagnostica falla** no sirve justo cuando hace falta. La comprobación captura `httpx.HTTPError` y responde "no".
 - **El nombre de la configuración no es el nombre del servidor.** Ollama completa con `:latest` los modelos sin etiqueta. Comparar cadenas sin normalizarlas da falsos negativos, y en la máquina del curso, dos.
 - **Lo que dice un fichero de configuración no es lo que pasa.** `.gitignore` no saca un fichero de git: si `.env` entró antes, sus claves están en el historial aunque hoy esté ignorado. La lección 6.04 explica cómo limpiarlo. Hay que preguntarle a git (`git ls-files .env`), no leer `.gitignore`.
+
+## Solución explicada paso a paso
+
+:::caution[Contiene spoilers]
+Intenta resolver el reto antes de abrir los desplegables. Cada uno compara el código defectuoso con su corrección y explica qué criterio desbloquea.
+:::
+
+<details>
+<summary>Arreglo 1: gestionar Ollama desconectado (criterio 2)</summary>
+
+**Problema:** `cliente.get()` lanza `httpx.ConnectError` cuando Ollama no está disponible. No llega a devolver un código HTTP, de modo que el diagnóstico se interrumpe.
+
+**Antes:**
+
+~~~python
+return cliente.get("/api/tags").status_code == 200
+~~~
+
+**Después:**
+
+~~~python
+try:
+    return cliente.get("/api/tags").status_code == 200
+except httpx.HTTPError:
+    return False
+~~~
+
+**Por qué:** el diagnóstico devuelve `False` si falla la comunicación, en vez de fallar él mismo. El criterio 2 simula Ollama apagado y espera una respuesta controlada.
+
+</details>
+
+<details>
+<summary>Arreglo 2: comparar modelos con etiqueta :latest (criterios 4 y 5)</summary>
+
+**Problema:** el fichero de configuración puede usar `bge-m3`, mientras Ollama lo lista como `bge-m3:latest`. Comparar los textos literalmente produce un falso negativo.
+
+**Antes:**
+
+~~~python
+return modelo in descargados
+~~~
+
+**Después:**
+
+~~~python
+return (modelo if ":" in modelo else f"{modelo}:latest") in descargados
+~~~
+
+**Por qué:** solo se añade la etiqueta implícita si falta. Los tamaños explícitos se mantienen distintos: `qwen2.5:1.5b` no debe confundirse con `qwen2.5:7b`. Lo prueban los criterios 4 y 5.
+
+</details>
+
+<details>
+<summary>Arreglo 3: comprobar el estado real de .env en Git (criterios 6 y 7)</summary>
+
+**Problema:** `.gitignore` no deja de versionar archivos añadidos anteriormente; solo indica qué archivos nuevos debe ignorar Git.
+
+**Antes:**
+
+~~~python
+gitignore = raiz / ".gitignore"
+ignorados = gitignore.read_text(encoding="utf-8").split() if gitignore.exists() else []
+return ".env" not in ignorados
+~~~
+
+**Después:**
+
+~~~python
+return ".env" in listar(raiz, ".env")
+~~~
+
+**Por qué:** `listar` llama a una función que consulta `git ls-files .env`. Ahora comprobamos lo que Git sigue realmente, en lugar de inferirlo del fichero de exclusiones. El comprobador simula ambos casos. Si un secreto estuvo versionado, ignorarlo ahora **no elimina su historial**; hay que revisar las credenciales expuestas y rotarlas.
+
+</details>
+
+### Verifica tus propios cambios
+
+~~~sh
+uv run python modulos/00-introduccion/reto/comprobar.py
+~~~
+
+El objetivo es **7 de 7 criterios**. El parámetro `--solucion` ejecuta la referencia, **no** el archivo que estás corrigiendo. Compáralos solo al terminar.
