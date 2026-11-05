@@ -23,7 +23,7 @@ Al terminar esta lección podrás:
 
 ### El modelo no ejecuta nada
 
-El nombre engaña: con tool calling (o function calling), **el modelo no ejecuta ninguna herramienta**. Lo que hace es responder, en lugar de con texto, con una petición estructurada: "quiero llamar a `estado_servicio` con `servicio=pagos`". Tu código decide si la ejecuta, la ejecuta y le devuelve el resultado en un mensaje nuevo. Luego el modelo sigue, ya con esa información.
+El nombre engaña: con tool calling (o function calling), **el modelo no ejecuta ninguna herramienta**. **Sí decide si necesita una, cuál solicitar y con qué argumentos**. En lugar de responder solo con texto, puede devolver una petición estructurada: "quiero llamar a `estado_servicio` con `servicio=pagos`". Tu código recibe esa petición, decide si está autorizada, valida sus argumentos y, si procede, ejecuta la herramienta. Después le devuelve el resultado al modelo en un mensaje nuevo para que continúe con esa información.
 
 ```text
 tu código ──(ticket + herramientas disponibles)──▶ modelo
@@ -32,6 +32,26 @@ tu código ── ejecuta la función ──▶ "caído: 100 % de errores 500"
 tu código ──(resultado de la herramienta)────────▶ modelo
 tu código ◀──(clasificación final)──────────────── modelo
 ```
+
+### ¿Cómo le dice el modelo a tu código que use una herramienta?
+
+**Mediante la respuesta de la API**, no llamando directamente a una función de Python o Java. Tu aplicación envía el mensaje del usuario junto con las definiciones de las herramientas disponibles. Si el modelo elige una, la respuesta incluye su **nombre y argumentos** en un campo estructurado. En este curso, `curso_core` unifica los formatos de Ollama y de las APIs compatibles y expone esas peticiones en `respuesta.llamadas`.
+
+Este fragmento simplificado procede de la práctica `herramientas.py`:
+
+```python
+respuesta = cliente.chat(renderizado, rol=rol, opciones=opciones)
+
+if respuesta.llamadas:  # El modelo ha pedido usar una herramienta.
+    llamada = respuesta.llamadas[0]
+    # Ejemplo: nombre="estado_servicio", argumentos={"servicio": "pagos"}
+    if llamada.nombre == HERRAMIENTA.nombre:
+        salida, validos = ejecutar(llamada)  # Tu código valida y ejecuta.
+```
+
+Fíjate en la separación: **el modelo elige y solicita; tu programa interpreta y ejecuta**. La función `ejecutar` valida los argumentos con Pydantic antes de consultar el estado simulado. A continuación, el programa añade a la conversación la petición original del modelo y un mensaje de rol `tool` con `salida`, y vuelve a llamar al modelo para obtener la respuesta final. Verás ese código completo en la práctica.
+
+Esto también explica por qué puedes **rechazar** una llamada, comprobar permisos o devolver un error: el modelo no tiene acceso directo a tus funciones. Un framework de agentes puede automatizar este ciclo, pero sigue existiendo una aplicación que ejecuta las herramientas.
 
 Si vienes de backend, piensa en el modelo como en un cliente que te manda peticiones a una API que tú expones. Como con cualquier cliente externo, **validas lo que te pide antes de hacerlo**.
 
