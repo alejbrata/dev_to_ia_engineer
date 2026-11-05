@@ -118,6 +118,32 @@
 	margin-top: 1.75rem;
 }
 
+/* Invitación opcional a apoyar el curso: visible, pero secundaria a estudiar. */
+.portada .apoyo-github {
+	margin: 0.85rem 0 0;
+	font-size: var(--sl-text-xs);
+	line-height: 1.7;
+	color: var(--sl-color-gray-3);
+}
+
+.portada .apoyo-github a {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.3rem;
+	color: var(--sl-color-gray-2);
+	text-decoration: underline;
+	text-underline-offset: 0.2em;
+}
+
+.portada .apoyo-github a:hover,
+.portada .apoyo-github a:focus-visible {
+	color: var(--sl-color-text-accent);
+}
+
+.portada .apoyo-github svg {
+	flex: 0 0 auto;
+}
+
 /* --- Consola (portada y componentes) ---------------------------------------------- */
 
 .consola {
