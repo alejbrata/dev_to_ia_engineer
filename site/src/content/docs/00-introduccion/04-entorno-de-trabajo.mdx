@@ -201,6 +201,37 @@ ollama ps      # modelos cargados en memoria ahora mismo
 ollama rm <modelo>   # borra un modelo descargado
 ```
 
+### 5.1. Comprueba qué modelos necesitas en cada módulo
+
+**No hace falta descargar todos los modelos desde el principio.** Algunos de 7B u 8B pueden ocupar varios GB y ejecutarse lentamente si tu ordenador no tiene suficiente memoria.
+
+Desde la **raíz del repositorio**, utiliza este comprobador cuando llegues a un módulo:
+
+```sh title="Terminal de VS Code · raíz del repo"
+uv run python scripts/preparar_modelos.py --modulo 1
+```
+
+El script lee los nombres directamente de `config/models.toml` y consulta los modelos descargados en Ollama. Por cada modelo que falte imprime el comando exacto, por ejemplo:
+
+```text
+FALTA qwen2.5:7b (roles: chat_grande)
+  ollama pull qwen2.5:7b
+```
+
+Para revisar todos los roles locales (sin descargar nada):
+
+```sh
+uv run python scripts/preparar_modelos.py --todos
+```
+
+Y si solo vas a utilizar uno o dos roles:
+
+```sh
+uv run python scripts/preparar_modelos.py --rol chat --rol embeddings
+```
+
+El comprobador **solo consulta**: nunca instala modelos automáticamente. Los roles por módulo son orientativos; algunas prácticas avanzadas requieren herramientas adicionales, como llama.cpp o vLLM, que se explican en sus lecciones.
+
 ### 6. Comprueba el entorno
 
 El script [`comprobar_entorno.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/00-introduccion/comprobar_entorno.py) revisa tu configuración sin llamar a ningún modelo ni mostrar el valor de las claves:
