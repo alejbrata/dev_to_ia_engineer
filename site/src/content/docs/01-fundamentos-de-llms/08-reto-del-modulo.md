@@ -126,3 +126,111 @@ Tres cosas que se llevan a cualquier sistema:
 - **Normaliza antes de comparar.** El coste total sube con el tráfico. El coste por llamada, o por conversación, es el que dice si algo cambió en el sistema.
 - **Un percentil sin ordenar es un número cualquiera.** El fallo no da error: da 66 donde había que dar 95.
 - **La latencia no lo habría visto.** La p95 apenas cambia (de unos 5,4 a 5,7 segundos), porque aquí la marcan los tokens de salida. Una alerta de latencia se habría quedado callada. Vigila los tokens de entrada por llamada (lección 06) y no dejes crecer el historial sin control: recórtalo o resúmelo (lección 02).
+
+## Solución explicada paso a paso
+
+:::caution[Contiene spoilers]
+Abre cada arreglo solo después de intentar resolverlo. Estos ejemplos muestran exactamente qué línea fallaba y qué aprendemos con la corrección.
+:::
+
+<details>
+<summary>Arreglo 1: separar tarifas de entrada y salida (criterios 1 y 2)</summary>
+
+**Problema:** la versión defectuosa aplica la tarifa de salida, más cara, a todos los tokens.
+
+**Antes — `coste()`:**
+
+~~~python
+tokens = llamada["tokens_entrada"] + llamada["tokens_salida"]
+return tokens * precios["salida"] / 1_000_000
+~~~
+
+**Después:**
+
+~~~python
+entrada = llamada["tokens_entrada"] * precios["entrada"]
+return (entrada + llamada["tokens_salida"] * precios["salida"]) / 1_000_000
+~~~
+
+**Por qué:** cada tipo de token tiene su propio precio. Con 1.000 tokens de entrada a 3 $/millón y 100 de salida a 12 $/millón, el coste es `(1000 * 3 + 100 * 12) / 1_000_000 = 0.0042 $`, no `0.0132 $`.
+
+</details>
+
+<details>
+<summary>Arreglo 2: ordenar para calcular la p95 (criterios 3 y 4)</summary>
+
+**Problema:** seleccionar una posición de una lista desordenada no calcula un percentil, aunque no produzca ninguna excepción.
+
+**Antes — `p95()`:**
+
+~~~python
+return valores[math.ceil(0.95 * len(valores)) - 1]
+~~~
+
+**Después:**
+
+~~~python
+return sorted(valores)[math.ceil(0.95 * len(valores)) - 1]
+~~~
+
+**Por qué:** el método de rango próximo del ejercicio requiere ordenar primero. Para los valores del 1 al 100, la p95 debe ser 95 independientemente de cómo lleguen ordenados.
+
+</details>
+
+<details>
+<summary>Arreglo 3: comparar coste por llamada, no gasto diario (criterios 5 y 6)</summary>
+
+**Problema:** la campaña del día 4 atrae más llamadas, por lo que sube el gasto total aunque cada petición cueste lo mismo.
+
+**Antes — dentro de `dia_del_cambio()`:**
+
+~~~python
+anteriores = mean(dias[d]["coste"] for d in orden[:i])
+if dias[orden[i]]["coste"] > umbral * anteriores:
+    return orden[i]
+~~~
+
+**Después:**
+
+~~~python
+anteriores = mean(dias[d]["coste_por_llamada"] for d in orden[:i])
+if dias[orden[i]]["coste_por_llamada"] > umbral * anteriores:
+    return orden[i]
+~~~
+
+**Por qué:** normalizar por petición separa el volumen del coste unitario. El día 4 no cambia el coste por llamada; el 8 de octubre sí, y ese es el cambio que queremos detectar.
+
+**Matiz:** esta comparación con la media histórica es suficiente para los datos sintéticos del reto; en producción habría que considerar estacionalidad, volumen y ventanas de referencia.
+
+</details>
+
+<details>
+<summary>Arreglo 4: elegir la causa a partir de los turnos (criterio 7)</summary>
+
+**Problema:** la hipótesis inicial `"más tráfico"` no explica que la segunda semana cueste más a pesar de tener menos llamadas.
+
+**Antes:**
+
+~~~python
+CAUSA = "más tráfico"
+~~~
+
+**Después:**
+
+~~~python
+CAUSA = "el contexto crece con cada turno"
+~~~
+
+**Por qué:** antes del día 8, el turno 12 utiliza alrededor de 630 tokens de entrada; después, unos 2.750. El cliente empezó a reenviar todo el historial de la conversación. Cada turno vuelve a pagar tokens ya enviados en turnos anteriores.
+
+La causa se **diagnostica manualmente** leyendo los datos; el script no hace inferencia causal por sí solo.
+
+</details>
+
+### Comprueba lo que has aprendido
+
+~~~sh
+uv run python modulos/01-fundamentos-de-llms/reto/comprobar.py
+~~~
+
+Debes conseguir **7 de 7 criterios** sobre tu archivo modificado. Con `--solucion` se comprueba el código ya resuelto, no tu trabajo.
