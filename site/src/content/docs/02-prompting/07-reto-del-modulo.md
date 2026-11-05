@@ -154,17 +154,14 @@ Abre estos apartados solo después de intentar el reto. Cada uno explica el fall
 
 **Código original:**
 
-~~~text
-# Antes (ejemplo del prompt original)
-... clientes que no pueden pagar ... → severidad: media
+~~~json
+{"servicio": "pagos", "severidad": "media", "afecta_clientes": true, "hora_inicio": "10:15"}
 ~~~
 
 **Código corregido:**
 
-~~~text
-# Después (criterio y ejemplo del prompt corregido)
-Si los clientes no pueden pagar, la incidencia requiere
-una severidad acorde con el impacto en el servicio.
+~~~json
+{"motivo": "Ningún cliente puede pagar: se pierden ventas, es pérdida de dinero.", "servicio": "pagos", "severidad": "critica", "afecta_clientes": true, "hora_inicio": "10:15"}
 ~~~
 
 **Cómo se corrige:** Revisa `reto/extraer-aviso.md` y compáralo con `reto/solucion/extraer-aviso.md`: corrige el ejemplo, incluye los criterios de severidad y aclara qué cubre cada servicio.
