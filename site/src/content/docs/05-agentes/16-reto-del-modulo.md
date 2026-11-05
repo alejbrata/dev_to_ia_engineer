@@ -129,22 +129,22 @@ Abre estos apartados solo después de intentar el reto. Cada uno explica el fall
 
 **Código original:**
 
-```python
+~~~python
 # Antes: se entra directamente en el bucle de llamadas.
 ultimo: Exception | None = None
 for _ in range(REINTENTOS):
     ...
-```
+~~~
 
 **Código corregido:**
 
-```python
+~~~python
 from api_simulada import DESTRUCTIVAS
 
 if accion["operacion"] in DESTRUCTIVAS and not aprobar(accion):
     return f"Acción denegada por la persona de guardia: {accion['operacion']} no se ha hecho."
 ultimo: Exception | None = None
-```
+~~~
 
 **Cómo se corrige:** La solución importa `DESTRUCTIVAS` y, si la operación es destructiva y `aprobar(accion)` devuelve falso, retorna una denegación sin llamar a la API.
 
@@ -159,16 +159,16 @@ ultimo: Exception | None = None
 
 **Código original:**
 
-```python
+~~~python
 return api.llamar(accion["operacion"], accion["args"])
-```
+~~~
 
 **Código corregido:**
 
-```python
+~~~python
 return api.llamar(accion["operacion"], accion["args"],
                   clave=accion["id"])
-```
+~~~
 
 **Cómo se corrige:** Después: `api.llamar(accion["operacion"], accion["args"], clave=accion["id"])`. El identificador estable hace idempotentes los reintentos en la API simulada.
 
@@ -183,17 +183,17 @@ return api.llamar(accion["operacion"], accion["args"],
 
 **Código original:**
 
-```python
+~~~python
 except (Timeout, LimiteDeUso, Rechazo) as e:
     ultimo = e
-```
+~~~
 
 **Código corregido:**
 
-```python
+~~~python
 except Rechazo as e:
     return f"Error: la API rechaza la petición ({e}). No se ha reintentado."
-```
+~~~
 
 **Cómo se corrige:** La solución captura `Rechazo` por separado y devuelve el error sin reintentar.
 
@@ -208,20 +208,20 @@ except Rechazo as e:
 
 **Código original:**
 
-```python
+~~~python
 except (Timeout, LimiteDeUso, Rechazo) as e:
     ultimo = e
-```
+~~~
 
 **Código corregido:**
 
-```python
+~~~python
 except LimiteDeUso as e:
     reloj.dormir(e.espera)
     ultimo = e
 except Timeout as e:
     ultimo = e
-```
+~~~
 
 **Cómo se corrige:** La solución captura `LimiteDeUso` y ejecuta `reloj.dormir(e.espera)` antes de continuar.
 
