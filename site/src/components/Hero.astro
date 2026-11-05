@@ -30,9 +30,9 @@ const textoCompleto = grabacion.fragmentos.map((f) => f.texto).join('');
 				</h1>
 				{hero?.tagline && <p class="entradilla" set:html={hero.tagline} />}
 				<div class="acciones">
-					{acciones.map(({ text, link, variant, icon }) => (
+					{acciones.map(({ text, link, variant, icon }, i) => (
 						<LinkButton href={link} variant={variant} icon={icon?.name}>
-							{text}
+							{i === 0 ? <span data-curso-boton-texto>{text}</span> : text}
 						</LinkButton>
 					))}
 				</div>
