@@ -130,3 +130,44 @@ De 19 en desarrollo a 17 en prueba. Los cuatro fallos, entre las dos particiones
 En los cuatro, la respuesta no está escrita con las palabras de la pregunta, y hay que deducirla. La regla del prompt ("no respondas con un dato parecido de otra política") evita inventar y, de paso, frena estas deducciones. Es el equilibrio de la lección 3.06 entre abstenerse de más y de menos. Aquí la referencia se queda del lado prudente: no inventa en ninguna de las 8 preguntas sin respuesta y falla 4 de las 32 que sí la tienen. Mover esa línea es la siguiente iteración, y se mide igual.
 
 Si tu sistema supera los criterios, ya tienes un proyecto que contar en una entrevista: la línea base, cada decisión con su medida, la cifra de prueba con su intervalo y los fallos que quedan, explicados. Es lo que pide el proyecto final (lecciones 01 a 04), en pequeño.
+
+## Solución explicada paso a paso
+
+:::caution[Contiene spoilers]
+Abre estos apartados solo después de intentar el reto. Cada uno explica el fallo, el cambio que aparece en la solución de referencia y la lección que deja.
+:::
+
+<details>
+<summary>El baseline responde sin los documentos</summary>
+
+**Qué fallaba:** El asistente original solo envía un mensaje de sistema y la pregunta. No tiene acceso a las políticas internas de Arce y puede inventar respuestas plausibles.
+
+**Cómo se corrige:** La solución construye un `IndiceVectorial` con `trocear_por_secciones()` sobre los ocho documentos de `docs/` usando el rol `embeddings`.
+
+**Qué aprendes:** Para preguntas sobre datos privados o específicos, el modelo necesita recuperar evidencia pertinente. Saber hablar del tema no equivale a conocer esas políticas.
+
+</details>
+
+<details>
+<summary>Introducir el contexto recuperado en la respuesta</summary>
+
+**Qué fallaba:** El código inicial pregunta directamente al rol `chat`; no busca ni pasa fragmentos.
+
+**Cómo se corrige:** La solución recupera tres resultados con `indice(cliente).buscar(pregunta, K)` y envía sus títulos y textos junto a la pregunta. También usa `ROL = "chat_grande"`.
+
+**Qué aprendes:** La recuperación y la generación son pasos distintos. El contexto debe aportar información legible y suficiente para responder.
+
+</details>
+
+<details>
+<summary>Exigir completitud y abstención</summary>
+
+**Qué fallaba:** La instrucción original dice que, si el modelo no sabe, se abstenga, pero sin evidencia es difícil decidir qué sabe.
+
+**Cómo se corrige:** El prompt de referencia obliga a usar solo los fragmentos, incluir todas las condiciones y responder exactamente `No aparece en la documentación` cuando los textos no contienen la respuesta.
+
+**Qué aprendes:** El objetivo no es que siempre responda: es acertar cuando hay evidencia y abstenerse cuando no. La solución es de referencia, no la única arquitectura válida.
+
+</details>
+
+**Comprobación:** ejecuta `uv run python modulos/08-proyecto-final/reto/comprobar.py` sobre tu código. Con `--solucion` se evalúa la implementación de referencia, no tus cambios.
