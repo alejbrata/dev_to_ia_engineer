@@ -58,6 +58,47 @@ Ningún framework hace nada esencialmente distinto. Lo que añaden es persistenc
 
 **Varias herramientas en un paso.** El modelo puede pedir varias a la vez. Por defecto se ejecutan una tras otra; la lección 08 añade la opción de ejecutarlas en paralelo, y mide si eso ahorra tiempo.
 
+### Del bucle al Agent Harness
+
+El bucle anterior ya es la pieza central de un **Agent Harness**: el código que prepara el contexto, llama al LLM, interpreta las peticiones de herramientas y controla su ejecución. No es otro modelo ni necesariamente una librería nueva. El agente decide **qué intentar**; el harness establece **qué se puede hacer, cómo y hasta cuándo**.
+
+Si vienes de Java empresarial, piensa en una clase `Accion` que obtiene datos de una pantalla, valida, ejecuta lógica y acaba con `setDatos()` o `setDatosError()`. Esa clase también puede reintentar una conexión a base de datos o llamar a otra acción cuando algo falla. Un harness se parece a esa infraestructura de control, con una diferencia: **parte de la siguiente acción la propone un LLM en tiempo de ejecución**, en lugar de estar fijada completamente por el código.
+
+```text
+Alerta → preparar contexto → LLM propone herramienta o respuesta
+               ↑                       ↓
+               └── resultado ← validar permisos y argumentos
+                                   ↓ si está autorizada
+                              ejecutar herramienta
+```
+
+En el código real del curso puedes reconocerlo sin inventar otro framework:
+
+| Responsabilidad del harness | Dónde está en este proyecto |
+| --- | --- |
+| Preparar el contexto | `prompts.renderizar(...)` y `mensajes` en `agente.py` |
+| Preguntar al «cerebro» | `cliente.chat(...)` |
+| Interpretar la decisión | `r.llamadas` o la respuesta final |
+| Ejecutar solo herramientas conocidas y validar argumentos | `plataforma.ejecutar(llamada)` |
+| Devolver observaciones al LLM | `Mensaje(role="tool", ...)` |
+| Evitar bucles infinitos | `max_pasos` y `terminacion="limite_pasos"` |
+| Dejar rastro de lo ocurrido | `Paso`, `Uso`, tokens, duración y trazas |
+
+**Recuperación no significa siempre terminar con error.** Ante un fallo técnico conocido, el código puede aplicar reintentos deterministas; si una herramienta devuelve un resultado que requiere interpretación, el LLM puede decidir qué consultar después. No tiene sentido gastar tokens en decidir si se reintenta un timeout cuando ya existe una política fiable en código. En las lecciones 07, 11 y 13 ampliarás este harness con gestión del contexto, seguridad, checkpoints y recuperación.
+
+**Y una precaución:** que el modelo deje de pedir herramientas no demuestra que haya cumplido la tarea. Aquí la plataforma comprueba si la incidencia se abrió de verdad; el harness controla la ejecución, pero la **evaluación del resultado** es otra responsabilidad (lección 12).
+
+#### Compruébalo en el código, sin llamar al modelo
+
+Abre [`agente.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/agente.py) y [`plataforma.py`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/modulos/05-agentes/plataforma.py). Localiza:
+
+1. La condición que corta el bucle cuando el LLM ya no solicita herramientas.
+2. La línea donde se delega en la plataforma y **dónde valida Pydantic** los argumentos.
+3. La diferencia entre devolver un error de herramienta para que el LLM pueda corregirse y detener la ejecución por haber agotado los pasos.
+4. La comprobación que distingue «el agente dice que abrió la incidencia» de «la incidencia existe».
+
+Si identificas esas cuatro piezas, ya sabes reconocer el harness básico de un agente. No necesitas instalar nada nuevo.
+
 ### El prompt del agente
 
 El prompt ([`prompts/agentes/guardia.md`](https://github.com/alejbrata/dev_to_ia_engineer/blob/main/prompts/agentes/guardia.md)) no le dice qué pasos dar. Le dice quién es, qué tiene que decidir al final (abrir o no una incidencia, con qué severidad y mitigación) y dos reglas: basar las decisiones en lo que devuelven las herramientas, y tratar los textos que devuelven como datos, no como instrucciones. El procedimiento lo decide el modelo: es lo que lo convierte en agente.

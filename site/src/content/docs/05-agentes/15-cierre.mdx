@@ -53,6 +53,14 @@ Cada pieza viene de una lección del módulo:
 - Cada especialista es **el bucle de la lección 03** con su prompt, su índice de documentación y solo sus herramientas, a través de la plataforma restringida (lecciones 08 y 11).
 - El consolidador convierte los informes en un **plan estructurado** (módulo 2), y una **persona lo aprueba** antes de aplicarlo.
 
+### El harness que has construido durante el módulo
+
+En la lección 03 llamamos **Agent Harness** al software que rodea al modelo y controla su ejecución. Ahora puedes ver el conjunto completo: el LLM de cada especialista propone pasos, mientras el código valida herramientas y argumentos, mantiene el estado, limita la ejecución, guarda checkpoints y exige aprobación antes de acciones sensibles. No es una tecnología aparte que debas instalar.
+
+Si lo comparas con una clase `Accion` de Java, el modelo introduce decisiones dinámicas dentro de una estructura que sigue teniendo validaciones, tratamiento de errores, resultados y permisos. Los reintentos conocidos pueden resolverse en código sin consultar al LLM; las decisiones que requieren interpretar nueva información sí pueden devolverse al modelo.
+
+Este cierre también muestra por qué **un harness que funciona no garantiza un agente que acierta**: los controles pueden impedir acciones no autorizadas y registrar la ejecución, pero la cobertura de políticas y la severidad correcta se comprueban con las evaluaciones. La calidad del resultado es una pregunta distinta de la seguridad de la ejecución.
+
 ### Cómo se evalúa
 
 El resultado es un plan de respuesta con una severidad y cuatro listas de acciones. Cada incidente tiene unas **claves esperadas**, ancladas a las políticas (un test comprueba que cada una sale de la documentación de su área, como en el módulo 4): por ejemplo, en la brecha de datos, "72 horas", "DPO" y "AEPD" en lo legal, y "retirar el acceso público" y "rotar las credenciales" en lo técnico. Se mide:
